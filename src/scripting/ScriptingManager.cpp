@@ -5,12 +5,19 @@
 #include <iostream>
 #include <string> // Required for std::string
 #include <array>
+#include <cmath> // For standard math functions
+
+constexpr double PI = 3.14159265358979323846;
 
 ScriptingManager::ScriptingManager(Engine* engine)
     : L(nullptr), engineInstance(engine) {
     // 1. Create a new Lua state.
     L = luaL_newstate();
     if (L) {
+        // Seed the random number generator.
+        std::random_device rd;
+        rng.seed(rd());
+
         // 2. Open the standard libraries (base, string, math, etc.).
         luaL_openlibs(L);
         std::cout << "ScriptingManager: Lua state created and standard libraries opened." << std::endl;
@@ -54,6 +61,16 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("btnp", &ScriptingManager::Lua_Btnp);
     RegisterFunction("print", &ScriptingManager::Lua_Print);
     RegisterFunction("time", &ScriptingManager::Lua_Time);
+
+    // Math functions
+    RegisterFunction("sin", &ScriptingManager::Lua_Sin);
+    RegisterFunction("cos", &ScriptingManager::Lua_Cos);
+    RegisterFunction("atan2", &ScriptingManager::Lua_Atan2);
+    RegisterFunction("sqrt", &ScriptingManager::Lua_Sqrt);
+    RegisterFunction("abs", &ScriptingManager::Lua_Abs);
+    RegisterFunction("flr", &ScriptingManager::Lua_Flr);
+    RegisterFunction("ceil", &ScriptingManager::Lua_Ceil);
+    RegisterFunction("rnd", &ScriptingManager::Lua_Rnd);
 }
 
 void ScriptingManager::RegisterFunction(const char* luaName, lua_CFunction func) {
@@ -249,6 +266,78 @@ int ScriptingManager::Lua_Time(lua_State* L) {
     
     lua_pushnumber(L, elapsed);
     return 1; // Return one value (the number).
+}
+
+int ScriptingManager::Lua_Sin(lua_State* L) {
+    double x = luaL_checknumber(L, 1);
+    // PICO-8 convention: input is 0..1, output is sin(-x * 2 * PI)
+    lua_pushnumber(L, std::sin(-x * 2.0 * PI));
+    return 1;
+}
+
+int ScriptingManager::Lua_Cos(lua_State* L) {
+    double x = luaL_checknumber(L, 1);
+    // PICO-8 convention: input is 0..1, output is cos(-x * 2 * PI)
+    lua_pushnumber(L, std::cos(-x * 2.0 * PI));
+    return 1;
+}
+
+int ScriptingManager::Lua_Atan2(lua_State* L) {
+    double dx = luaL_checknumber(L, 1);
+    double dy = luaL_checknumber(L, 2);
+    // PICO-8 convention: atan2(dx, -dy) and result is 0..1
+    double angle = std::atan2(dx, -dy); // Returns -PI to PI
+    double normalized = -angle / (2.0 * PI); // Normalize to -0.5 to 0.5
+    if (normalized < 0) {
+        normalized += 1.0;
+    }
+    lua_pushnumber(L, normalized);
+    return 1;
+}
+
+int ScriptingManager::Lua_Sqrt(lua_State* L) {
+    double x = luaL_checknumber(L, 1);
+    lua_pushnumber(L, std::sqrt(x));
+    return 1;
+}
+
+int ScriptingManager::Lua_Abs(lua_State* L) {
+    double x = luaL_checknumber(L, 1);
+    lua_pushnumber(L, std::abs(x));
+    return 1;
+}
+
+int ScriptingManager::Lua_Flr(lua_State* L) {
+    double x = luaL_checknumber(L, 1);
+    lua_pushnumber(L, std::floor(x));
+    return 1;
+}
+
+int ScriptingManager::Lua_Ceil(lua_State* L) {
+    double x = luaL_checknumber(L, 1);
+    lua_pushnumber(L, std::ceil(x));
+    return 1;
+}
+
+int ScriptingManager::Lua_Rnd(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    int n = lua_gettop(L);
+
+    if (n == 0) {
+        // rnd() -> returns [0, 1)
+        std::uniform_real_distribution<double> dist(0.0, 1.0);
+        lua_pushnumber(L, dist(sm->rng));
+    } else {
+        // rnd(max) -> returns [0, max)
+        double max_val = luaL_checknumber(L, 1);
+        if (max_val < 0) {
+            // To match PICO-8 behavior, rnd of a negative number seems to work on the positive range
+            max_val = -max_val;
+        }
+        std::uniform_real_distribution<double> dist(0.0, max_val);
+        lua_pushnumber(L, dist(sm->rng));
+    }
+    return 1;
 }
 
 // Calls a global Lua function with no arguments or return values.

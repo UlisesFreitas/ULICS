@@ -56,6 +56,12 @@ function _draw()
     -- Test the time function with a pulsing circle
     local pulse = (time() * 2) % 2
     circ(50, 200, 10 + pulse * 10, 14)
+
+    -- Test math functions with an orbiting moon
+    local orbit_radius = 40
+    local orbit_x = 200 + cos(time()/4) * orbit_radius
+    local orbit_y = 50 + sin(time()/4) * orbit_radius
+    circfill(flr(orbit_x), flr(orbit_y), 5, 6)
 end
 )lua";
 

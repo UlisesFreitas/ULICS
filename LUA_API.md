@@ -57,6 +57,24 @@ Functions for playing sound effects and music.
 
 ---
 
+## Math API
+
+Convenience functions for common mathematical operations.
+
+| Function | Parameters | Description | Status |
+| :--- | :--- | :--- | :--- |
+| `sin(x)` | `angle` | Returns the sine of an angle `x`. `x` is from 0-1, representing a full circle. | ✅ **Implemented** |
+| `cos(x)` | `angle` | Returns the cosine of an angle `x`. `x` is from 0-1, representing a full circle. | ✅ **Implemented** |
+| `atan2(dx, dy)`| `dx`, `dy` | Returns the angle for a given vector, from 0-1. | ✅ **Implemented** |
+| `sqrt(x)` | `value` | Returns the square root of `x`. | ✅ **Implemented** |
+| `abs(x)` | `value` | Returns the absolute (non-negative) value of `x`. | ✅ **Implemented** |
+| `flr(x)` | `value` | Returns the nearest integer equal to or less than `x`. | ✅ **Implemented** |
+| `ceil(x)` | `value` | Returns the nearest integer equal to or greater than `x`. | ✅ **Implemented** |
+| `rnd(max)` | `max_value` | Returns a random number between 0 (inclusive) and `max` (exclusive). If `max` is omitted, returns a value between 0 and 1. | ✅ **Implemented** |
+
+
+---
+
 ## Map API
 
 Functions for interacting with the tilemap data.

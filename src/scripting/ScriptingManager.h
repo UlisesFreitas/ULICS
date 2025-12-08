@@ -2,6 +2,7 @@
 #define SCRIPTING_MANAGER_H
 
 #include <string>
+#include <random>
 
 // Include the C++ wrapper for the Lua C API headers.
 extern "C" {
@@ -34,6 +35,7 @@ private:
     lua_State* L; // Pointer to the Lua state.
     Engine* engineInstance; // Non-owning pointer to the main engine instance.
     std::string lastError;
+    std::mt19937 rng; // Mersenne Twister random number generator.
 
     void RegisterAPI();
 
@@ -75,6 +77,16 @@ private:
 
     // Static bridge function to call Engine::getElapsedTime
     static int Lua_Time(lua_State* L);
+
+    // --- Math Functions ---
+    static int Lua_Sin(lua_State* L);
+    static int Lua_Cos(lua_State* L);
+    static int Lua_Atan2(lua_State* L);
+    static int Lua_Sqrt(lua_State* L);
+    static int Lua_Abs(lua_State* L);
+    static int Lua_Flr(lua_State* L);
+    static int Lua_Ceil(lua_State* L);
+    static int Lua_Rnd(lua_State* L);
 };
 
 #endif // SCRIPTING_MANAGER_H

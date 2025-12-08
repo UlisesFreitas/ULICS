@@ -213,7 +213,8 @@
         {
           "id": "3.11",
           "description": "Expose convenience math functions (`sin`, `cos`, `rnd`, `flr`, etc.) to the global Lua namespace.",
-          "status": "pending"
+          "status": "completed",
+          "notes": "Added sin, cos, atan2, sqrt, abs, flr, ceil, and rnd. Adopted PICO-8 angle conventions."
         },
         {
           "id": "3.12",

@@ -244,8 +244,9 @@
       "tasks": [
         {
           "id": "4.1",
-          "description": "Design the 'cartridge' structure and the 'config.json' file format (will include 'memory_limit_mb', 'lua_code_limit_lines', 'palette_size').",
-          "status": "pending"
+          "description": "Design the 'cartridge' structure and the 'config.json' file format.",
+          "status": "completed",
+          "notes": "Created the cartridges/demo directory with a main.lua and config.json. Moved the embedded script content to the new file structure."
         },
         {
           "id": "4.2",

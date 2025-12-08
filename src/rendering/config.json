@@ -1,0 +1,11 @@
+{
+  "title": "ULICS Demo",
+  "author": "ULICS Team",
+  "version": "1.0.0",
+  "description": "A demonstration cartridge showcasing the ULICS API.",
+  "config": {
+    "palette_size": 16,
+    "memory_limit_mb": 1024,
+    "lua_code_limit_lines": 262144
+  }
+}

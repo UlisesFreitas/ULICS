@@ -11,11 +11,12 @@ extern "C" {
 }
 
 class AestheticLayer; // Forward declaration
-class InputManager;   // Forward declaration
+class InputManager; // Forward declaration
+class Engine;       // Forward declaration
 
 class ScriptingManager {
 public:
-    ScriptingManager(AestheticLayer* aestheticLayer, InputManager* inputManager);
+    explicit ScriptingManager(Engine* engine);
     ~ScriptingManager();
 
     // Loads and runs a Lua script from a string buffer.
@@ -31,9 +32,8 @@ public:
 
 private:
     lua_State* L; // Pointer to the Lua state.
+    Engine* engineInstance; // Non-owning pointer to the main engine instance.
     std::string lastError;
-    AestheticLayer* aestheticLayerInstance; // Non-owning pointer.
-    InputManager* inputManagerInstance;     // Non-owning pointer.
 
     void RegisterAPI();
 
@@ -72,6 +72,9 @@ private:
 
     // Static bridge function to call AestheticLayer::Print
     static int Lua_Print(lua_State* L);
+
+    // Static bridge function to call Engine::getElapsedTime
+    static int Lua_Time(lua_State* L);
 };
 
 #endif // SCRIPTING_MANAGER_H

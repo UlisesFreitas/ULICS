@@ -1,14 +1,13 @@
 #include "scripting/ScriptingManager.h"
 #include "rendering/AestheticLayer.h"
 #include "input/InputManager.h"
+#include "core/Engine.h"
 #include <iostream>
 #include <string> // Required for std::string
 #include <array>
 
-ScriptingManager::ScriptingManager(AestheticLayer* aestheticLayer, InputManager* inputManager)
-    : L(nullptr), 
-      aestheticLayerInstance(aestheticLayer),
-      inputManagerInstance(inputManager) {
+ScriptingManager::ScriptingManager(Engine* engine)
+    : L(nullptr), engineInstance(engine) {
     // 1. Create a new Lua state.
     L = luaL_newstate();
     if (L) {
@@ -54,6 +53,7 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("btn", &ScriptingManager::Lua_Btn);
     RegisterFunction("btnp", &ScriptingManager::Lua_Btnp);
     RegisterFunction("print", &ScriptingManager::Lua_Print);
+    RegisterFunction("time", &ScriptingManager::Lua_Time);
 }
 
 void ScriptingManager::RegisterFunction(const char* luaName, lua_CFunction func) {
@@ -67,8 +67,8 @@ void ScriptingManager::RegisterFunction(const char* luaName, lua_CFunction func)
 }
 
 int ScriptingManager::Lua_Clear(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    AestheticLayer* layer = sm->aestheticLayerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
     // 2. Get the argument (the color) from the Lua stack.
     int colorIndex = luaL_checkinteger(L, 1);
@@ -81,8 +81,8 @@ int ScriptingManager::Lua_Clear(lua_State* L) {
 }
 
 int ScriptingManager::Lua_Pset(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    AestheticLayer* layer = sm->aestheticLayerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
     // 2. Get the arguments from the Lua stack.
     int x = luaL_checkinteger(L, 1);
@@ -97,8 +97,8 @@ int ScriptingManager::Lua_Pset(lua_State* L) {
 }
 
 int ScriptingManager::Lua_Line(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    AestheticLayer* layer = sm->aestheticLayerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
     int x1 = luaL_checkinteger(L, 1);
     int y1 = luaL_checkinteger(L, 2);
@@ -112,8 +112,8 @@ int ScriptingManager::Lua_Line(lua_State* L) {
 }
 
 int ScriptingManager::Lua_Rect(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    AestheticLayer* layer = sm->aestheticLayerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
     int x = luaL_checkinteger(L, 1);
     int y = luaL_checkinteger(L, 2);
@@ -127,8 +127,8 @@ int ScriptingManager::Lua_Rect(lua_State* L) {
 }
 
 int ScriptingManager::Lua_RectFill(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    AestheticLayer* layer = sm->aestheticLayerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
     int x = luaL_checkinteger(L, 1);
     int y = luaL_checkinteger(L, 2);
@@ -142,8 +142,8 @@ int ScriptingManager::Lua_RectFill(lua_State* L) {
 }
 
 int ScriptingManager::Lua_Circ(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    AestheticLayer* layer = sm->aestheticLayerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
     int x = luaL_checkinteger(L, 1);
     int y = luaL_checkinteger(L, 2);
@@ -156,8 +156,8 @@ int ScriptingManager::Lua_Circ(lua_State* L) {
 }
 
 int ScriptingManager::Lua_CircFill(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    AestheticLayer* layer = sm->aestheticLayerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
     int x = luaL_checkinteger(L, 1);
     int y = luaL_checkinteger(L, 2);
@@ -170,8 +170,8 @@ int ScriptingManager::Lua_CircFill(lua_State* L) {
 }
 
 int ScriptingManager::Lua_Pget(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    AestheticLayer* layer = sm->aestheticLayerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
     int x = luaL_checkinteger(L, 1);
     int y = luaL_checkinteger(L, 2);
@@ -197,8 +197,8 @@ static const std::array<SDL_Scancode, 6> buttonMapping = {
 };
 
 int ScriptingManager::Lua_Btn(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    InputManager* input = sm->inputManagerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    InputManager* input = sm->engineInstance->getInputManager();
 
     int buttonIndex = luaL_checkinteger(L, 1);
     bool isDown = false;
@@ -212,8 +212,8 @@ int ScriptingManager::Lua_Btn(lua_State* L) {
 }
 
 int ScriptingManager::Lua_Btnp(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    InputManager* input = sm->inputManagerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    InputManager* input = sm->engineInstance->getInputManager();
 
     int buttonIndex = luaL_checkinteger(L, 1);
     bool isPressed = false;
@@ -227,8 +227,8 @@ int ScriptingManager::Lua_Btnp(lua_State* L) {
 }
 
 int ScriptingManager::Lua_Print(lua_State* L) {
-    ScriptingManager* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
-    AestheticLayer* layer = sm->aestheticLayerInstance;
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
     // Get arguments from Lua.
     const char* text = luaL_checkstring(L, 1);
@@ -240,6 +240,15 @@ int ScriptingManager::Lua_Print(lua_State* L) {
     layer->Print(text, x, y, colorIndex);
 
     return 0; // No return values.
+}
+
+int ScriptingManager::Lua_Time(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    double elapsed = sm->engineInstance->getElapsedTime();
+    
+    lua_pushnumber(L, elapsed);
+    return 1; // Return one value (the number).
 }
 
 // Calls a global Lua function with no arguments or return values.

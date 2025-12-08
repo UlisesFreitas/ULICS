@@ -48,10 +48,14 @@ function _draw()
     circfill(200, 150, 20, rect_color + 11) -- Draw a green circle
 
     -- Draw the player
-    rectfill(player.x, player.y, 8, 8, player.color)
+    rectfill(player.x, player.y, 8, 8, player.color)    
 
     -- Test the print function by showing player coordinates
     print("X:"..player.x.." Y:"..player.y, 4, 4, 7)
+
+    -- Test the time function with a pulsing circle
+    local pulse = (time() * 2) % 2
+    circ(50, 200, 10 + pulse * 10, 14)
 end
 )lua";
 

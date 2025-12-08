@@ -66,7 +66,7 @@ bool Engine::Initialize(const char* title, int width, int height) {
     }
 
     try {
-        scriptingManager = std::make_unique<ScriptingManager>(aestheticLayer.get(), inputManager.get());
+        scriptingManager = std::make_unique<ScriptingManager>(this);
         // Load the demo cartridge directly from the embedded string.
         if (!scriptingManager->LoadAndRunScript(EmbeddedScripts::DEMO_CART)) {
             std::cerr << "Could not load the embedded demo cartridge." << std::endl;
@@ -85,8 +85,15 @@ bool Engine::Initialize(const char* title, int width, int height) {
     }
 
     isRunning = true;
+    startTime = std::chrono::high_resolution_clock::now();
     std::cout << "Engine initialized successfully." << std::endl;
     return true;
+}
+
+double Engine::getElapsedTime() const {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = now - startTime;
+    return elapsed.count();
 }
 
 void Engine::Run() {

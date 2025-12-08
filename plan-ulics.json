@@ -207,7 +207,8 @@
         {
           "id": "3.10",
           "description": "Expose a `time()` function to Lua that returns the elapsed time since engine start.",
-          "status": "pending"
+          "status": "completed",
+          "notes": "Refactored ScriptingManager to hold a pointer to the Engine for easier access to subsystems."
         },
         {
           "id": "3.11",

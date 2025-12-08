@@ -1,9 +1,10 @@
 #include "core/Engine.h"
 #include "rendering/AestheticLayer.h"
-#include "demos/DemoGame.h" // Include our demo game.
+#include "scripting/LuaGame.h" // Include our Lua game bridge.
 #include <iostream>
 #include <chrono>
 #include "scripting/ScriptingManager.h"
+#include "scripting/EmbeddedScripts.h" // Include our new embedded script header.
 
 Engine::Engine() : isRunning(false), window(nullptr), renderer(nullptr), 
                    aestheticLayer(nullptr), activeGame(nullptr), scriptingManager(nullptr) {
@@ -54,16 +55,21 @@ bool Engine::Initialize(const char* title, int width, int height) {
     }
 
     try {
-        activeGame = std::make_unique<DemoGame>();
+        scriptingManager = std::make_unique<ScriptingManager>(aestheticLayer.get());
+        // Load the demo cartridge directly from the embedded string.
+        if (!scriptingManager->LoadAndRunScript(EmbeddedScripts::DEMO_CART)) {
+            std::cerr << "Could not load the embedded demo cartridge." << std::endl;
+            return false;
+        }
     } catch (const std::exception& e) {
-        std::cerr << "Error creating game instance: " << e.what() << std::endl;
+        std::cerr << "Error initializing ScriptingManager: " << e.what() << std::endl;
         return false;
     }
 
     try {
-        scriptingManager = std::make_unique<ScriptingManager>(aestheticLayer.get());
+        activeGame = std::make_unique<LuaGame>(scriptingManager.get());
     } catch (const std::exception& e) {
-        std::cerr << "Error initializing ScriptingManager: " << e.what() << std::endl;
+        std::cerr << "Error creating game instance: " << e.what() << std::endl;
         return false;
     }
 
@@ -101,10 +107,10 @@ void Engine::Run() {
         }
 
         // Render loop. It runs once per main loop iteration.
-        if (activeGame && aestheticLayer) {
+        if (activeGame) {
             activeGame->_draw(*aestheticLayer);
-            aestheticLayer->Present();
         }
+        aestheticLayer->Present(); // Present the result regardless.
     }
 }
 

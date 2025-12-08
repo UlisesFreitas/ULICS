@@ -170,11 +170,37 @@
         {
           "id": "3.3",
           "description": "Expose (bind) the Aesthetic Layer's API functions (PSET, LINE, etc.) to the Lua environment using the **Lua C API**.",
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "3.4",
           "description": "Modify the engine's main loop to call the main functions (_update(), _draw()) of the loaded Lua script.",
+          "status": "completed",
+          "notes": "Implemented using an embedded script for a self-contained executable."
+        },
+        {
+          "id": "3.5",
+          "description": "Expand the core drawing API in Lua: `circ`, `circfill`, and `pget`.",
+          "status": "pending"
+        },
+        {
+          "id": "3.6",
+          "description": "Implement a basic `InputManager` to track keyboard state.",
+          "status": "pending"
+        },
+        {
+          "id": "3.7",
+          "description": "Expose input functions to Lua: `btn(i)` and `btnp(i)`.",
+          "status": "pending"
+        },
+        {
+          "id": "3.8",
+          "description": "Embed a default bitmap font and expose a `print(str, x, y, color)` function to Lua.",
+          "status": "pending"
+        },
+        {
+          "id": "3.9",
+          "description": "Improve runtime error handling to display Lua errors on-screen instead of only in the console.",
           "status": "pending"
         }
       ]

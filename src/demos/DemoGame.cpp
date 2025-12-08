@@ -2,7 +2,7 @@
 #include "rendering/AestheticLayer.h"
 
 DemoGame::DemoGame() : frameCount(0) {
-    // Constructor: Inicializa el estado del juego de demostración.
+    // Constructor: Initializes the demo game state.
 }
 
 void DemoGame::_update() {
@@ -10,19 +10,19 @@ void DemoGame::_update() {
 }
 
 void DemoGame::_draw(AestheticLayer& aestheticLayer) {
-    // Esta es la lógica de dibujo que antes estaba en Engine::Run().
+    // This is the drawing logic that was previously in Engine::Run().
 
-    // Limpiamos el framebuffer con el color de fondo.
+    // Clear the framebuffer with the background color.
     aestheticLayer.Clear(1);
 
-    // Dibujamos algunas formas para demostrar la API.
-    aestheticLayer.RectFill(10, 10, 50, 30, 2); // Rectángulo relleno púrpura
-    aestheticLayer.Rect(70, 10, 40, 40, 10);    // Contorno de rectángulo amarillo
+    // Draw some shapes to demonstrate the API.
+    aestheticLayer.RectFill(10, 10, 50, 30, 2); // Purple filled rectangle
+    aestheticLayer.Rect(70, 10, 40, 40, 10);    // Yellow rectangle outline
 
-    // Dibujamos una línea diagonal que cambia de color.
-    uint8_t lineColor = 7 + (frameCount / 30) % 9; // Cambia entre blanco y los colores vivos
+    // Draw a diagonal line that changes color.
+    uint8_t lineColor = 7 + (frameCount / 30) % 9; // Changes between white and the bright colors
     aestheticLayer.Line(10, 50, 245, 200, lineColor);
 
-    // Dibujamos un pequeño rectángulo que se mueve.
-    aestheticLayer.RectFill((frameCount * 2) % 246, 220, 10, 10, 8); // Rojo
+    // Draw a small moving rectangle.
+    aestheticLayer.RectFill((frameCount * 2) % 246, 220, 10, 10, 8); // Red
 }

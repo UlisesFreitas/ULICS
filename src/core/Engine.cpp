@@ -1,11 +1,11 @@
 #include "core/Engine.h"
 #include "rendering/AestheticLayer.h"
-#include "demos/DemoGame.h" // Incluimos nuestro juego de demostración
+#include "demos/DemoGame.h" // Include our demo game.
 #include <iostream>
 #include <chrono>
 #include "scripting/ScriptingManager.h"
 
-Engine::Engine() : isRunning(false), window(nullptr), renderer(nullptr),
+Engine::Engine() : isRunning(false), window(nullptr), renderer(nullptr), 
                    aestheticLayer(nullptr), activeGame(nullptr), scriptingManager(nullptr) {
     // Constructor
 }
@@ -16,7 +16,7 @@ Engine::~Engine() {
 
 bool Engine::Initialize(const char* title, int width, int height) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        std::cerr << "Error al inicializar SDL: " << SDL_GetError() << std::endl;
+        std::cerr << "Error initializing SDL: " << SDL_GetError() << std::endl;
         return false;
     }
 
@@ -30,45 +30,45 @@ bool Engine::Initialize(const char* title, int width, int height) {
     );
 
     if (!window) {
-        std::cerr << "Error al crear la ventana: " << SDL_GetError() << std::endl;
+        std::cerr << "Error creating window: " << SDL_GetError() << std::endl;
         SDL_Quit();
         return false;
     }
 
-    // Creamos el renderer acelerado. Quitamos VSYNC para que el bucle de juego no se vea limitado por la tasa de refresco del monitor.
-    // Nuestro timestep fijo se encargará de la consistencia.
+    // Create an accelerated renderer. We disable VSYNC so the game loop is not limited by the monitor's refresh rate.
+    // Our fixed timestep will handle consistency.
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
-        std::cerr << "Error al crear el renderer: " << SDL_GetError() << std::endl;
+        std::cerr << "Error creating renderer: " << SDL_GetError() << std::endl;
         Shutdown();
         return false;
     }
-    // Mantiene la relación de aspecto al escalar.
+    // Maintain aspect ratio when scaling.
     SDL_RenderSetLogicalSize(renderer, AestheticLayer::FRAMEBUFFER_WIDTH, AestheticLayer::FRAMEBUFFER_HEIGHT);
 
     try {
         aestheticLayer = std::make_unique<AestheticLayer>(renderer);
     } catch (const std::exception& e) {
-        std::cerr << "Error al inicializar la capa estética: " << e.what() << std::endl;
+        std::cerr << "Error initializing AestheticLayer: " << e.what() << std::endl;
         return false;
     }
 
     try {
         activeGame = std::make_unique<DemoGame>();
     } catch (const std::exception& e) {
-        std::cerr << "Error al crear la instancia del juego: " << e.what() << std::endl;
+        std::cerr << "Error creating game instance: " << e.what() << std::endl;
         return false;
     }
 
     try {
-        scriptingManager = std::make_unique<ScriptingManager>();
+        scriptingManager = std::make_unique<ScriptingManager>(aestheticLayer.get());
     } catch (const std::exception& e) {
-        std::cerr << "Error al inicializar el ScriptingManager: " << e.what() << std::endl;
+        std::cerr << "Error initializing ScriptingManager: " << e.what() << std::endl;
         return false;
     }
 
     isRunning = true;
-    std::cout << "Engine inicializado correctamente." << std::endl;
+    std::cout << "Engine initialized successfully." << std::endl;
     return true;
 }
 
@@ -91,8 +91,8 @@ void Engine::Run() {
             }
         }
 
-        // Bucle de actualización de lógica con timestep fijo.
-        // Se ejecuta tantas veces como sea necesario para 'ponerse al día' con el tiempo real.
+        // Fixed timestep logic update loop.
+        // It runs as many times as necessary to 'catch up' with real time.
         while (lag >= MS_PER_UPDATE) {
             if (activeGame) {
                 activeGame->_update();
@@ -100,7 +100,7 @@ void Engine::Run() {
             lag -= MS_PER_UPDATE;
         }
 
-        // Bucle de renderizado. Se ejecuta una vez por vuelta del bucle principal.
+        // Render loop. It runs once per main loop iteration.
         if (activeGame && aestheticLayer) {
             activeGame->_draw(*aestheticLayer);
             aestheticLayer->Present();
@@ -110,7 +110,7 @@ void Engine::Run() {
 
 void Engine::Shutdown() {
     scriptingManager.reset();
-    aestheticLayer.reset(); // Libera el unique_ptr
+    aestheticLayer.reset(); // Release the unique_ptr
 
     if (renderer) {
         SDL_DestroyRenderer(renderer);
@@ -122,5 +122,5 @@ void Engine::Shutdown() {
         window = nullptr;
     }
     SDL_Quit();
-    std::cout << "Engine detenido." << std::endl;
+    std::cout << "Engine shut down." << std::endl;
 }

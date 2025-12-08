@@ -22,10 +22,12 @@ Start-Transcript -Path $LogFile
 
 $BuildDir = Join-Path -Path $ScriptDir -ChildPath "build"
 $SdlDir = Join-Path -Path $ScriptDir -ChildPath "sdl"
+$LuaDir = Join-Path -Path $ScriptDir -ChildPath "external/lua"
 $ErrorActionPreference = "Stop"
 
 try {
-    # --- Step 1: Ensure SDL2 source code is available ---
+    # --- Step 1: Ensure dependencies are available ---
+    # SDL2
     if (-not (Test-Path -Path $SdlDir)) {
         Write-Host "SDL2 source not found. Cloning from repository..."
         # Clone only the latest version (--depth 1) for a faster and smaller download.
@@ -35,6 +37,17 @@ try {
         Remove-Item -Path (Join-Path $SdlDir ".git") -Recurse -Force
     } else {
         Write-Host "SDL2 source found."
+    }
+
+    # Lua
+    if (-not (Test-Path -Path $LuaDir)) {
+        Write-Host "Lua source not found. Cloning from repository..."
+        New-Item -ItemType Directory -Path (Split-Path $LuaDir) -ErrorAction SilentlyContinue | Out-Null
+        git clone --depth 1 https://github.com/lua/lua.git $LuaDir
+        # Remove the .git folder to prevent nested repository detection.
+        Remove-Item -Path (Join-Path $LuaDir ".git") -Recurse -Force
+    } else {
+        Write-Host "Lua source found."
     }
 
     # --- Step 2: Clean and recreate the build directory ---

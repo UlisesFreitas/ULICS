@@ -24,6 +24,22 @@ set(SDL_SHARED OFF CACHE BOOL "Do not build SDL as a shared library")
 # The 'EXCLUDE_FROM_ALL' option prevents SDL's install targets from running during a normal build.
 add_subdirectory(sdl EXCLUDE_FROM_ALL)
 
+# --- Manually managed Lua dependency ---
+# We define how to build Lua here, without needing a CMakeLists.txt inside the external/lua directory.
+
+# 1. Find all Lua source files, excluding the command-line interpreter files.
+file(GLOB LUA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/external/lua/*.c")
+list(FILTER LUA_SOURCES EXCLUDE REGEX "lua\\.c$|luac\\.c$")
+
+# 2. Create the static library target from those sources.
+add_library(lua_lib STATIC ${LUA_SOURCES})
+
+# 3. Set its output name to be clean (e.g., lua.lib).
+set_target_properties(lua_lib PROPERTIES OUTPUT_NAME lua)
+
+# 4. Specify that anyone linking against lua_lib should also get its include directory.
+target_include_directories(lua_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/lua")
+
 # --- Main Application Target ---
 # Add our executable. The WIN32 flag is important for GUI applications on Windows.
 add_executable(UliCS WIN32
@@ -42,8 +58,7 @@ target_include_directories(UliCS PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 # Link our application against the static SDL2 library (SDL2::SDL2-static).
 # This target is created by the add_subdirectory(sdl) command above.
 # It automatically handles include directories and system library dependencies.
-# SDL2::SDL2main is required on Windows to provide the WinMain entry point.
-target_link_libraries(UliCS PRIVATE SDL2::SDL2-static SDL2::SDL2main)
+target_link_libraries(UliCS PRIVATE SDL2::SDL2-static SDL2::SDL2main lua_lib)
 
 # --- Build Output ---
 

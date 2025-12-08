@@ -22,12 +22,16 @@ public:
     bool LoadAndRunScript(const char* scriptBuffer);
 
     // Calls a global Lua function with no arguments or return values.
-    void CallLuaFunction(const char* functionName);
+    // Returns false if an error occurs during the call.
+    bool CallLuaFunction(const char* functionName);
 
     lua_State* GetLuaState() const { return L; }
 
+    const std::string& GetLastLuaError() const { return lastError; }
+
 private:
     lua_State* L; // Pointer to the Lua state.
+    std::string lastError;
     AestheticLayer* aestheticLayerInstance; // Non-owning pointer.
     InputManager* inputManagerInstance;     // Non-owning pointer.
 

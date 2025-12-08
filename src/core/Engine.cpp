@@ -7,8 +7,9 @@
 #include "scripting/ScriptingManager.h"
 #include "scripting/EmbeddedScripts.h" // Include our new embedded script header.
 
-Engine::Engine() : isRunning(false), window(nullptr), renderer(nullptr), 
-                   aestheticLayer(nullptr), activeGame(nullptr), scriptingManager(nullptr),
+Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
+                   window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
+                   activeGame(nullptr), scriptingManager(nullptr),
                    inputManager(nullptr) {
     // Constructor
 }
@@ -116,18 +117,37 @@ void Engine::Run() {
         // Fixed timestep logic update loop.
         // It runs as many times as necessary to 'catch up' with real time.
         while (lag >= MS_PER_UPDATE) {
-            if (activeGame) {
-                activeGame->_update();
+            // Do not update logic if we are in an error state.
+            if (activeGame && !inErrorState) {
+                if (!activeGame->_update()) {
+                    enterErrorState(scriptingManager->GetLastLuaError());
+                }
             }
             lag -= MS_PER_UPDATE;
         }
 
         // Render loop. It runs once per main loop iteration.
-        if (activeGame) {
-            activeGame->_draw(*aestheticLayer);
+        if (inErrorState) {
+            drawErrorScreen();
+        } else {
+            if (activeGame) {
+                activeGame->_draw(*aestheticLayer);
+            }
         }
         aestheticLayer->Present(); // Present the result regardless.
     }
+}
+
+void Engine::enterErrorState(const std::string& message) {
+    inErrorState = true;
+    errorMessage = message;
+    std::cerr << "Engine entering error state: " << errorMessage << std::endl;
+}
+
+void Engine::drawErrorScreen() {
+    aestheticLayer->Clear(2); // Dark Purple background for errors
+    aestheticLayer->Print("LUA ERROR:", 4, 4, 8); // Red title
+    aestheticLayer->Print(errorMessage, 4, 20, 7); // White error message
 }
 
 void Engine::Shutdown() {

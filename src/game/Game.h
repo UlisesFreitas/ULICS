@@ -11,7 +11,7 @@ class AestheticLayer;
 class Game {
 public:
     virtual ~Game() = default;
-    virtual void _update() = 0;
+    virtual bool _update() = 0;
     virtual void _draw(AestheticLayer& aestheticLayer) = 0;
 };
 

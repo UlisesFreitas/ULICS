@@ -5,8 +5,9 @@ DemoGame::DemoGame() : frameCount(0) {
     // Constructor: Initializes the demo game state.
 }
 
-void DemoGame::_update() {
+bool DemoGame::_update() {
     frameCount++;
+    return true; // Indicate that the update was successful.
 }
 
 void DemoGame::_draw(AestheticLayer& aestheticLayer) {

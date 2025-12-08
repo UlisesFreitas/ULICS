@@ -12,8 +12,8 @@ LuaGame::LuaGame(ScriptingManager* manager) : scriptingManager(manager) {
     // The ScriptingManager is already initialized and has loaded main.lua in Engine::Initialize.
 }
 
-void LuaGame::_update() {
-    scriptingManager->CallLuaFunction("_update");
+bool LuaGame::_update() {
+    return scriptingManager->CallLuaFunction("_update");
 }
 
 void LuaGame::_draw(AestheticLayer& aestheticLayer) {

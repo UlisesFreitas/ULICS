@@ -2,6 +2,7 @@
 #define ENGINE_H
 
 #include <SDL.h>
+#include <string>
 #include <memory>
 
 class AestheticLayer;
@@ -22,9 +23,13 @@ private:
     static constexpr int UPDATES_PER_SECOND = 60;
     static constexpr double MS_PER_UPDATE = 1000.0 / UPDATES_PER_SECOND;
 
+    void enterErrorState(const std::string& message);
+    void drawErrorScreen();
     void Shutdown();
 
     bool isRunning;
+    bool inErrorState;
+    std::string errorMessage;
     SDL_Window* window;
     SDL_Renderer* renderer;
     std::unique_ptr<AestheticLayer> aestheticLayer;

@@ -15,7 +15,7 @@ public:
     explicit LuaGame(ScriptingManager* scriptingManager);
     ~LuaGame() override = default;
 
-    void _update() override;
+    bool _update() override;
     void _draw(AestheticLayer& aestheticLayer) override;
 
 private:

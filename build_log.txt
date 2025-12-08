@@ -1,6 +1,6 @@
 ﻿**********************
 Windows PowerShell transcript start
-Start time: 20251208205717
+Start time: 20251208210323
 Username: LEGION25\Ulises
 RunAs User: LEGION25\Ulises
 Configuration Name: 
@@ -32,7 +32,7 @@ shell32;dinput8
 -- Project configured. Executable will be named UliCS.exe
 -- Build type:
 -- Executable will be generated in: U:/ULICS/build/bin
--- Configuring done (18.4s)
+-- Configuring done (18.6s)
 -- Generating done (0.1s)
 -- Build files have been written to: U:/ULICS/build
 CMake configuration successful.
@@ -42,5 +42,5 @@ Project built successfully!
 You can find the executable at: U:\ULICS\build\bin\Release\UliCS.exe
 **********************
 Windows PowerShell transcript end
-End time: 20251208205746
+End time: 20251208210352
 **********************

@@ -243,16 +243,19 @@ int ScriptingManager::Lua_Print(lua_State* L) {
 }
 
 // Calls a global Lua function with no arguments or return values.
-void ScriptingManager::CallLuaFunction(const char* functionName) {
+bool ScriptingManager::CallLuaFunction(const char* functionName) {
     lua_getglobal(L, functionName); // Get the function from Lua's global scope
 
     if (lua_isfunction(L, -1)) {
         // Call the function with 0 arguments and 0 return values.
         if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-            std::cerr << "Error calling Lua function '" << functionName << "': " << lua_tostring(L, -1) << std::endl;
+            lastError = lua_tostring(L, -1);
+            std::cerr << "Error calling Lua function '" << functionName << "': " << lastError << std::endl;
             lua_pop(L, 1); // Pop error message
+            return false;
         }
     } else {
         lua_pop(L, 1); // Pop the non-function value from the stack
     }
+    return true;
 }

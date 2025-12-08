@@ -181,27 +181,28 @@
         {
           "id": "3.5",
           "description": "Expand the core drawing API in Lua: `circ`, `circfill`, and `pget`.",
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "3.6",
           "description": "Implement a basic `InputManager` to track keyboard state.",
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "3.7",
           "description": "Expose input functions to Lua: `btn(i)` and `btnp(i)`.",
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "3.8",
           "description": "Embed a default bitmap font and expose a `print(str, x, y, color)` function to Lua.",
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "3.9",
           "description": "Improve runtime error handling to display Lua errors on-screen instead of only in the console.",
-          "status": "pending"
+          "status": "completed",
+          "notes": "Engine now enters an error state and renders the Lua error message directly to the screen."
         }
       ]
     },

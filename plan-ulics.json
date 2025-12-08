@@ -221,13 +221,18 @@
           "description": "Implement and expose a `camera(x, y)` function to offset all subsequent drawing operations.",
           "status": "completed",
           "notes": "Added camera(x, y) offset to AestheticLayer and exposed it to Lua. All drawing primitives now respect the camera."
+        },
+        {
+          "id": "3.13",
+          "description": "Implement and expose a function **`tcolor(color_id)`** that sets the current **transparent** color index in the `AestheticLayer`, vital for future `SPRITE` operations.",
+          "status": "pending"
         }
       ]
     },
     {
       "phase": 4,
-      "title": "Cartridge System and Modularity",
-      "description": "Define and develop the 'cartridge' system for loading games and the console's modular configuration.",
+      "title": "Cartridge System and Modularity (Base UI Prepared)",
+      "description": "Define and develop the 'cartridge' system for loading games and the console's modular configuration. The engine's state management is prepared for a simple UI.",
       "management": "The application will be managed via 'cartridges'. A cartridge will be a directory containing a 'main.lua' file for code and a 'config.json' for metadata and modular configuration. Optionally, it can include an 'assets' directory.",
       "libraries": [
         {
@@ -259,6 +264,21 @@
         {
           "id": "4.5",
           "description": "Implement limit-checking logic (e.g., Lua code lines) in the 'ScriptingManager' as an informative 'soft' constraint.",
+          "status": "pending"
+        },
+        {
+          "id": "4.6",
+          "description": "Implement the **execution state logic** in the `Engine` (e.g., using an `enum` for `STATE_BOOT`, `STATE_MENU`, `STATE_GAME`, `STATE_ERROR`).",
+          "status": "pending"
+        },
+        {
+          "id": "4.7",
+          "description": "Create the **`cartridges/` directory** and implement the scanning logic in the `CartridgeLoader` to list all available cartuchos.",
+          "status": "pending"
+        },
+        {
+          "id": "4.8",
+          "description": "Modify the `Engine` to, if no cartridge is specified, automatically enter `STATE_MENU` and launch an **internal system script** (e.g., `system/menu.lua`) to render the initial UI.",
           "status": "pending"
         }
       ]
@@ -296,6 +316,11 @@
         {
           "id": "5.4",
           "description": "Implement a 'SpriteSheet' system that can be loaded from the cartridge's assets.",
+          "status": "pending"
+        },
+        {
+          "id": "5.5",
+          "description": "Implement a function `mousetoggle(enabled)` to activate/deactivate the mouse cursor and expose the functions `mousex()`, `mousey()` to Lua for basic UI interaction.",
           "status": "pending"
         }
       ]

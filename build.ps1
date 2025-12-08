@@ -13,6 +13,7 @@ if ($runningProcess) {
 # Get the directory where the script is located to ensure paths are correct.
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LogFile = Join-Path -Path $ScriptDir -ChildPath "build_log.txt"
+$ErrorLogFile = Join-Path -Path $ScriptDir -ChildPath "build_errors.txt"
 
 # Clean up old log and start new transcript to capture all output
 if (Test-Path $LogFile) {
@@ -78,6 +79,8 @@ try {
 
 } catch {
     Write-Error "An error occurred during the build process: $_"
+    # Save the specific error to the error log file.
+    "$_" | Out-File -FilePath $ErrorLogFile -Append
     # Exit with a non-zero code to indicate failure
     exit 1
 } finally {

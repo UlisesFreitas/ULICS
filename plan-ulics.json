@@ -224,8 +224,9 @@
         },
         {
           "id": "3.13",
-          "description": "Implement and expose a function **`tcolor(color_id)`** that sets the current **transparent** color index in the `AestheticLayer`, vital for future `SPRITE` operations.",
-          "status": "pending"
+          "description": "Implement and expose a `tcolor(color_id)` function that sets the current transparent color index.",
+          "status": "completed",
+          "notes": "Added optional transparency to AestheticLayer, controlled via tcolor(c) in Lua. Refactored drawing primitives to respect transparency."
         }
       ]
     },

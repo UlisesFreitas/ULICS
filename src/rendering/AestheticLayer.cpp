@@ -54,6 +54,10 @@ void AestheticLayer::SetCamera(int x, int y) {
     cameraY = y;
 }
 
+void AestheticLayer::SetTransparentColor(std::optional<uint8_t> colorIndex) {
+    transparentColor = colorIndex;
+}
+
 void AestheticLayer::Clear(uint8_t colorIndex) {
     // Ensure the fill value is of the correct type (uint8_t) to avoid conversion warnings.
     uint8_t finalColorIndex = colorIndex % static_cast<uint8_t>(palette.size());
@@ -61,6 +65,11 @@ void AestheticLayer::Clear(uint8_t colorIndex) {
 }
 
 void AestheticLayer::SetPixel(int x, int y, uint8_t colorIndex) {
+    // Check for transparent color before drawing.
+    if (transparentColor.has_value() && colorIndex == transparentColor.value()) {
+        return;
+    }
+
     int screenX = x - cameraX;
     int screenY = y - cameraY;
 
@@ -92,42 +101,28 @@ void AestheticLayer::Line(int x1, int y1, int x2, int y2, uint8_t colorIndex) {
 }
 
 void AestheticLayer::Rect(int x, int y, int w, int h, uint8_t colorIndex) {
-    x -= cameraX;
-    y -= cameraY;
-
     if (w <= 0 || h <= 0) return;
-    // Ensure we don't draw outside the bounds for horizontal and vertical lines.
     int x2 = x + w - 1;
     int y2 = y + h - 1;
 
     // Draw the 4 lines of the rectangle.
     for (int i = x; i <= x2; ++i) {
-        // Manually call SetPixel's logic to avoid double-offsetting
-        if (i >= 0 && i < FRAMEBUFFER_WIDTH && y >= 0 && y < FRAMEBUFFER_HEIGHT) framebuffer[y * FRAMEBUFFER_WIDTH + i] = colorIndex;
-        if (i >= 0 && i < FRAMEBUFFER_WIDTH && y2 >= 0 && y2 < FRAMEBUFFER_HEIGHT) framebuffer[y2 * FRAMEBUFFER_WIDTH + i] = colorIndex;
+        SetPixel(i, y, colorIndex);
+        SetPixel(i, y2, colorIndex);
     }
     for (int i = y + 1; i < y2; ++i) {
-        if (x >= 0 && x < FRAMEBUFFER_WIDTH && i >= 0 && i < FRAMEBUFFER_HEIGHT) framebuffer[i * FRAMEBUFFER_WIDTH + x] = colorIndex;
-        if (x2 >= 0 && x2 < FRAMEBUFFER_WIDTH && i >= 0 && i < FRAMEBUFFER_HEIGHT) framebuffer[i * FRAMEBUFFER_WIDTH + x2] = colorIndex;
+        SetPixel(x, i, colorIndex);
+        SetPixel(x2, i, colorIndex);
     }
 }
 
 void AestheticLayer::RectFill(int x, int y, int w, int h, uint8_t colorIndex) {
-    x -= cameraX;
-    y -= cameraY;
-
     int x2 = x + w;
     int y2 = y + h;
 
-    // Clip the rectangle to the screen boundaries
-    int startX = std::max(x, 0);
-    int startY = std::max(y, 0);
-    int endX = std::min(x2, FRAMEBUFFER_WIDTH);
-    int endY = std::min(y2, FRAMEBUFFER_HEIGHT);
-
-    for (int j = startY; j < endY; ++j) {
-        for (int i = startX; i < endX; ++i) {
-            framebuffer[j * FRAMEBUFFER_WIDTH + i] = colorIndex;
+    for (int j = y; j < y2; ++j) {
+        for (int i = x; i < x2; ++i) {
+            SetPixel(i, j, colorIndex);
         }
     }
 }
@@ -182,10 +177,8 @@ uint8_t AestheticLayer::Pget(int x, int y) {
 }
 
 void AestheticLayer::Print(const std::string& text, int x, int y, uint8_t colorIndex) {
-    int cursorX = x - cameraX;
-    int cursorY = y - cameraY;
-
-    for (char c : text) {
+    int cursorX = x;
+    for (const char& c : text) {
         // Only render printable ASCII characters.
         if (c >= 32 && c <= 126) {
             // Calculate the starting index for the character's glyph data.
@@ -200,9 +193,7 @@ void AestheticLayer::Print(const std::string& text, int x, int y, uint8_t colorI
                     // If the bit is set, draw a pixel.
                     // We check the most significant bit for column 0, so we shift by (7 - col).
                     if ((rowData >> (7 - col)) & 1) {
-                        if (cursorX + col >= 0 && cursorX + col < FRAMEBUFFER_WIDTH && cursorY + row >= 0 && cursorY + row < FRAMEBUFFER_HEIGHT) {
-                            framebuffer[(cursorY + row) * FRAMEBUFFER_WIDTH + (cursorX + col)] = colorIndex;
-                        }
+                        SetPixel(cursorX + col, y + row, colorIndex);
                     }
                 }
             }

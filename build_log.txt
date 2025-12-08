@@ -1,12 +1,12 @@
 ﻿**********************
 Windows PowerShell transcript start
-Start time: 20251209000457
+Start time: 20251209001626
 Username: LEGION25\Ulises
 RunAs User: LEGION25\Ulises
 Configuration Name: 
 Machine: LEGION25 (Microsoft Windows NT 10.0.26200.0)
 Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass
-Process ID: 15500
+Process ID: 11296
 PSVersion: 5.1.26100.7309
 PSEdition: Desktop
 PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7309
@@ -32,7 +32,7 @@ shell32;dinput8
 -- Project configured. Executable will be named UliCS.exe
 -- Build type:
 -- Executable will be generated in: U:/ULICS/build/bin
--- Configuring done (19.2s)
+-- Configuring done (18.5s)
 -- Generating done (0.1s)
 -- Build files have been written to: U:/ULICS/build
 CMake configuration successful.
@@ -42,5 +42,5 @@ Project built successfully!
 You can find the executable at: U:\ULICS\build\bin\Release\UliCS.exe
 **********************
 Windows PowerShell transcript end
-End time: 20251209000529
+End time: 20251209001656
 **********************

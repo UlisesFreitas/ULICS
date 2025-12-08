@@ -62,6 +62,7 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("print", &ScriptingManager::Lua_Print);
     RegisterFunction("time", &ScriptingManager::Lua_Time);
     RegisterFunction("camera", &ScriptingManager::Lua_Camera);
+    RegisterFunction("tcolor", &ScriptingManager::Lua_TColor);
 
     // Math functions
     RegisterFunction("sin", &ScriptingManager::Lua_Sin);
@@ -281,6 +282,21 @@ int ScriptingManager::Lua_Camera(lua_State* L) {
     return 0;
 }
 
+int ScriptingManager::Lua_TColor(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
+
+    if (lua_isnoneornil(L, 1)) {
+        // tcolor() or tcolor(nil) -> disable transparency
+        layer->SetTransparentColor(std::nullopt);
+    } else {
+        // tcolor(c) -> set color c as transparent
+        int colorIndex = luaL_checkinteger(L, 1);
+        layer->SetTransparentColor(static_cast<uint8_t>(colorIndex));
+    }
+
+    return 0;
+}
 
 int ScriptingManager::Lua_Sin(lua_State* L) {
     double x = luaL_checknumber(L, 1);

@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <optional>
 
 class AestheticLayer {
 public:
@@ -17,6 +18,9 @@ public:
 
     // Sets the camera offset for all subsequent drawing operations.
     void SetCamera(int x, int y);
+
+    // Sets the color that will be treated as transparent during drawing operations.
+    void SetTransparentColor(std::optional<uint8_t> colorIndex);
 
     // Clears the framebuffer with a palette color index.
     void Clear(uint8_t colorIndex);
@@ -56,6 +60,7 @@ private:
     std::vector<SDL_Color> palette;    // 16-color palette.
     int cameraX = 0;
     int cameraY = 0;
+    std::optional<uint8_t> transparentColor;
 };
 
 #endif // AESTHETIC_LAYER_H

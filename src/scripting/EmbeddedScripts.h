@@ -30,6 +30,9 @@ end
 
 -- This function is called once per frame for drawing.
 function _draw()
+    -- Set black (0) as the transparent color
+    tcolor(0)
+
     -- Use the 'clear' function we exposed from C++.
     clear(1) -- Clear the screen with dark blue.
 
@@ -37,7 +40,7 @@ function _draw()
     rectfill(-128, -128, 512, 512, 2)
 
     -- Test the new drawing functions
-    rectfill(10, 10, 100, 80, 0)      -- Black filled rectangle
+    rectfill(10, 10, 100, 80, 0)      -- Black filled rectangle (should be invisible)
     rect(10, 10, 100, 80, 6)         -- Outline it in light gray
 
     line(15, 15, 105, 85, 8)         -- Draw a red diagonal line
@@ -68,6 +71,10 @@ function _draw()
     local orbit_x = 200 + cos(time()/4) * orbit_radius
     local orbit_y = 50 + sin(time()/4) * orbit_radius
     circfill(flr(orbit_x), flr(orbit_y), 5, 6)
+
+    -- Disable transparency to draw black text
+    tcolor(nil)
+    print("ULICS CONSOLE", 88, 128, 0)
 end
 )lua";
 

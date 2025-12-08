@@ -1,6 +1,27 @@
 {
   "projectName": "ULICS Fantasy Console",
   "description": "Plan de desarrollo para una consola de fantasía de alto rendimiento con C++/SDL, separando lógica y estética.",
+  "file_structure": [
+    "U:/ULICS/",
+    "├── .gitignore",
+    "├── build.ps1",
+    "├── CMakeLists.txt",
+    "├── plan-ulics.json",
+    "├── src/",
+    "│   ├── core/",
+    "│   │   ├── Engine.cpp",
+    "│   │   └── Engine.h",
+    "│   ├── demos/",
+    "│   │   ├── DemoGame.cpp",
+    "│   │   └── DemoGame.h",
+    "│   ├── game/",
+    "│   │   └── Game.h",
+    "│   ├── rendering/",
+    "│   │   ├── AestheticLayer.cpp",
+    "│   │   └── AestheticLayer.h",
+    "│   └── main.cpp",
+    "└── (build/, sdl/)"
+  ],
   "phases": [
     {
       "phase": 0,
@@ -10,27 +31,32 @@
         {
           "id": "0.1",
           "description": "Crear un script de compilación (build.ps1) que automatice todo el proceso.",
-          "status": "completed"
+          "status": "completed",
+          "files": "build.ps1"
         },
         {
           "id": "0.2",
           "description": "El script debe limpiar el directorio de compilación ('build') antes de cada ejecución para asegurar una compilación limpia.",
-          "status": "completed"
+          "status": "completed",
+          "files": "build.ps1"
         },
         {
           "id": "0.3",
           "description": "El script debe terminar cualquier instancia de la aplicación ('UliCS.exe') que se esté ejecutando antes de compilar.",
-          "status": "completed"
+          "status": "completed",
+          "files": "build.ps1"
         },
         {
           "id": "0.4",
           "description": "Generar un log de compilación ('build_log.txt') con la salida completa del proceso.",
-          "status": "completed"
+          "status": "completed",
+          "files": "build.ps1"
         },
         {
             "id": "0.5",
             "description": "Automatizar la obtención y compilación de dependencias (clonar SDL2 desde el repositorio si no existe).",
-            "status": "completed"
+            "status": "completed",
+            "files": "build.ps1, .gitignore"
         }
       ]
     },
@@ -48,22 +74,26 @@
         {
           "id": "1.1",
           "description": "Definir y crear la estructura de directorios del proyecto (src, build, cartridges, assets).",
-          "status": "completed"
+          "status": "completed",
+          "files": "src/"
         },
         {
           "id": "1.2",
           "description": "Configurar CMake para compilar el proyecto y enlazar SDL2 de forma estática.",
-          "status": "completed"
+          "status": "completed",
+          "files": "CMakeLists.txt"
         },
         {
           "id": "1.3",
           "description": "Crear una aplicación básica que inicializa SDL, abre una ventana y demuestra que el enlace estático funciona.",
-          "status": "completed"
+          "status": "completed",
+          "files": "src/main.cpp"
         },
         {
           "id": "1.4",
           "description": "Crear la clase principal 'Engine' que encapsule la inicialización de SDL, la ventana y el bucle principal.",
-          "status": "completed"
+          "status": "completed",
+          "files": "src/Engine.h, src/Engine.cpp, src/main.cpp"
         }
       ]
     },
@@ -81,27 +111,38 @@
         {
           "id": "2.1",
           "description": "Desarrollar la 'Capa Estética': una clase que maneja un framebuffer de baja resolución (ej. 256x256) y una paleta de 16 colores base.",
-          "status": "completed"
+          "status": "completed",
+          "files": "src/AestheticLayer.h, src/AestheticLayer.cpp, src/Engine.h, src/Engine.cpp"
         },
         {
           "id": "2.2",
           "description": "Implementar la API de dibujo básica en la Capa Estética (PSET, LINE, RECT) que opera sobre el framebuffer.",
-          "status": "completed"
+          "status": "completed",
+          "files": "src/AestheticLayer.h, src/AestheticLayer.cpp, src/Engine.cpp"
         },
         {
           "id": "2.3",
           "description": "Crear un mecanismo para escalar y renderizar el framebuffer de la Capa Estética a la ventana principal de SDL.",
-          "status": "completed"
+          "status": "completed",
+          "files": "src/Engine.cpp, src/AestheticLayer.cpp"
         },
         {
           "id": "2.4",
           "description": "Desarrollar la 'Capa Lógica' que contendrá las funciones _update() y _draw() y que llamará a la API de la Capa Estética.",
-          "status": "completed"
+          "status": "completed",
+          "files": "src/core/, src/demos/, src/game/, src/rendering/, CMakeLists.txt, todos los archivos .h/.cpp"
         },
         {
           "id": "2.5",
           "description": "Separar la lógica de actualización (_update) del dibujo (_draw) en la Capa Lógica para un bucle de juego desacoplado.",
-          "status": "completed"
+          "status": "completed",
+          "files": "src/game/Game.h, src/demos/DemoGame.h, src/demos/DemoGame.cpp, src/core/Engine.cpp"
+        },
+        {
+          "id": "2.6",
+          "description": "Implementar un bucle de juego con timestep fijo para desacoplar la lógica de la velocidad de renderizado.",
+          "status": "completed",
+          "files": "src/core/Engine.h, src/core/Engine.cpp"
         }
       ]
     },

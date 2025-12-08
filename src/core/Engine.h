@@ -16,6 +16,10 @@ public:
     void Run();
 
 private:
+    // Constantes para el bucle de juego con timestep fijo.
+    static constexpr int UPDATES_PER_SECOND = 60;
+    static constexpr double MS_PER_UPDATE = 1000.0 / UPDATES_PER_SECOND;
+
     void Shutdown();
 
     bool isRunning;

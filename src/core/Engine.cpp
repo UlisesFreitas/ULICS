@@ -2,6 +2,7 @@
 #include "rendering/AestheticLayer.h"
 #include "demos/DemoGame.h" // Incluimos nuestro juego de demostración
 #include <iostream>
+#include <chrono>
 
 Engine::Engine() : isRunning(false), window(nullptr), renderer(nullptr),
                    aestheticLayer(nullptr), activeGame(nullptr) {
@@ -33,7 +34,9 @@ bool Engine::Initialize(const char* title, int width, int height) {
         return false;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    // Creamos el renderer acelerado. Quitamos VSYNC para que el bucle de juego no se vea limitado por la tasa de refresco del monitor.
+    // Nuestro timestep fijo se encargará de la consistencia.
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
         std::cerr << "Error al crear el renderer: " << SDL_GetError() << std::endl;
         Shutdown();
@@ -62,27 +65,38 @@ bool Engine::Initialize(const char* title, int width, int height) {
 }
 
 void Engine::Run() {
+    using clock = std::chrono::high_resolution_clock;
+
     SDL_Event event;
+    auto previousTime = clock::now();
+    double lag = 0.0;
 
     while (isRunning) {
+        auto currentTime = clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(currentTime - previousTime).count();
+        previousTime = currentTime;
+        lag += elapsed;
+
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 isRunning = false;
             }
         }
 
-        // --- Bucle principal del motor ---
-        if (activeGame && aestheticLayer) {
-            // 1. Actualizar el estado del juego.
-            activeGame->_update();
-
-            // 2. Dibujar el estado actual del juego.
-            activeGame->_draw(*aestheticLayer);
+        // Bucle de actualización de lógica con timestep fijo.
+        // Se ejecuta tantas veces como sea necesario para 'ponerse al día' con el tiempo real.
+        while (lag >= MS_PER_UPDATE) {
+            if (activeGame) {
+                activeGame->_update();
+            }
+            lag -= MS_PER_UPDATE;
         }
 
-        // --- Renderizado ---
-        // 2. Presentar el resultado de la capa estética en la pantalla.
-        aestheticLayer->Present();
+        // Bucle de renderizado. Se ejecuta una vez por vuelta del bucle principal.
+        if (activeGame && aestheticLayer) {
+            activeGame->_draw(*aestheticLayer);
+            aestheticLayer->Present();
+        }
     }
 }
 

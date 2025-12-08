@@ -3,13 +3,11 @@
 
 class AestheticLayer;
 
-/**
- * @class Game
- * @brief Interfaz base para cualquier juego o cartucho que se ejecute en el motor.
- *
- * Define la estructura fundamental de un juego con funciones para inicialización,
- * actualización de la lógica y dibujo.
- */
+/// @class Game
+/// @brief Base interface for any game or cartridge running on the engine.
+///
+/// Defines the fundamental structure of a game with functions for initialization,
+/// logic updates, and drawing.
 class Game {
 public:
     virtual ~Game() = default;

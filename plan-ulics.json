@@ -1,6 +1,6 @@
 {
   "projectName": "ULICS Fantasy Console",
-  "description": "Plan de desarrollo para una consola de fantasía de alto rendimiento con C++/SDL, separando lógica y estética.",
+  "description": "Development plan for a high-performance fantasy console with C++/SDL, separating logic and aesthetics.",
   "file_structure": [
     "U:/ULICS/",
     "├── .gitignore",
@@ -25,36 +25,36 @@
   "phases": [
     {
       "phase": 0,
-      "title": "Automatización de Compilación y Entorno",
-      "description": "Establecer un entorno de desarrollo robusto y automatizado que gestione las dependencias, la compilación y la limpieza del proyecto.",
+      "title": "Build Automation and Environment",
+      "description": "Establish a robust and automated development environment that manages dependencies, compilation, and project cleanup.",
       "tasks": [
         {
           "id": "0.1",
-          "description": "Crear un script de compilación (build.ps1) que automatice todo el proceso.",
+          "description": "Create a build script (build.ps1) that automates the entire process.",
           "status": "completed",
           "files": "build.ps1"
         },
         {
           "id": "0.2",
-          "description": "El script debe limpiar el directorio de compilación ('build') antes de cada ejecución para asegurar una compilación limpia.",
+          "description": "The script must clean the build directory ('build') before each run to ensure a clean build.",
           "status": "completed",
           "files": "build.ps1"
         },
         {
           "id": "0.3",
-          "description": "El script debe terminar cualquier instancia de la aplicación ('UliCS.exe') que se esté ejecutando antes de compilar.",
+          "description": "The script must terminate any running application instance ('UliCS.exe') before compiling.",
           "status": "completed",
           "files": "build.ps1"
         },
         {
           "id": "0.4",
-          "description": "Generar un log de compilación ('build_log.txt') con la salida completa del proceso.",
+          "description": "Generate a build log ('build_log.txt') with the complete process output.",
           "status": "completed",
           "files": "build.ps1"
         },
         {
             "id": "0.5",
-            "description": "Automatizar la obtención y compilación de dependencias (clonar SDL2 desde el repositorio si no existe).",
+            "description": "Automate dependency fetching and compilation (clone SDL2 from the repository if it doesn't exist).",
             "status": "completed",
             "files": "build.ps1, .gitignore"
         }
@@ -62,36 +62,36 @@
     },
     {
       "phase": 1,
-      "title": "Configuración Inicial y Base del Proyecto",
-      "description": "Establecer la estructura del proyecto, el sistema de compilación y la ventana básica de la aplicación. El objetivo es tener un 'Hola Mundo' funcional que demuestre que el entorno está correctamente configurado.",
+      "title": "Initial Setup and Project Baseline",
+      "description": "Establish the project structure, build system, and basic application window. The goal is to have a functional 'Hello World' that demonstrates the environment is correctly configured.",
       "libraries": [
         {
           "name": "SDL2",
-          "purpose": "Librería principal para la gestión de ventanas, renderizado 2D y eventos de entrada."
+          "purpose": "Main library for window management, 2D rendering, and input events."
         }
       ],
       "tasks": [
         {
           "id": "1.1",
-          "description": "Definir y crear la estructura de directorios del proyecto (src, build, cartridges, assets).",
+          "description": "Define and create the project's directory structure (src, build, cartridges, assets).",
           "status": "completed",
           "files": "src/"
         },
         {
           "id": "1.2",
-          "description": "Configurar CMake para compilar el proyecto y enlazar SDL2 de forma estática.",
+          "description": "Configure CMake to compile the project and link SDL2 statically.",
           "status": "completed",
           "files": "CMakeLists.txt"
         },
         {
           "id": "1.3",
-          "description": "Crear una aplicación básica que inicializa SDL, abre una ventana y demuestra que el enlace estático funciona.",
+          "description": "Create a basic application that initializes SDL, opens a window, and demonstrates that static linking works.",
           "status": "completed",
           "files": "src/main.cpp"
         },
         {
           "id": "1.4",
-          "description": "Crear la clase principal 'Engine' que encapsule la inicialización de SDL, la ventana y el bucle principal.",
+          "description": "Create the main 'Engine' class to encapsulate SDL initialization, the window, and the main loop.",
           "status": "completed",
           "files": "src/Engine.h, src/Engine.cpp, src/main.cpp"
         }
@@ -99,48 +99,48 @@
     },
     {
       "phase": 2,
-      "title": "Arquitectura del Motor (Doble Capa)",
-      "description": "Implementar el núcleo de la arquitectura de doble capa: la capa de renderizado estético y la capa de lógica de juego.",
+      "title": "Engine Architecture (Dual Layer)",
+      "description": "Implement the core of the dual-layer architecture: the aesthetic rendering layer and the game logic layer.",
       "libraries": [
         {
           "name": "SDL2",
-          "purpose": "Continúa siendo la base para el renderizado."
+          "purpose": "Continues to be the foundation for rendering."
         }
       ],
       "tasks": [
         {
           "id": "2.1",
-          "description": "Desarrollar la 'Capa Estética': una clase que maneja un framebuffer de baja resolución (ej. 256x256) y una paleta de 16 colores base.",
+          "description": "Develop the 'Aesthetic Layer': a class that manages a low-resolution framebuffer (e.g., 256x256) and a base 16-color palette.",
           "status": "completed",
           "files": "src/AestheticLayer.h, src/AestheticLayer.cpp, src/Engine.h, src/Engine.cpp"
         },
         {
           "id": "2.2",
-          "description": "Implementar la API de dibujo básica en la Capa Estética (PSET, LINE, RECT) que opera sobre el framebuffer.",
+          "description": "Implement the basic drawing API in the Aesthetic Layer (PSET, LINE, RECT) that operates on the framebuffer.",
           "status": "completed",
           "files": "src/AestheticLayer.h, src/AestheticLayer.cpp, src/Engine.cpp"
         },
         {
           "id": "2.3",
-          "description": "Crear un mecanismo para escalar y renderizar el framebuffer de la Capa Estética a la ventana principal de SDL.",
+          "description": "Create a mechanism to scale and render the Aesthetic Layer's framebuffer to the main SDL window.",
           "status": "completed",
           "files": "src/Engine.cpp, src/AestheticLayer.cpp"
         },
         {
           "id": "2.4",
-          "description": "Desarrollar la 'Capa Lógica' que contendrá las funciones _update() y _draw() y que llamará a la API de la Capa Estética.",
+          "description": "Develop the 'Logic Layer' which will contain the _update() and _draw() functions and will call the Aesthetic Layer's API.",
           "status": "completed",
           "files": "src/core/, src/demos/, src/game/, src/rendering/, CMakeLists.txt, todos los archivos .h/.cpp"
         },
         {
           "id": "2.5",
-          "description": "Separar la lógica de actualización (_update) del dibujo (_draw) en la Capa Lógica para un bucle de juego desacoplado.",
+          "description": "Separate the update logic (_update) from the drawing logic (_draw) in the Logic Layer for a decoupled game loop.",
           "status": "completed",
           "files": "src/game/Game.h, src/demos/DemoGame.h, src/demos/DemoGame.cpp, src/core/Engine.cpp"
         },
         {
           "id": "2.6",
-          "description": "Implementar un bucle de juego con timestep fijo para desacoplar la lógica de la velocidad de renderizado.",
+          "description": "Implement a fixed timestep game loop to decouple logic from rendering speed.",
           "status": "completed",
           "files": "src/core/Engine.h, src/core/Engine.cpp"
         }
@@ -148,132 +148,132 @@
     },
     {
       "phase": 3,
-      "title": "Integración de Scripting (Lua C API)",
-      "description": "Incorporar el motor de scripting **Lua** utilizando su C API nativo para un control máximo. La lógica del juego será escrita por el usuario final, y conectaremos la API del motor a Lua.",
+      "title": "Scripting Integration (Lua C API)",
+      "description": "Incorporate the **Lua** scripting engine using its native C API for maximum control. The game logic will be written by the end-user, and we will connect the engine's API to Lua.",
       "libraries": [
         {
           "name": "Lua (C API)",
-          "purpose": "El motor de scripting principal. Se utilizará la C API nativa (o una capa ligera de C++) para el binding."
+          "purpose": "The main scripting engine. The native C API (or a lightweight C++ wrapper) will be used for binding."
         }
       ],
       "tasks": [
         {
           "id": "3.1",
-          "description": "Integrar la librería estática de **Lua** en el proyecto (compilar desde la fuente o usar vcpkg) a través de CMake.",
+          "description": "Integrate the **Lua** static library into the project (compile from source or use vcpkg) via CMake.",
           "status": "completed"
         },
         {
           "id": "3.2",
-          "description": "Crear una clase 'ScriptingManager' para gestionar el estado de Lua (`lua_State`), cargar y ejecutar scripts.",
+          "description": "Create a 'ScriptingManager' class to manage the Lua state (`lua_State`), load, and execute scripts.",
           "status": "completed"
         },
         {
           "id": "3.3",
-          "description": "Exponer (bind) las funciones de la API de la Capa Estética (PSET, LINE, etc.) al entorno de Lua utilizando la **C API de Lua**.",
+          "description": "Expose (bind) the Aesthetic Layer's API functions (PSET, LINE, etc.) to the Lua environment using the **Lua C API**.",
           "status": "pending"
         },
         {
           "id": "3.4",
-          "description": "Modificar el bucle principal del motor para que llame a las funciones principales (_update(), _draw()) del script Lua cargado.",
+          "description": "Modify the engine's main loop to call the main functions (_update(), _draw()) of the loaded Lua script.",
           "status": "pending"
         }
       ]
     },
     {
       "phase": 4,
-      "title": "Sistema de Cartuchos y Modularidad",
-      "description": "Definir y desarrollar el sistema de 'cartuchos' para cargar juegos y la configuración modular de la consola.",
-      "management": "La aplicación se gestionará mediante 'cartuchos'. Un cartucho será un directorio que contenga un archivo 'main.lua' para el código y un 'config.json' para los metadatos y la configuración modular. Opcionalmente, puede incluir un directorio 'assets'.",
+      "title": "Cartridge System and Modularity",
+      "description": "Define and develop the 'cartridge' system for loading games and the console's modular configuration.",
+      "management": "The application will be managed via 'cartridges'. A cartridge will be a directory containing a 'main.lua' file for code and a 'config.json' for metadata and modular configuration. Optionally, it can include an 'assets' directory.",
       "libraries": [
         {
           "name": "nlohmann/json",
-          "purpose": "Una librería moderna de C++ para parsear fácilmente el archivo de configuración 'config.json' de cada cartucho."
+          "purpose": "A modern C++ library to easily parse the 'config.json' file of each cartridge."
         }
       ],
       "tasks": [
         {
           "id": "4.1",
-          "description": "Diseñar la estructura del 'cartucho' y el formato del archivo 'config.json' (incluirá 'memory_limit_mb', 'lua_code_limit_lines', 'palette_size').",
+          "description": "Design the 'cartridge' structure and the 'config.json' file format (will include 'memory_limit_mb', 'lua_code_limit_lines', 'palette_size').",
           "status": "pending"
         },
         {
           "id": "4.2",
-          "description": "Integrar la librería 'nlohmann/json' para el parseo de la configuración.",
+          "description": "Integrate the 'nlohmann/json' library for configuration parsing.",
           "status": "pending"
         },
         {
           "id": "4.3",
-          "description": "Implementar una clase 'CartridgeLoader' que lea un directorio de cartucho, parseé 'config.json' y lo cargue en el motor.",
+          "description": "Implement a 'CartridgeLoader' class that reads a cartridge directory, parses 'config.json', and loads it into the engine.",
           "status": "pending"
         },
         {
           "id": "4.4",
-          "description": "Adaptar el motor para que use la configuración del cartucho: ajustar el tamaño de la paleta en la Capa Estética dinámicamente (16, 32, 64, 128).",
+          "description": "Adapt the engine to use the cartridge's configuration: dynamically adjust the palette size in the Aesthetic Layer (16, 32, 64, 128).",
           "status": "pending"
         },
         {
           "id": "4.5",
-          "description": "Implementar la lógica de chequeo de límites (ej. líneas de código Lua) en el 'ScriptingManager' como una restricción 'suave' informativa.",
+          "description": "Implement limit-checking logic (e.g., Lua code lines) in the 'ScriptingManager' as an informative 'soft' constraint.",
           "status": "pending"
         }
       ]
     },
     {
       "phase": 5,
-      "title": "Expansión de API y Funcionalidades",
-      "description": "Añadir funcionalidades esenciales a una consola de fantasía, como entrada de usuario avanzada, audio y una API de dibujo más rica.",
+      "title": "API Expansion and Features",
+      "description": "Add essential features to a fantasy console, such as advanced user input, audio, and a richer drawing API.",
       "libraries": [
         {
           "name": "SDL2_mixer",
-          "purpose": "Para gestionar la reproducción de audio y música."
+          "purpose": "To manage audio and music playback."
         },
         {
           "name": "SDL2_image",
-          "purpose": "Para cargar sprites desde archivos de imagen (PNG)."
+          "purpose": "To load sprites from image files (PNG)."
         }
       ],
       "tasks": [
         {
           "id": "5.1",
-          "description": "Crear un 'InputManager' para manejar teclado y gamepad, y exponer una API simple a Lua (btn(), btnp()).",
+          "description": "Create an 'InputManager' to handle keyboard and gamepad, and expose a simple API to Lua (btn(), btnp()).",
           "status": "pending"
         },
         {
           "id": "5.2",
-          "description": "Integrar SDL2_mixer y crear un 'AudioManager' con funciones para reproducir sonidos y música (sfx(), music()), expuestas a Lua.",
+          "description": "Integrate SDL2_mixer and create an 'AudioManager' with functions to play sounds and music (sfx(), music()), exposed to Lua.",
           "status": "pending"
         },
         {
           "id": "5.3",
-          "description": "Expandir la API de dibujo en la Capa Estética con SPRITE, CIRCLE, y otras primitivas. Exponer a Lua.",
+          "description": "Expand the drawing API in the Aesthetic Layer with SPRITE, CIRCLE, and other primitives. Expose to Lua.",
           "status": "pending"
         },
         {
           "id": "5.4",
-          "description": "Implementar un sistema de 'SpriteSheet' que pueda ser cargado desde los assets del cartucho.",
+          "description": "Implement a 'SpriteSheet' system that can be loaded from the cartridge's assets.",
           "status": "pending"
         }
       ]
     },
     {
       "phase": 6,
-      "title": "Finalización, Documentación y Ejemplos",
-      "description": "Crear un cartucho de demostración completo, documentar la API para los usuarios finales y pulir el proyecto para su lanzamiento inicial.",
+      "title": "Finalization, Documentation, and Examples",
+      "description": "Create a complete demo cartridge, document the API for end-users, and polish the project for its initial release.",
       "libraries": [],
       "tasks": [
         {
           "id": "6.1",
-          "description": "Desarrollar un cartucho de demostración (ej. un juego simple como Pong o un platformer básico) que use todas las funcionalidades de la API.",
+          "description": "Develop a demo cartridge (e.g., a simple game like Pong or a basic platformer) that uses all API features.",
           "status": "pending"
         },
         {
           "id": "6.2",
-          "description": "Escribir una documentación exhaustiva de la API en formato Markdown, explicando cada función Lua, sus parámetros y su comportamiento.",
+          "description": "Write comprehensive API documentation in Markdown format, explaining each Lua function, its parameters, and its behavior.",
           "status": "pending"
         },
         {
           "id": "6.3",
-          "description": "Realizar una revisión general del código, refactorizar y optimizar donde sea necesario antes de considerarlo v1.0.",
+          "description": "Perform a general code review, refactor, and optimize where necessary before considering it v1.0.",
           "status": "pending"
         }
       ]

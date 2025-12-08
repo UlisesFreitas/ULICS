@@ -9,7 +9,7 @@ ScriptingManager::ScriptingManager(AestheticLayer* aestheticLayer)
     if (L) {
         // 2. Open the standard libraries (base, string, math, etc.).
         luaL_openlibs(L);
-        std::cout << "ScriptingManager: Estado de Lua creado y librerías abiertas." << std::endl;
+        std::cout << "ScriptingManager: Lua state created and standard libraries opened." << std::endl;
 
         // 3. Register our C++ API in Lua.
         RegisterAPI();
@@ -19,7 +19,7 @@ ScriptingManager::ScriptingManager(AestheticLayer* aestheticLayer)
 ScriptingManager::~ScriptingManager() {
     if (L) {
         lua_close(L);
-        std::cout << "ScriptingManager: Estado de Lua cerrado." << std::endl;
+        std::cout << "ScriptingManager: Lua state closed." << std::endl;
     }
 }
 
@@ -38,7 +38,7 @@ void ScriptingManager::RegisterAPI() {
     // 3. Assign the function we just created to a global variable in Lua named "clear".
     lua_setglobal(L, "clear");
 
-    std::cout << "ScriptingManager: Función 'clear' registrada en Lua." << std::endl;
+    std::cout << "ScriptingManager: 'clear' function registered in Lua." << std::endl;
 }
 
 int ScriptingManager::Lua_Clear(lua_State* L) {

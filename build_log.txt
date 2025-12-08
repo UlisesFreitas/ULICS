@@ -1,6 +1,6 @@
 **********************
 PowerShell transcript start
-Start time: 20251208155907
+Start time: 20251208184017
 Username: LEGION25\Ulises
 RunAs User: LEGION25\Ulises
 Configuration Name: 
@@ -10,8 +10,8 @@ Copyright (c) Microsoft Corporation.
 
 https://aka.ms/vscode-powershell
 Type 'help' to get help.
-" -LogLevel 'Warning' -LogPath 'c:\Users\Ulises\AppData\Roaming\Code\logs\20251208T144136\window1\exthost\ms-vscode.powershell' -SessionDetailsPath 'c:\Users\Ulises\AppData\Roaming\Code\User\globalStorage\ms-vscode.powershell\sessions\PSES-VSCode-23880-556116.json' -FeatureFlags @() 
-Process ID: 15568
+" -LogLevel 'Warning' -LogPath 'c:\Users\Ulises\AppData\Roaming\Code\logs\20251208T181551\window1\exthost\ms-vscode.powershell' -SessionDetailsPath 'c:\Users\Ulises\AppData\Roaming\Code\User\globalStorage\ms-vscode.powershell\sessions\PSES-VSCode-19388-962567.json' -FeatureFlags @() 
+Process ID: 17560
 PSVersion: 7.5.4
 PSEdition: Core
 GitCommitId: 7.5.4
@@ -24,14 +24,10 @@ WSManStackVersion: 3.0
 **********************
 Transcript started, output file is U:\ULICS\build_log.txt
 SDL2 source found.
+Lua source found.
 Performing a clean build. Removing and recreating build directory...
 [1/2] Configuring project with CMake...
---
---  CFLAGS:        /DWIN32 /D_WINDOWS
---  EXTRA_CFLAGS:
---  EXTRA_LDFLAGS:
---  EXTRA_LIBS:    kernel32;user32;gdi32;winmm;imm32;ole32;oleaut32;version;uuid;advapi32;setupa
-pi;shell32;dinput8
+shell32;dinput8
 --
 --  Build Shared Library: OFF
 --  Build Static Library: ON
@@ -40,29 +36,15 @@ pi;shell32;dinput8
 -- Project configured. Executable will be named UliCS.exe
 -- Build type:
 -- Executable will be generated in: U:/ULICS/build/bin
--- Configuring done (17.4s)
+-- Configuring done (18.1s)
 -- Generating done (0.1s)
 -- Build files have been written to: U:/ULICS/build
 CMake configuration successful.
 [2/2] Building project via CMake...
-  SDL_windowshaptic.c
-  SDL_xinputhaptic.c
-  SDL_mslibc.c
-  SDL2-static.vcxproj -> U:\ULICS\build\sdl\Release\SDL2-static.lib
-  Building Custom Rule U:/ULICS/sdl/CMakeLists.txt
-  SDL_windows_main.c
-  SDL2main.vcxproj -> U:\ULICS\build\sdl\Release\SDL2main.lib
-  Building Custom Rule U:/ULICS/CMakeLists.txt
-  main.cpp
-  Engine.cpp
-  AestheticLayer.cpp
-  DemoGame.cpp
-  Generating Code...
-  UliCS.vcxproj -> U:\ULICS\build\bin\Release\UliCS.exe
-  Building Custom Rule U:/ULICS/CMakeLists.txt
+
 Project built successfully!
 You can find the executable at: U:\ULICS\build\bin\Release\UliCS.exe
 **********************
 PowerShell transcript end
-End time: 20251208155932
+End time: 20251208184045
 **********************

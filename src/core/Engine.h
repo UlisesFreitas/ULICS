@@ -6,6 +6,7 @@
 
 class AestheticLayer;
 class Game;
+class ScriptingManager;
 
 class Engine {
 public:
@@ -27,6 +28,7 @@ private:
     SDL_Renderer* renderer;
     std::unique_ptr<AestheticLayer> aestheticLayer;
     std::unique_ptr<Game> activeGame;
+    std::unique_ptr<ScriptingManager> scriptingManager;
 };
 
 #endif // ENGINE_H

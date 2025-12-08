@@ -148,33 +148,33 @@
     },
     {
       "phase": 3,
-      "title": "Integración de Scripting (Lua)",
-      "description": "Incorporar un motor de scripting Lua para que la lógica del juego pueda ser escrita por el usuario final, y conectar la API del motor a Lua.",
+      "title": "Integración de Scripting (Lua C API)",
+      "description": "Incorporar el motor de scripting **Lua** utilizando su C API nativo para un control máximo. La lógica del juego será escrita por el usuario final, y conectaremos la API del motor a Lua.",
       "libraries": [
         {
-          "name": "sol2",
-          "purpose": "Librería de enlace C++/Lua para facilitar la integración y exposición de la API a Lua de forma segura y moderna."
+          "name": "Lua (C API)",
+          "purpose": "El motor de scripting principal. Se utilizará la C API nativa (o una capa ligera de C++) para el binding."
         }
       ],
       "tasks": [
         {
           "id": "3.1",
-          "description": "Integrar la librería 'sol2' en el proyecto a través de CMake.",
-          "status": "pending"
+          "description": "Integrar la librería estática de **Lua** en el proyecto (compilar desde la fuente o usar vcpkg) a través de CMake.",
+          "status": "completed"
         },
         {
           "id": "3.2",
-          "description": "Crear una clase 'ScriptingManager' para gestionar el estado de Lua, cargar y ejecutar scripts.",
-          "status": "pending"
+          "description": "Crear una clase 'ScriptingManager' para gestionar el estado de Lua (`lua_State`), cargar y ejecutar scripts.",
+          "status": "completed"
         },
         {
           "id": "3.3",
-          "description": "Exponer (bind) las funciones de la API de la Capa Estética (PSET, LINE, etc.) al entorno de Lua usando sol2.",
+          "description": "Exponer (bind) las funciones de la API de la Capa Estética (PSET, LINE, etc.) al entorno de Lua utilizando la **C API de Lua**.",
           "status": "pending"
         },
         {
           "id": "3.4",
-          "description": "Modificar el bucle principal del motor para que llame a las funciones _update() y _draw() del script Lua cargado.",
+          "description": "Modificar el bucle principal del motor para que llame a las funciones principales (_update(), _draw()) del script Lua cargado.",
           "status": "pending"
         }
       ]

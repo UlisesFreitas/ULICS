@@ -7,6 +7,14 @@ project(UliCS LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# --- Windows-specific: C Runtime Library ---
+# To resolve LNK4098 warnings, we enforce the same C runtime library for all
+# targets (our executable, SDL, Lua). We choose the static multithreaded
+# runtime (/MT) to avoid dependencies on the Visual C++ Redistributable DLLs.
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 # --- Build SDL2 from source as a static library ---
 # This assumes the SDL source code is in a directory named 'sdl'
 # at the same level as this CMakeLists.txt file.
@@ -48,6 +56,7 @@ add_executable(UliCS WIN32
     src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h
     src/game/Game.h
     src/demos/DemoGame.cpp src/demos/DemoGame.h
+    src/scripting/ScriptingManager.cpp src/scripting/ScriptingManager.h
 )
 
 # Add the 'src' directory to the include path.

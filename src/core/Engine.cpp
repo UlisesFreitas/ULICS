@@ -3,9 +3,10 @@
 #include "demos/DemoGame.h" // Incluimos nuestro juego de demostración
 #include <iostream>
 #include <chrono>
+#include "scripting/ScriptingManager.h"
 
 Engine::Engine() : isRunning(false), window(nullptr), renderer(nullptr),
-                   aestheticLayer(nullptr), activeGame(nullptr) {
+                   aestheticLayer(nullptr), activeGame(nullptr), scriptingManager(nullptr) {
     // Constructor
 }
 
@@ -59,6 +60,13 @@ bool Engine::Initialize(const char* title, int width, int height) {
         return false;
     }
 
+    try {
+        scriptingManager = std::make_unique<ScriptingManager>();
+    } catch (const std::exception& e) {
+        std::cerr << "Error al inicializar el ScriptingManager: " << e.what() << std::endl;
+        return false;
+    }
+
     isRunning = true;
     std::cout << "Engine inicializado correctamente." << std::endl;
     return true;
@@ -101,6 +109,7 @@ void Engine::Run() {
 }
 
 void Engine::Shutdown() {
+    scriptingManager.reset();
     aestheticLayer.reset(); // Libera el unique_ptr
 
     if (renderer) {

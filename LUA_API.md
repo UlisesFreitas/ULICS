@@ -29,7 +29,7 @@ Functions for drawing pixels, shapes, and text to the screen.
 | `print(str, x, y, c)` | `text`, `x`, `y`, `color` | Draws text to the screen. | ✅ **Implemented** |
 | `spr(n, x, y, ...)` | `sprite#`, `x`, `y`, `...` | Draws a sprite from the spritesheet. | ❌ **Future** |
 | `sspr(...)` | `...` | Draws a scaled section of the spritesheet. | ❌ **Future** |
-| `camera(x, y)` | `x`, `y` | Sets the screen's drawing offset (for scrolling). | ❌ **Future** |
+| `camera(x, y)` | `x`, `y` | Sets the screen's drawing offset (for scrolling). | ✅ **Implemented** |
 | `pal(c1, c2, p)` | `color1`, `color2`, `...` | Swaps palette colors for screen effects. | ❌ **Future** |
 
 ---

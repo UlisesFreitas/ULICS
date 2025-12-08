@@ -10,6 +10,9 @@ local player = { x = 128, y = 128, color = 8 }
 
 -- This function is called 60 times per second for game logic.
 function _update()
+    -- Set the camera to follow the player, centering them on screen.
+    camera(player.x - 128 + 4, player.y - 128 + 4)
+
     -- Player movement
     if btn(0) then player.x = player.x - 1 end -- Left
     if btn(1) then player.x = player.x + 1 end -- Right
@@ -29,6 +32,9 @@ end
 function _draw()
     -- Use the 'clear' function we exposed from C++.
     clear(1) -- Clear the screen with dark blue.
+
+    -- Draw a large background rectangle to show the world is moving
+    rectfill(-128, -128, 512, 512, 2)
 
     -- Test the new drawing functions
     rectfill(10, 10, 100, 80, 0)      -- Black filled rectangle

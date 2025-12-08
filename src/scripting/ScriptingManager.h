@@ -78,6 +78,9 @@ private:
     // Static bridge function to call Engine::getElapsedTime
     static int Lua_Time(lua_State* L);
 
+    // Static bridge function to call AestheticLayer::SetCamera
+    static int Lua_Camera(lua_State* L);
+
     // --- Math Functions ---
     static int Lua_Sin(lua_State* L);
     static int Lua_Cos(lua_State* L);

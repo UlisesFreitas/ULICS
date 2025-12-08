@@ -61,6 +61,7 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("btnp", &ScriptingManager::Lua_Btnp);
     RegisterFunction("print", &ScriptingManager::Lua_Print);
     RegisterFunction("time", &ScriptingManager::Lua_Time);
+    RegisterFunction("camera", &ScriptingManager::Lua_Camera);
 
     // Math functions
     RegisterFunction("sin", &ScriptingManager::Lua_Sin);
@@ -267,6 +268,19 @@ int ScriptingManager::Lua_Time(lua_State* L) {
     lua_pushnumber(L, elapsed);
     return 1; // Return one value (the number).
 }
+
+int ScriptingManager::Lua_Camera(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
+
+    int x = luaL_checkinteger(L, 1);
+    int y = luaL_checkinteger(L, 2);
+
+    layer->SetCamera(x, y);
+
+    return 0;
+}
+
 
 int ScriptingManager::Lua_Sin(lua_State* L) {
     double x = luaL_checknumber(L, 1);

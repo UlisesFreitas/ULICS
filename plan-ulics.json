@@ -219,7 +219,8 @@
         {
           "id": "3.12",
           "description": "Implement and expose a `camera(x, y)` function to offset all subsequent drawing operations.",
-          "status": "pending"
+          "status": "completed",
+          "notes": "Added camera(x, y) offset to AestheticLayer and exposed it to Lua. All drawing primitives now respect the camera."
         }
       ]
     },

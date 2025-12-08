@@ -15,6 +15,9 @@ public:
     AestheticLayer(SDL_Renderer* renderer);
     ~AestheticLayer();
 
+    // Sets the camera offset for all subsequent drawing operations.
+    void SetCamera(int x, int y);
+
     // Clears the framebuffer with a palette color index.
     void Clear(uint8_t colorIndex);
 
@@ -51,6 +54,8 @@ private:
     std::vector<uint32_t> pixelBuffer; // Pixel buffer in ARGB8888 format for the texture.
     std::vector<uint8_t> framebuffer;  // Color index buffer (256x256).
     std::vector<SDL_Color> palette;    // 16-color palette.
+    int cameraX = 0;
+    int cameraY = 0;
 };
 
 #endif // AESTHETIC_LAYER_H

@@ -7,6 +7,7 @@
 class AestheticLayer;
 class Game;
 class ScriptingManager;
+class InputManager;
 
 class Engine {
 public:
@@ -29,6 +30,7 @@ private:
     std::unique_ptr<AestheticLayer> aestheticLayer;
     std::unique_ptr<Game> activeGame;
     std::unique_ptr<ScriptingManager> scriptingManager;
+    std::unique_ptr<InputManager> inputManager;
 };
 
 #endif // ENGINE_H

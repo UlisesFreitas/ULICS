@@ -3,6 +3,7 @@
 
 #include <SDL.h>
 #include <vector>
+#include <string>
 #include <cstdint>
 
 class AestheticLayer {
@@ -28,6 +29,18 @@ public:
 
     // Draws a filled rectangle.
     void RectFill(int x, int y, int w, int h, uint8_t colorIndex);
+
+    // Draws the outline of a circle.
+    void Circ(int centerX, int centerY, int radius, uint8_t colorIndex);
+
+    // Draws a filled circle.
+    void CircFill(int centerX, int centerY, int radius, uint8_t colorIndex);
+
+    // Gets the color index of a pixel at the given coordinates.
+    uint8_t Pget(int x, int y);
+
+    // Draws text on the framebuffer using the embedded font.
+    void Print(const std::string& text, int x, int y, uint8_t colorIndex);
 
     // Renders the framebuffer to the main window.
     void Present();

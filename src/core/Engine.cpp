@@ -1,13 +1,15 @@
 #include "core/Engine.h"
 #include "rendering/AestheticLayer.h"
 #include "scripting/LuaGame.h" // Include our Lua game bridge.
+#include "input/InputManager.h" // Include the new InputManager.
 #include <iostream>
 #include <chrono>
 #include "scripting/ScriptingManager.h"
 #include "scripting/EmbeddedScripts.h" // Include our new embedded script header.
 
 Engine::Engine() : isRunning(false), window(nullptr), renderer(nullptr), 
-                   aestheticLayer(nullptr), activeGame(nullptr), scriptingManager(nullptr) {
+                   aestheticLayer(nullptr), activeGame(nullptr), scriptingManager(nullptr),
+                   inputManager(nullptr) {
     // Constructor
 }
 
@@ -55,7 +57,15 @@ bool Engine::Initialize(const char* title, int width, int height) {
     }
 
     try {
-        scriptingManager = std::make_unique<ScriptingManager>(aestheticLayer.get());
+        inputManager = std::make_unique<InputManager>();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error initializing InputManager: " << e.what() << std::endl;
+        return false;
+    }
+
+    try {
+        scriptingManager = std::make_unique<ScriptingManager>(aestheticLayer.get(), inputManager.get());
         // Load the demo cartridge directly from the embedded string.
         if (!scriptingManager->LoadAndRunScript(EmbeddedScripts::DEMO_CART)) {
             std::cerr << "Could not load the embedded demo cartridge." << std::endl;
@@ -91,10 +101,16 @@ void Engine::Run() {
         previousTime = currentTime;
         lag += elapsed;
 
+        // Prepare for new input.
+        inputManager->beginNewFrame();
+
+        // Process all pending events.
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 isRunning = false;
             }
+            // The InputManager doesn't need to handle events directly for now,
+            // as SDL_GetKeyboardState is updated by SDL_PollEvent/SDL_PumpEvents.
         }
 
         // Fixed timestep logic update loop.
@@ -115,6 +131,7 @@ void Engine::Run() {
 }
 
 void Engine::Shutdown() {
+    inputManager.reset();
     scriptingManager.reset();
     aestheticLayer.reset(); // Release the unique_ptr
 

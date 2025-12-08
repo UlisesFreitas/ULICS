@@ -11,10 +11,11 @@ extern "C" {
 }
 
 class AestheticLayer; // Forward declaration
+class InputManager;   // Forward declaration
 
 class ScriptingManager {
 public:
-    ScriptingManager(AestheticLayer* aestheticLayer);
+    ScriptingManager(AestheticLayer* aestheticLayer, InputManager* inputManager);
     ~ScriptingManager();
 
     // Loads and runs a Lua script from a string buffer.
@@ -27,7 +28,8 @@ public:
 
 private:
     lua_State* L; // Pointer to the Lua state.
-    AestheticLayer* aestheticLayerInstance; // Pointer to the aesthetic layer we will control.
+    AestheticLayer* aestheticLayerInstance; // Non-owning pointer.
+    InputManager* inputManagerInstance;     // Non-owning pointer.
 
     void RegisterAPI();
 
@@ -48,6 +50,24 @@ private:
 
     // Static bridge function to call AestheticLayer::RectFill
     static int Lua_RectFill(lua_State* L);
+
+    // Static bridge function to call AestheticLayer::Circ
+    static int Lua_Circ(lua_State* L);
+
+    // Static bridge function to call AestheticLayer::CircFill
+    static int Lua_CircFill(lua_State* L);
+
+    // Static bridge function to call AestheticLayer::Pget
+    static int Lua_Pget(lua_State* L);
+
+    // Static bridge function to call InputManager::isKeyDown
+    static int Lua_Btn(lua_State* L);
+
+    // Static bridge function to call InputManager::isKeyPressed
+    static int Lua_Btnp(lua_State* L);
+
+    // Static bridge function to call AestheticLayer::Print
+    static int Lua_Print(lua_State* L);
 };
 
 #endif // SCRIPTING_MANAGER_H

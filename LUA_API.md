@@ -23,10 +23,10 @@ Functions for drawing pixels, shapes, and text to the screen.
 | `line(x1, y1, x2, y2, c)` | `x1`, `y1`, `x2`, `y2`, `color` | Draws a line between two points. | ✅ **Implemented** |
 | `rect(x, y, w, h, c)` | `x`, `y`, `width`, `height`, `color` | Draws the outline of a rectangle. | ✅ **Implemented** |
 | `rectfill(x, y, w, h, c)` | `x`, `y`, `width`, `height`, `color` | Draws a filled rectangle. | ✅ **Implemented** |
-| `circ(x, y, r, c)` | `x`, `y`, `radius`, `color` | Draws the outline of a circle. | 📝 **Planned** |
-| `circfill(x, y, r, c)` | `x`, `y`, `radius`, `color` | Draws a filled circle. | 📝 **Planned** |
-| `pget(x, y)` | `x`, `y` | Gets the color index of a pixel. | 📝 **Planned** |
-| `print(str, x, y, c)` | `text`, `x`, `y`, `color` | Draws text to the screen. | 📝 **Planned** |
+| `circ(x, y, r, c)` | `x`, `y`, `radius`, `color` | Draws the outline of a circle. | ✅ **Implemented** |
+| `circfill(x, y, r, c)` | `x`, `y`, `radius`, `color` | Draws a filled circle. | ✅ **Implemented** |
+| `pget(x, y)` | `x`, `y` | Gets the color index of a pixel. | ✅ **Implemented** |
+| `print(str, x, y, c)` | `text`, `x`, `y`, `color` | Draws text to the screen. | ✅ **Implemented** |
 | `spr(n, x, y, ...)` | `sprite#`, `x`, `y`, `...` | Draws a sprite from the spritesheet. | ❌ **Future** |
 | `sspr(...)` | `...` | Draws a scaled section of the spritesheet. | ❌ **Future** |
 | `camera(x, y)` | `x`, `y` | Sets the screen's drawing offset (for scrolling). | ❌ **Future** |
@@ -40,8 +40,8 @@ Functions for reading user input from the keyboard, mouse, and gamepads.
 
 | Function | Parameters | Description | Status |
 | :--- | :--- | :--- | :--- |
-| `btn(i)` | `button_id` | Returns `true` if a button is currently held down. | 📝 **Planned** |
-| `btnp(i)` | `button_id` | Returns `true` if a button was just pressed this frame. | 📝 **Planned** |
+| `btn(i)` | `button_id` | Returns `true` if a button is currently held down. | ✅ **Implemented** |
+| `btnp(i)` | `button_id` | Returns `true` if a button was just pressed this frame. | ✅ **Implemented** |
 | `mouse()` | - | Returns the mouse coordinates and button states. | ❌ **Future** |
 
 ---
@@ -78,6 +78,3 @@ Advanced functions for direct memory manipulation.
 | `peek(addr)` | `address` | Reads a byte from a memory address. | ❌ **Future** |
 | `poke(addr, val)` | `address`, `value` | Writes a byte to a memory address. | ❌ **Future** |
 | `dget(i)` / `dset(i, v)` | `index`, `value` | Reads/writes persistent cartridge data. | ❌ **Future** |
-
-
-

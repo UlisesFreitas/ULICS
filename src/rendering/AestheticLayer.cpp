@@ -1,4 +1,5 @@
 #include "AestheticLayer.h"
+#include "rendering/EmbeddedFont.h"
 #include <stdexcept>
 
 AestheticLayer::AestheticLayer(SDL_Renderer* renderer) : renderer(renderer) {
@@ -106,6 +107,79 @@ void AestheticLayer::RectFill(int x, int y, int w, int h, uint8_t colorIndex) {
         for (int i = x; i < x2; ++i) {
             SetPixel(i, j, colorIndex);
         }
+    }
+}
+
+void AestheticLayer::Circ(int centerX, int centerY, int radius, uint8_t colorIndex) {
+    if (radius < 0) return;
+    int x = radius;
+    int y = 0;
+    int err = 0;
+
+    while (x >= y) {
+        SetPixel(centerX + x, centerY + y, colorIndex);
+        SetPixel(centerX + y, centerY + x, colorIndex);
+        SetPixel(centerX - y, centerY + x, colorIndex);
+        SetPixel(centerX - x, centerY + y, colorIndex);
+        SetPixel(centerX - x, centerY - y, colorIndex);
+        SetPixel(centerX - y, centerY - x, colorIndex);
+        SetPixel(centerX + y, centerY - x, colorIndex);
+        SetPixel(centerX + x, centerY - y, colorIndex);
+
+        if (err <= 0) {
+            y += 1;
+            err += 2 * y + 1;
+        }
+        if (err > 0) {
+            x -= 1;
+            err -= 2 * x + 1;
+        }
+    }
+}
+
+void AestheticLayer::CircFill(int centerX, int centerY, int radius, uint8_t colorIndex) {
+    if (radius < 0) return;
+    // Using a simpler, albeit less optimal, scanline method for clarity.
+    for (int dy = -radius; dy <= radius; ++dy) {
+        for (int dx = -radius; dx <= radius; ++dx) {
+            if (dx * dx + dy * dy <= radius * radius) {
+                SetPixel(centerX + dx, centerY + dy, colorIndex);
+            }
+        }
+    }
+}
+
+uint8_t AestheticLayer::Pget(int x, int y) {
+    if (x >= 0 && x < FRAMEBUFFER_WIDTH && y >= 0 && y < FRAMEBUFFER_HEIGHT) {
+        return framebuffer[y * FRAMEBUFFER_WIDTH + x];
+    }
+    return 0; // Return color 0 (black) for out-of-bounds pixels.
+}
+
+void AestheticLayer::Print(const std::string& text, int x, int y, uint8_t colorIndex) {
+    int cursorX = x;
+    for (char c : text) {
+        // Only render printable ASCII characters.
+        if (c >= 32 && c <= 126) {
+            // Calculate the starting index for the character's glyph data.
+            int charIndex = (c - 32) * EmbeddedFont::FONT_HEIGHT;
+
+            // Iterate through the 8 rows of the character's glyph.
+            for (int row = 0; row < EmbeddedFont::FONT_HEIGHT; ++row) {
+                uint8_t rowData = EmbeddedFont::FONT_DATA[charIndex + row];
+
+                // Iterate through the 8 bits of the row data (representing columns).
+                for (int col = 0; col < EmbeddedFont::FONT_WIDTH; ++col) {
+                    // If the bit is set, draw a pixel.
+                    // We check the most significant bit for column 0, so we shift by (7 - col).
+                    if ((rowData >> (7 - col)) & 1) {
+                        SetPixel(cursorX + col, y + row, colorIndex);
+                    }
+                }
+            }
+        }
+        // Advance the cursor for the next character.
+        cursorX += EmbeddedFont::FONT_WIDTH; // Character spacing is now built into the font glyphs.
     }
 }
 

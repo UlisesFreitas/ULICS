@@ -1,7 +1,7 @@
 // Main entry point for the UliCS Fantasy Console.
 // This file initializes the Engine and runs the main application loop.
 
-#include "Engine.h"
+#include "core/Engine.h"
 
 // The cross-platform entry point for an SDL application.
 int main(int argc, char* argv[]) {
@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
     (void)argv;
 
     Engine engine;
-    if (engine.Initialize()) {
+    if (engine.Initialize("UliCS Fantasy Console", 1024, 1024)) {
         engine.Run();
     }
 

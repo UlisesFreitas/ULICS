@@ -58,12 +58,12 @@
         {
           "id": "1.3",
           "description": "Crear una aplicación básica que inicializa SDL, abre una ventana y demuestra que el enlace estático funciona.",
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "1.4",
           "description": "Crear la clase principal 'Engine' que encapsule la inicialización de SDL, la ventana y el bucle principal.",
-          "status": "pending"
+          "status": "completed"
         }
       ]
     },
@@ -81,22 +81,27 @@
         {
           "id": "2.1",
           "description": "Desarrollar la 'Capa Estética': una clase que maneja un framebuffer de baja resolución (ej. 256x256) y una paleta de 16 colores base.",
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "2.2",
           "description": "Implementar la API de dibujo básica en la Capa Estética (PSET, LINE, RECT) que opera sobre el framebuffer.",
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "2.3",
           "description": "Crear un mecanismo para escalar y renderizar el framebuffer de la Capa Estética a la ventana principal de SDL.",
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "2.4",
           "description": "Desarrollar la 'Capa Lógica' que contendrá las funciones _update() y _draw() y que llamará a la API de la Capa Estética.",
-          "status": "pending"
+          "status": "completed"
+        },
+        {
+          "id": "2.5",
+          "description": "Separar la lógica de actualización (_update) del dibujo (_draw) en la Capa Lógica para un bucle de juego desacoplado.",
+          "status": "completed"
         }
       ]
     },

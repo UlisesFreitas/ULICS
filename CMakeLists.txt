@@ -15,9 +15,10 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/sdl/CMakeLists.txt")
 endif()
 
 # Set SDL build options BEFORE adding the subdirectory.
-# This ensures SDL is built as a static library.
-set(SDL_STATIC ON)
-set(SDL_SHARED OFF)
+# We set them as CACHE variables to pre-configure SDL's options
+# and avoid CMake warnings about normal variables being overwritten.
+set(SDL_STATIC ON CACHE BOOL "Build SDL as a static library")
+set(SDL_SHARED OFF CACHE BOOL "Do not build SDL as a shared library")
 
 # Add the SDL project as a sub-project. CMake will now build SDL for us.
 # The 'EXCLUDE_FROM_ALL' option prevents SDL's install targets from running during a normal build.
@@ -25,7 +26,18 @@ add_subdirectory(sdl EXCLUDE_FROM_ALL)
 
 # --- Main Application Target ---
 # Add our executable. The WIN32 flag is important for GUI applications on Windows.
-add_executable(UliCS WIN32 src/main.cpp src/Engine.cpp src/Engine.h)
+add_executable(UliCS WIN32
+    src/main.cpp
+    src/core/Engine.cpp src/core/Engine.h
+    src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h
+    src/game/Game.h
+    src/demos/DemoGame.cpp src/demos/DemoGame.h
+)
+
+# Add the 'src' directory to the include path.
+# This allows us to use includes relative to the src root, like #include "core/Engine.h".
+# PUBLIC means that any other target linking against UliCS would also inherit this include directory.
+target_include_directories(UliCS PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # Link our application against the static SDL2 library (SDL2::SDL2-static).
 # This target is created by the add_subdirectory(sdl) command above.

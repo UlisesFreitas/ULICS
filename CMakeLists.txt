@@ -61,12 +61,14 @@ add_executable(UliCS WIN32
     src/rendering/EmbeddedFont.h
     src/input/InputManager.cpp src/input/InputManager.h
     src/scripting/ScriptingManager.cpp src/scripting/ScriptingManager.h
+    src/cartridge/CartridgeLoader.cpp src/cartridge/CartridgeLoader.h
 )
 
 # Add the 'src' directory to the include path.
 # This allows us to use includes relative to the src root, like #include "core/Engine.h".
 # PUBLIC means that any other target linking against UliCS would also inherit this include directory.
 target_include_directories(UliCS PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_include_directories(UliCS PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann_json/include")
 
 # Link our application against the static SDL2 library (SDL2::SDL2-static).
 # This target is created by the add_subdirectory(sdl) command above.

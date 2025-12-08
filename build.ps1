@@ -24,6 +24,7 @@ Start-Transcript -Path $LogFile
 $BuildDir = Join-Path -Path $ScriptDir -ChildPath "build"
 $SdlDir = Join-Path -Path $ScriptDir -ChildPath "sdl"
 $LuaDir = Join-Path -Path $ScriptDir -ChildPath "external/lua"
+$JsonIncludeDir = Join-Path -Path $ScriptDir -ChildPath "external/nlohmann_json/include"
 $ErrorActionPreference = "Stop"
 
 try {
@@ -49,6 +50,17 @@ try {
         Remove-Item -Path (Join-Path $LuaDir ".git") -Recurse -Force
     } else {
         Write-Host "Lua source found."
+    }
+
+    # nlohmann/json
+    $JsonFile = Join-Path -Path $JsonIncludeDir -ChildPath "nlohmann/json.hpp"
+    if (-not (Test-Path -Path $JsonFile)) {
+        Write-Host "nlohmann/json not found. Downloading..."
+        New-Item -ItemType Directory -Path (Split-Path $JsonFile) -Force | Out-Null
+        $JsonUrl = "https://github.com/nlohmann/json/releases/latest/download/json.hpp"
+        Invoke-WebRequest -Uri $JsonUrl -OutFile $JsonFile
+    } else {
+        Write-Host "nlohmann/json found."
     }
 
     # --- Step 2: Clean and recreate the build directory ---

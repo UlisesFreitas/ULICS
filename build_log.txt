@@ -1,29 +1,35 @@
-﻿**********************
-Windows PowerShell transcript start
-Start time: 20251209003826
+**********************
+PowerShell transcript start
+Start time: 20251209004320
 Username: LEGION25\Ulises
 RunAs User: LEGION25\Ulises
 Configuration Name: 
 Machine: LEGION25 (Microsoft Windows NT 10.0.26200.0)
-Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass
-Process ID: 11296
-PSVersion: 5.1.26100.7309
-PSEdition: Desktop
-PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7309
-BuildVersion: 10.0.26100.7309
-CLRVersion: 4.0.30319.42000
-WSManStackVersion: 3.0
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -NoProfile -ExecutionPolicy Bypass -Command Import-Module 'c:\Users\Ulises\.vscode\extensions\ms-vscode.powershell-2025.4.0\modules\PowerShellEditorServices\PowerShellEditorServices.psd1'; Start-EditorServices -HostName 'Visual Studio Code Host' -HostProfileId 'Microsoft.VSCode' -HostVersion '2025.4.0' -BundledModulesPath 'c:\Users\Ulises\.vscode\extensions\ms-vscode.powershell-2025.4.0\modules' -EnableConsoleRepl -StartupBanner "PowerShell Extension v2025.4.0
+Copyright (c) Microsoft Corporation.
+
+https://aka.ms/vscode-powershell
+Type 'help' to get help.
+" -LogLevel 'Warning' -LogPath 'c:\Users\Ulises\AppData\Roaming\Code\logs\20251209T001502\window1\exthost\ms-vscode.powershell' -SessionDetailsPath 'c:\Users\Ulises\AppData\Roaming\Code\User\globalStorage\ms-vscode.powershell\sessions\PSES-VSCode-25540-419558.json' -FeatureFlags @() 
+Process ID: 25868
+PSVersion: 7.5.4
+PSEdition: Core
+GitCommitId: 7.5.4
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
 PSRemotingProtocolVersion: 2.3
 SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
 **********************
 Transcript started, output file is U:\ULICS\build_log.txt
 SDL2 source found.
 Lua source found.
+nlohmann/json not found. Downloading...
 Performing a clean build. Removing and recreating build directory...
 [1/2] Configuring project with CMake...
---  EXTRA_LDFLAGS:
---  EXTRA_LIBS:    kernel32;user32;gdi32;winmm;imm32;ole32;oleaut32;version;uuid;advapi32;setupapi;
-shell32;dinput8
+--  EXTRA_LIBS:    kernel32;user32;gdi32;winmm;imm32;ole32;oleaut32;version;uuid;adva
+pi32;setupapi;shell32;dinput8
 --
 --  Build Shared Library: OFF
 --  Build Static Library: ON
@@ -32,7 +38,7 @@ shell32;dinput8
 -- Project configured. Executable will be named UliCS.exe
 -- Build type:
 -- Executable will be generated in: U:/ULICS/build/bin
--- Configuring done (17.8s)
+-- Configuring done (17.9s)
 -- Generating done (0.1s)
 -- Build files have been written to: U:/ULICS/build
 CMake configuration successful.
@@ -41,6 +47,6 @@ CMake configuration successful.
 Project built successfully!
 You can find the executable at: U:\ULICS\build\bin\Release\UliCS.exe
 **********************
-Windows PowerShell transcript end
-End time: 20251209003855
+PowerShell transcript end
+End time: 20251209004352
 **********************

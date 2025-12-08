@@ -251,7 +251,8 @@
         {
           "id": "4.2",
           "description": "Integrate the 'nlohmann/json' library for configuration parsing.",
-          "status": "pending"
+          "status": "completed",
+          "notes": "build.ps1 now automatically downloads json.hpp. Created a placeholder CartridgeLoader class that successfully includes the json header to verify integration."
         },
         {
           "id": "4.3",

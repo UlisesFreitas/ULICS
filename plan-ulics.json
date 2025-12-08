@@ -1,0 +1,236 @@
+{
+  "projectName": "ULICS Fantasy Console",
+  "description": "Plan de desarrollo para una consola de fantasía de alto rendimiento con C++/SDL, separando lógica y estética.",
+  "phases": [
+    {
+      "phase": 0,
+      "title": "Automatización de Compilación y Entorno",
+      "description": "Establecer un entorno de desarrollo robusto y automatizado que gestione las dependencias, la compilación y la limpieza del proyecto.",
+      "tasks": [
+        {
+          "id": "0.1",
+          "description": "Crear un script de compilación (build.ps1) que automatice todo el proceso.",
+          "status": "completed"
+        },
+        {
+          "id": "0.2",
+          "description": "El script debe limpiar el directorio de compilación ('build') antes de cada ejecución para asegurar una compilación limpia.",
+          "status": "completed"
+        },
+        {
+          "id": "0.3",
+          "description": "El script debe terminar cualquier instancia de la aplicación ('UliCS.exe') que se esté ejecutando antes de compilar.",
+          "status": "completed"
+        },
+        {
+          "id": "0.4",
+          "description": "Generar un log de compilación ('build_log.txt') con la salida completa del proceso.",
+          "status": "completed"
+        },
+        {
+            "id": "0.5",
+            "description": "Automatizar la obtención y compilación de dependencias (clonar SDL2 desde el repositorio si no existe).",
+            "status": "completed"
+        }
+      ]
+    },
+    {
+      "phase": 1,
+      "title": "Configuración Inicial y Base del Proyecto",
+      "description": "Establecer la estructura del proyecto, el sistema de compilación y la ventana básica de la aplicación. El objetivo es tener un 'Hola Mundo' funcional que demuestre que el entorno está correctamente configurado.",
+      "libraries": [
+        {
+          "name": "SDL2",
+          "purpose": "Librería principal para la gestión de ventanas, renderizado 2D y eventos de entrada."
+        }
+      ],
+      "tasks": [
+        {
+          "id": "1.1",
+          "description": "Definir y crear la estructura de directorios del proyecto (src, build, cartridges, assets).",
+          "status": "completed"
+        },
+        {
+          "id": "1.2",
+          "description": "Configurar CMake para compilar el proyecto y enlazar SDL2 de forma estática.",
+          "status": "completed"
+        },
+        {
+          "id": "1.3",
+          "description": "Crear una aplicación básica que inicializa SDL, abre una ventana y demuestra que el enlace estático funciona.",
+          "status": "pending"
+        },
+        {
+          "id": "1.4",
+          "description": "Crear la clase principal 'Engine' que encapsule la inicialización de SDL, la ventana y el bucle principal.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "title": "Arquitectura del Motor (Doble Capa)",
+      "description": "Implementar el núcleo de la arquitectura de doble capa: la capa de renderizado estético y la capa de lógica de juego.",
+      "libraries": [
+        {
+          "name": "SDL2",
+          "purpose": "Continúa siendo la base para el renderizado."
+        }
+      ],
+      "tasks": [
+        {
+          "id": "2.1",
+          "description": "Desarrollar la 'Capa Estética': una clase que maneja un framebuffer de baja resolución (ej. 256x256) y una paleta de 16 colores base.",
+          "status": "pending"
+        },
+        {
+          "id": "2.2",
+          "description": "Implementar la API de dibujo básica en la Capa Estética (PSET, LINE, RECT) que opera sobre el framebuffer.",
+          "status": "pending"
+        },
+        {
+          "id": "2.3",
+          "description": "Crear un mecanismo para escalar y renderizar el framebuffer de la Capa Estética a la ventana principal de SDL.",
+          "status": "pending"
+        },
+        {
+          "id": "2.4",
+          "description": "Desarrollar la 'Capa Lógica' que contendrá las funciones _update() y _draw() y que llamará a la API de la Capa Estética.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "title": "Integración de Scripting (Lua)",
+      "description": "Incorporar un motor de scripting Lua para que la lógica del juego pueda ser escrita por el usuario final, y conectar la API del motor a Lua.",
+      "libraries": [
+        {
+          "name": "sol2",
+          "purpose": "Librería de enlace C++/Lua para facilitar la integración y exposición de la API a Lua de forma segura y moderna."
+        }
+      ],
+      "tasks": [
+        {
+          "id": "3.1",
+          "description": "Integrar la librería 'sol2' en el proyecto a través de CMake.",
+          "status": "pending"
+        },
+        {
+          "id": "3.2",
+          "description": "Crear una clase 'ScriptingManager' para gestionar el estado de Lua, cargar y ejecutar scripts.",
+          "status": "pending"
+        },
+        {
+          "id": "3.3",
+          "description": "Exponer (bind) las funciones de la API de la Capa Estética (PSET, LINE, etc.) al entorno de Lua usando sol2.",
+          "status": "pending"
+        },
+        {
+          "id": "3.4",
+          "description": "Modificar el bucle principal del motor para que llame a las funciones _update() y _draw() del script Lua cargado.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "title": "Sistema de Cartuchos y Modularidad",
+      "description": "Definir y desarrollar el sistema de 'cartuchos' para cargar juegos y la configuración modular de la consola.",
+      "management": "La aplicación se gestionará mediante 'cartuchos'. Un cartucho será un directorio que contenga un archivo 'main.lua' para el código y un 'config.json' para los metadatos y la configuración modular. Opcionalmente, puede incluir un directorio 'assets'.",
+      "libraries": [
+        {
+          "name": "nlohmann/json",
+          "purpose": "Una librería moderna de C++ para parsear fácilmente el archivo de configuración 'config.json' de cada cartucho."
+        }
+      ],
+      "tasks": [
+        {
+          "id": "4.1",
+          "description": "Diseñar la estructura del 'cartucho' y el formato del archivo 'config.json' (incluirá 'memory_limit_mb', 'lua_code_limit_lines', 'palette_size').",
+          "status": "pending"
+        },
+        {
+          "id": "4.2",
+          "description": "Integrar la librería 'nlohmann/json' para el parseo de la configuración.",
+          "status": "pending"
+        },
+        {
+          "id": "4.3",
+          "description": "Implementar una clase 'CartridgeLoader' que lea un directorio de cartucho, parseé 'config.json' y lo cargue en el motor.",
+          "status": "pending"
+        },
+        {
+          "id": "4.4",
+          "description": "Adaptar el motor para que use la configuración del cartucho: ajustar el tamaño de la paleta en la Capa Estética dinámicamente (16, 32, 64, 128).",
+          "status": "pending"
+        },
+        {
+          "id": "4.5",
+          "description": "Implementar la lógica de chequeo de límites (ej. líneas de código Lua) en el 'ScriptingManager' como una restricción 'suave' informativa.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "title": "Expansión de API y Funcionalidades",
+      "description": "Añadir funcionalidades esenciales a una consola de fantasía, como entrada de usuario avanzada, audio y una API de dibujo más rica.",
+      "libraries": [
+        {
+          "name": "SDL2_mixer",
+          "purpose": "Para gestionar la reproducción de audio y música."
+        },
+        {
+          "name": "SDL2_image",
+          "purpose": "Para cargar sprites desde archivos de imagen (PNG)."
+        }
+      ],
+      "tasks": [
+        {
+          "id": "5.1",
+          "description": "Crear un 'InputManager' para manejar teclado y gamepad, y exponer una API simple a Lua (btn(), btnp()).",
+          "status": "pending"
+        },
+        {
+          "id": "5.2",
+          "description": "Integrar SDL2_mixer y crear un 'AudioManager' con funciones para reproducir sonidos y música (sfx(), music()), expuestas a Lua.",
+          "status": "pending"
+        },
+        {
+          "id": "5.3",
+          "description": "Expandir la API de dibujo en la Capa Estética con SPRITE, CIRCLE, y otras primitivas. Exponer a Lua.",
+          "status": "pending"
+        },
+        {
+          "id": "5.4",
+          "description": "Implementar un sistema de 'SpriteSheet' que pueda ser cargado desde los assets del cartucho.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "phase": 6,
+      "title": "Finalización, Documentación y Ejemplos",
+      "description": "Crear un cartucho de demostración completo, documentar la API para los usuarios finales y pulir el proyecto para su lanzamiento inicial.",
+      "libraries": [],
+      "tasks": [
+        {
+          "id": "6.1",
+          "description": "Desarrollar un cartucho de demostración (ej. un juego simple como Pong o un platformer básico) que use todas las funcionalidades de la API.",
+          "status": "pending"
+        },
+        {
+          "id": "6.2",
+          "description": "Escribir una documentación exhaustiva de la API en formato Markdown, explicando cada función Lua, sus parámetros y su comportamiento.",
+          "status": "pending"
+        },
+        {
+          "id": "6.3",
+          "description": "Realizar una revisión general del código, refactorizar y optimizar donde sea necesario antes de considerarlo v1.0.",
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}

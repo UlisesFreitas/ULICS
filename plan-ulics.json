@@ -281,8 +281,32 @@
         {
           "id": "4.3.4",
           "description": "Implement the first-run deployment logic: check for the data path and extract the embedded default cartridge if it's missing.",
+          "status": "completed",
+          "notes": "Engine now checks for the default cartridge on startup. If missing, it creates the files in the user's data path from the embedded resources. The temporary post-build copy command in CMake has been removed."
+        },
+        {
+          "id": "4.3.5",
+          "description": "Refactor the embedded cartridge to be a 'boot' cartridge instead of a 'demo'.",
           "status": "pending",
-          "notes": "The Engine will manage this process during initialization."
+          "notes": "Rename EmbeddedCartridge.h to EmbeddedBootCartridge.h and simplify its Lua script to a simple welcome/boot screen. This will be the foundation for the future system menu."
+        },
+        {
+          "id": "4.3.6",
+          "description": "Modify the deployment logic to use a hidden system directory.",
+          "status": "pending",
+          "notes": "The engine will now deploy the boot cartridge to a hidden folder (e.g., 'cartridges/.ulics_boot/') to discourage user modification."
+        },
+        {
+          "id": "4.3.7",
+          "description": "Ensure the boot cartridge is checked and deployed on every startup.",
+          "status": "pending",
+          "notes": "The 'deploy...IfNeeded' logic will run on every launch, making the boot cartridge self-healing if deleted by the user."
+        },
+        {
+          "id": "4.3.8",
+          "description": "Modify the engine to always load the boot cartridge by default.",
+          "status": "pending",
+          "notes": "The Engine will now be hardcoded to load from 'cartridges/.ulics_boot/' on startup, ensuring a consistent boot experience."
         },
         {
           "id": "4.4",

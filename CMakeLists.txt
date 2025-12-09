@@ -86,10 +86,3 @@ set_target_properties(UliCS PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_
 message(STATUS "Project configured. Executable will be named UliCS.exe")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Executable will be generated in: ${CMAKE_BINARY_DIR}/bin")
-
-# --- Post-Build Step: Copy Cartridges ---
-# This command ensures that the 'cartridges' directory is copied to the
-# same directory as the final executable, so the engine can find them at runtime.
-add_custom_command(TARGET UliCS POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/cartridges" "$<TARGET_FILE_DIR:UliCS>/cartridges"
-    COMMENT "Copying cartridges to output directory...")

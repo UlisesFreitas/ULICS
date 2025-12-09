@@ -5,9 +5,12 @@
 #include "cartridge/CartridgeLoader.h" // Include the new CartridgeLoader.
 #include "core/Constants.h" // Include our application constants.
 #include "core/FileSystem.h" // Include our new FileSystem utility.
+#include "cartridge/EmbeddedCartridge.h" // Include the embedded default cartridge data.
 #include <iostream>
 #include <chrono>
 #include "scripting/ScriptingManager.h"
+#include <filesystem>
+#include <fstream>
 
 Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
@@ -67,9 +70,13 @@ bool Engine::Initialize(const char* title, int width, int height) {
     }
     std::cout << "User data path set to: " << userDataPath << std::endl;
 
+    // On first run, deploy the embedded default cartridge.
+    deployDefaultCartridgeIfNeeded();
+
     try {
         inputManager = std::make_unique<InputManager>();
     }
+
     catch (const std::exception& e) {
         std::cerr << "Error initializing InputManager: " << e.what() << std::endl;
         return false;
@@ -77,8 +84,8 @@ bool Engine::Initialize(const char* title, int width, int height) {
 
     try {
         cartridgeLoader = std::make_unique<CartridgeLoader>();
-        std::string demoCartPath = userDataPath + "cartridges/demo";
-        if (!cartridgeLoader->loadCartridge(demoCartPath)) {
+        std::filesystem::path demoCartPath = std::filesystem::path(userDataPath) / "cartridges" / "demo";
+        if (!cartridgeLoader->loadCartridge(demoCartPath.string())) {
             enterErrorState("Failed to load default cartridge.");
             // We don't return false here, so the error screen can be shown.
         }
@@ -169,6 +176,34 @@ void Engine::enterErrorState(const std::string& message) {
     inErrorState = true;
     errorMessage = message;
     std::cerr << "Engine entering error state: " << errorMessage << std::endl;
+}
+
+void Engine::deployDefaultCartridgeIfNeeded() {
+    std::filesystem::path demoCartridgeDir = std::filesystem::path(userDataPath) / "cartridges" / "demo";
+    std::filesystem::path demoConfigPath = demoCartridgeDir / "config.json";
+
+    // If the config file already exists, we assume the cartridge is deployed.
+    if (std::filesystem::exists(demoConfigPath)) {
+        return;
+    }
+
+    std::cout << "First run detected. Deploying default 'demo' cartridge..." << std::endl;
+
+    try {
+        // Create the directory structure.
+        std::filesystem::create_directories(demoCartridgeDir);
+
+        // Write the config.json file.
+        std::ofstream configFile(demoConfigPath);
+        configFile << Ulics::EmbeddedCartridge::DEMO_CONFIG_JSON;
+
+        // Write the main.lua file.
+        std::ofstream scriptFile(demoCartridgeDir / "main.lua");
+        scriptFile << Ulics::EmbeddedCartridge::DEMO_LUA_SCRIPT;
+
+    } catch (const std::filesystem::filesystem_error& e) {
+        enterErrorState("Failed to write default cartridge files: " + std::string(e.what()));
+    }
 }
 
 void Engine::drawErrorScreen() {

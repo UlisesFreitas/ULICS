@@ -5,7 +5,7 @@
 #include "cartridge/CartridgeLoader.h" // Include the new CartridgeLoader.
 #include "core/Constants.h" // Include our application constants.
 #include "core/FileSystem.h" // Include our new FileSystem utility.
-#include "cartridge/EmbeddedCartridge.h" // Include the embedded default cartridge data.
+#include "cartridge/EmbeddedBootCartridge.h" // Include the embedded default cartridge data.
 #include <iostream>
 #include <chrono>
 #include "scripting/ScriptingManager.h"

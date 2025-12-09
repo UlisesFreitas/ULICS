@@ -287,7 +287,7 @@
         {
           "id": "4.3.5",
           "description": "Refactor the embedded cartridge to be a 'boot' cartridge instead of a 'demo'.",
-          "status": "pending",
+          "status": "completed",
           "notes": "Rename EmbeddedCartridge.h to EmbeddedBootCartridge.h and simplify its Lua script to a simple welcome/boot screen. This will be the foundation for the future system menu."
         },
         {

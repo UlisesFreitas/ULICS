@@ -47,3 +47,42 @@ bool CartridgeLoader::loadCartridge(const std::string& cartridgeDirectoryPath) {
     loaded = true;
     return true;
 }
+
+std::vector<CartridgeInfo> CartridgeLoader::scanForCartridges(const std::string& cartridgesBasePath) {
+    std::vector<CartridgeInfo> foundCarts;
+    std::filesystem::path basePath(cartridgesBasePath);
+
+    if (!std::filesystem::exists(basePath) || !std::filesystem::is_directory(basePath)) {
+        return foundCarts; // Return empty vector if the base path doesn't exist.
+    }
+
+    for (const auto& entry : std::filesystem::directory_iterator(basePath)) {
+        if (entry.is_directory()) {
+            std::string dirName = entry.path().filename().string();
+            // Skip the hidden boot cartridge and other hidden directories.
+            if (dirName.rfind(".", 0) == 0) {
+                continue;
+            }
+
+            std::filesystem::path configPath = entry.path() / "config.json";
+            if (std::filesystem::exists(configPath)) {
+                std::ifstream configFileStream(configPath);
+                if (configFileStream.is_open()) {
+                    try {
+                        nlohmann::json config;
+                        configFileStream >> config;
+                        foundCarts.push_back({
+                            dirName, // Use directory name as the ID
+                            config.value("title", "Untitled"),
+                            config.value("author", "Unknown"),
+                            config.value("description", "")
+                        });
+                    } catch (const nlohmann::json::parse_error&) {
+                        // Ignore cartridges with invalid JSON.
+                    }
+                }
+            }
+        }
+    }
+    return foundCarts;
+}

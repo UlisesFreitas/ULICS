@@ -84,6 +84,9 @@ private:
     // Static bridge function to call AestheticLayer::SetTransparentColor
     static int Lua_TColor(lua_State* L);
 
+    // Static bridge function to scan for and list available cartridges.
+    static int Lua_ListCarts(lua_State* L);
+
     // --- Math Functions ---
     static int Lua_Sin(lua_State* L);
     static int Lua_Cos(lua_State* L);

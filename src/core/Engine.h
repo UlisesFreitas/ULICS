@@ -32,6 +32,8 @@ public:
     AestheticLayer* getAestheticLayer() const { return aestheticLayer.get(); }
     InputManager* getInputManager() const { return inputManager.get(); }
     double getElapsedTime() const;
+    CartridgeLoader* getCartridgeLoader() const { return cartridgeLoader.get(); }
+    const std::string& getUserDataPath() const { return userDataPath; }
 
 private:
     // Constants for the fixed timestep game loop.

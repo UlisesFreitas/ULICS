@@ -329,8 +329,8 @@
         {
           "id": "4.7",
           "description": "Expose a `listcarts()` function to Lua that returns a table of available cartridges.",
-          "status": "pending",
-          "notes": "The CartridgeLoader will scan the user's cartridges directory and return metadata (title, author) for each valid cartridge found."
+          "status": "completed",
+          "notes": "CartridgeLoader can now scan for cartridges. Exposed this functionality to Lua via `listcarts()`, which returns a table of cartridge metadata (id, title, author)."
         },
         {
           "id": "4.8",

@@ -1,11 +1,12 @@
 #include "scripting/ScriptingManager.h"
 #include "rendering/AestheticLayer.h"
 #include "input/InputManager.h"
+#include "cartridge/CartridgeLoader.h"
 #include "core/Engine.h"
 #include <iostream>
-#include <string> // Required for std::string
+#include <string>
 #include <array>
-#include <cmath> // For standard math functions
+#include <cmath> 
 
 constexpr double PI = 3.14159265358979323846;
 
@@ -78,6 +79,7 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("time", &ScriptingManager::Lua_Time);
     RegisterFunction("camera", &ScriptingManager::Lua_Camera);
     RegisterFunction("tcolor", &ScriptingManager::Lua_TColor);
+    RegisterFunction("listcarts", &ScriptingManager::Lua_ListCarts);
 
     // Math functions
     RegisterFunction("sin", &ScriptingManager::Lua_Sin);
@@ -311,6 +313,37 @@ int ScriptingManager::Lua_TColor(lua_State* L) {
     }
 
     return 0;
+}
+
+int ScriptingManager::Lua_ListCarts(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    Engine* engine = sm->engineInstance;
+    CartridgeLoader* loader = engine->getCartridgeLoader();
+
+    std::string cartridgesPath = engine->getUserDataPath() + "cartridges";
+    auto foundCarts = loader->scanForCartridges(cartridgesPath);
+
+    // Create the main table that will be returned to Lua.
+    lua_newtable(L); // This will be our array of cartridge tables.
+
+    int index = 1; // Lua tables are 1-indexed.
+    for (const auto& cartInfo : foundCarts) {
+        lua_newtable(L); // Create a table for the current cartridge.
+
+        lua_pushstring(L, cartInfo.id.c_str());
+        lua_setfield(L, -2, "id");
+
+        lua_pushstring(L, cartInfo.title.c_str());
+        lua_setfield(L, -2, "title");
+
+        lua_pushstring(L, cartInfo.author.c_str());
+        lua_setfield(L, -2, "author");
+
+        // Add the cartridge table to our main array table at the current index.
+        lua_rawseti(L, -2, index++);
+    }
+
+    return 1; // We are returning one value: the main table.
 }
 
 int ScriptingManager::Lua_Sin(lua_State* L) {

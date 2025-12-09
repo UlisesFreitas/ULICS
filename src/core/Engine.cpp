@@ -104,7 +104,10 @@ bool Engine::Initialize(const char* title, int width, int height) {
     try {
         scriptingManager = std::make_unique<ScriptingManager>(this);
         if (cartridgeLoader->isLoaded()) {
-            scriptingManager->LoadAndRunScript(cartridgeLoader->getLuaScript().c_str());
+            const auto& config = cartridgeLoader->getConfig();
+            size_t lineLimit = config.value("/config/lua_code_limit_lines"_json_pointer, 0);
+            scriptingManager->LoadAndRunScript(cartridgeLoader->getLuaScript().c_str(), lineLimit);
+            std::cout << "ScriptingManager: Successfully loaded and executed script." << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "Error initializing ScriptingManager: " << e.what() << std::endl;

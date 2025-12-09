@@ -317,8 +317,8 @@
         {
           "id": "4.5",
           "description": "Implement limit-checking logic (e.g., Lua code lines) in the 'ScriptingManager' as an informative 'soft' constraint.",
-          "status": "pending",
-          "notes": "The engine will read 'lua_code_limit_lines' and print a warning if the loaded script exceeds it."
+          "status": "completed",
+          "notes": "ScriptingManager now counts lines in the loaded script. The Engine reads 'lua_code_limit_lines' from config.json and passes it to the ScriptingManager, which prints a warning if the limit is exceeded."
         },
         {
           "id": "4.6",

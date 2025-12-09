@@ -35,16 +35,31 @@ ScriptingManager::~ScriptingManager() {
 }
 
 // Loads and runs a Lua script from the given filepath.
-bool ScriptingManager::LoadAndRunScript(const char* scriptBuffer) {
+bool ScriptingManager::LoadAndRunScript(const char* scriptBuffer, size_t line_limit) {
+    // --- Soft Constraint Check: Line Count ---
+    size_t line_count = 0;
+    if (scriptBuffer && *scriptBuffer) {
+        line_count = 1; // Start with 1 line.
+        for (const char* p = scriptBuffer; *p != '\0'; ++p) {
+            if (*p == '\n') {
+                line_count++;
+            }
+        }
+    }
+
+    if (line_limit > 0 && line_count > line_limit) {
+        std::cout << "ScriptingManager Warning: Script line count (" << line_count
+                  << ") exceeds cartridge limit (" << line_limit << ")." << std::endl;
+    }
+
     // luaL_dostring loads and runs a script from a string.
     if (luaL_dostring(L, scriptBuffer) != LUA_OK) {
         // If there was an error, it's on top of the stack.
-        const char* error = lua_tostring(L, -1);
-        std::cerr << "Error running embedded script: " << error << std::endl;
+        lastError = lua_tostring(L, -1);
+        std::cerr << "Error running script: " << lastError << std::endl;
         lua_pop(L, 1); // Pop the error message from the stack.
         return false;
     }
-    std::cout << "ScriptingManager: Successfully loaded and executed embedded script." << std::endl;
     return true;
 }
 

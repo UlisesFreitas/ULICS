@@ -20,8 +20,8 @@ public:
     explicit ScriptingManager(Engine* engine);
     ~ScriptingManager();
 
-    // Loads and runs a Lua script from a string buffer.
-    bool LoadAndRunScript(const char* scriptBuffer);
+    // Loads and runs a Lua script from a string buffer, checking against a line limit.
+    bool LoadAndRunScript(const char* scriptBuffer, size_t line_limit);
 
     // Calls a global Lua function with no arguments or return values.
     // Returns false if an error occurs during the call.

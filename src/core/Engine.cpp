@@ -181,13 +181,16 @@ void Engine::enterErrorState(const std::string& message) {
 void Engine::deployDefaultCartridgeIfNeeded() {
     std::filesystem::path bootCartridgeDir = std::filesystem::path(userDataPath) / "cartridges" / ".ulics_boot";
     std::filesystem::path bootConfigPath = bootCartridgeDir / "config.json";
+    std::filesystem::path bootScriptPath = bootCartridgeDir / "main.lua";
 
-    // If the config file already exists, we assume the cartridge is deployed.
-    if (std::filesystem::exists(bootConfigPath)) {
+    // If both essential files of the boot cartridge exist, do nothing.
+    if (std::filesystem::exists(bootConfigPath) && std::filesystem::exists(bootScriptPath)) {
         return;
     }
 
-    std::cout << "First run detected. Deploying default boot cartridge..." << std::endl;
+    // If we are here, at least one file is missing.
+    std::cout << "Boot cartridge is missing or incomplete. Verifying/Deploying..." << std::endl;
+
 
     try {
         // Create the directory structure.
@@ -196,10 +199,12 @@ void Engine::deployDefaultCartridgeIfNeeded() {
         // Write the config.json file.
         std::ofstream configFile(bootConfigPath);
         configFile << Ulics::EmbeddedCartridge::BOOT_CONFIG_JSON;
+        configFile.close();
 
-        // Write the main.lua file.
-        std::ofstream scriptFile(bootCartridgeDir / "main.lua");
+        // Write the main.lua file. This will create or overwrite it.
+        std::ofstream scriptFile(bootScriptPath);
         scriptFile << Ulics::EmbeddedCartridge::BOOT_LUA_SCRIPT;
+        scriptFile.close();
 
     } catch (const std::filesystem::filesystem_error& e) {
         enterErrorState("Failed to write default cartridge files: " + std::string(e.what()));

@@ -299,8 +299,8 @@
         {
           "id": "4.3.7",
           "description": "Ensure the boot cartridge is checked and deployed on every startup.",
-          "status": "pending",
-          "notes": "The 'deploy...IfNeeded' logic will run on every launch, making the boot cartridge self-healing if deleted by the user."
+          "status": "completed",
+          "notes": "The deployment logic now checks for the existence of both config.json and main.lua on every startup. If either is missing, it redeploys both files, making the boot cartridge self-healing."
         },
         {
           "id": "4.3.8",

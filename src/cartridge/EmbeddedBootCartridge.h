@@ -8,7 +8,7 @@ namespace Ulics {
 namespace EmbeddedCartridge {
 
 // --- Embedded config.json for the boot cartridge ---
-constexpr std::string_view DEMO_CONFIG_JSON = R"json(
+constexpr std::string_view BOOT_CONFIG_JSON = R"json(
 {
   "title": "ULICS Boot",
   "author": "ULICS Team",
@@ -23,7 +23,7 @@ constexpr std::string_view DEMO_CONFIG_JSON = R"json(
 )json"; 
 
 // --- Embedded main.lua for the boot cartridge ---
-constexpr std::string_view DEMO_LUA_SCRIPT = R"lua(
+constexpr std::string_view BOOT_LUA_SCRIPT = R"lua(
 function _draw()
     -- Set black (0) as the transparent color
     tcolor(0)

@@ -84,8 +84,8 @@ bool Engine::Initialize(const char* title, int width, int height) {
 
     try {
         cartridgeLoader = std::make_unique<CartridgeLoader>();
-        std::filesystem::path demoCartPath = std::filesystem::path(userDataPath) / "cartridges" / "demo";
-        if (!cartridgeLoader->loadCartridge(demoCartPath.string())) {
+        std::filesystem::path bootCartPath = std::filesystem::path(userDataPath) / "cartridges" / ".ulics_boot";
+        if (!cartridgeLoader->loadCartridge(bootCartPath.string())) {
             enterErrorState("Failed to load default cartridge.");
             // We don't return false here, so the error screen can be shown.
         }
@@ -179,27 +179,27 @@ void Engine::enterErrorState(const std::string& message) {
 }
 
 void Engine::deployDefaultCartridgeIfNeeded() {
-    std::filesystem::path demoCartridgeDir = std::filesystem::path(userDataPath) / "cartridges" / "demo";
-    std::filesystem::path demoConfigPath = demoCartridgeDir / "config.json";
+    std::filesystem::path bootCartridgeDir = std::filesystem::path(userDataPath) / "cartridges" / ".ulics_boot";
+    std::filesystem::path bootConfigPath = bootCartridgeDir / "config.json";
 
     // If the config file already exists, we assume the cartridge is deployed.
-    if (std::filesystem::exists(demoConfigPath)) {
+    if (std::filesystem::exists(bootConfigPath)) {
         return;
     }
 
-    std::cout << "First run detected. Deploying default 'demo' cartridge..." << std::endl;
+    std::cout << "First run detected. Deploying default boot cartridge..." << std::endl;
 
     try {
         // Create the directory structure.
-        std::filesystem::create_directories(demoCartridgeDir);
+        std::filesystem::create_directories(bootCartridgeDir);
 
         // Write the config.json file.
-        std::ofstream configFile(demoConfigPath);
-        configFile << Ulics::EmbeddedCartridge::DEMO_CONFIG_JSON;
+        std::ofstream configFile(bootConfigPath);
+        configFile << Ulics::EmbeddedCartridge::BOOT_CONFIG_JSON;
 
         // Write the main.lua file.
-        std::ofstream scriptFile(demoCartridgeDir / "main.lua");
-        scriptFile << Ulics::EmbeddedCartridge::DEMO_LUA_SCRIPT;
+        std::ofstream scriptFile(bootCartridgeDir / "main.lua");
+        scriptFile << Ulics::EmbeddedCartridge::BOOT_LUA_SCRIPT;
 
     } catch (const std::filesystem::filesystem_error& e) {
         enterErrorState("Failed to write default cartridge files: " + std::string(e.what()));

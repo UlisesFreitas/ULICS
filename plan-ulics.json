@@ -293,8 +293,8 @@
         {
           "id": "4.3.6",
           "description": "Modify the deployment logic to use a hidden system directory.",
-          "status": "pending",
-          "notes": "The engine will now deploy the boot cartridge to a hidden folder (e.g., 'cartridges/.ulics_boot/') to discourage user modification."
+          "status": "completed",
+          "notes": "The engine now deploys and loads the boot cartridge from 'cartridges/.ulics_boot/' in the user data path. Renamed internal embedded constants for clarity."
         },
         {
           "id": "4.3.7",

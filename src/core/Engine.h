@@ -17,6 +17,7 @@ enum class EngineState {
     Initializing,           ///< The engine is currently setting up.
     BootCartridgeRunning,   ///< The default boot cartridge is loaded and running.
     GameRunning,            ///< A user-selected game cartridge is loaded and running.
+    LoadingCartridge,       ///< The engine is currently loading a new cartridge.
     Error                   ///< An unrecoverable error has occurred.
 };
 
@@ -42,6 +43,8 @@ private:
     static constexpr double MS_PER_UPDATE = 1000.0 / UPDATES_PER_SECOND;
     void enterErrorState(const std::string& message);
     void deployDefaultCartridgeIfNeeded();
+    void performCartridgeLoad();
+    void drawLoadingScreen();
     void drawErrorScreen();
     void Shutdown();
 
@@ -50,6 +53,7 @@ private:
     std::string errorMessage;
     EngineState currentState;
     std::string userDataPath;
+    std::string nextCartridgeId;
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     SDL_Window* window;
     SDL_Renderer* renderer;

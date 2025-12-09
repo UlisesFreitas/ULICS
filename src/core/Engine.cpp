@@ -164,7 +164,8 @@ void Engine::Run() {
         // Fixed timestep logic update loop.
         // It runs as many times as necessary to 'catch up' with real time,
         // but only if the engine is in a running state.
-        if (currentState == EngineState::BootCartridgeRunning || currentState == EngineState::GameRunning) {
+        bool isGameRunning = (currentState == EngineState::BootCartridgeRunning || currentState == EngineState::GameRunning);
+        if (isGameRunning) {
             while (lag >= MS_PER_UPDATE) {
                 if (activeGame) {
                     if (!activeGame->_update()) {
@@ -178,20 +179,32 @@ void Engine::Run() {
         // Render loop. It runs once per main loop iteration.
         switch (currentState) {
             case EngineState::BootCartridgeRunning:
-            case EngineState::GameRunning:
+            case EngineState::GameRunning: {
                 if (activeGame) {
                     activeGame->_draw(*aestheticLayer);
                 }
                 break;
-            case EngineState::Error:
+            }
+            case EngineState::LoadingCartridge: {
+                drawLoadingScreen();
+                break;
+            }
+            case EngineState::Error: {
                 drawErrorScreen();
                 break;
-            case EngineState::Initializing:
+            }
+            case EngineState::Initializing: {
                 // Should not happen in Run() loop, but handle defensively.
                 drawErrorScreen(); // Or a blank screen, depending on desired behavior.
                 break;
         }
+        }
         aestheticLayer->Present(); // Present the result regardless.
+
+        // If we were in the loading state, perform the actual load *after* presenting the frame.
+        if (currentState == EngineState::LoadingCartridge) {
+            performCartridgeLoad();
+        }
     }
 }
 
@@ -203,18 +216,32 @@ void Engine::enterErrorState(const std::string& message) {
 }
 
 void Engine::RequestCartridgeLoad(const std::string& cartId) {
-    std::cout << "Engine: Received request to load cartridge '" << cartId << "'." << std::endl;
+    // This function is now asynchronous. It just sets the state and the target ID.
+    // The actual loading happens in the main loop.
+    if (currentState == EngineState::LoadingCartridge) {
+        std::cout << "Engine: Ignoring load request, a cartridge is already being loaded." << std::endl;
+        return;
+    }
+    std::cout << "Engine: Queued request to load cartridge '" << cartId << "'." << std::endl;
+    nextCartridgeId = cartId;
+    currentState = EngineState::LoadingCartridge;
+}
 
+void Engine::performCartridgeLoad() {
     // 1. Construct path to the new cartridge.
-    std::filesystem::path cartPath = std::filesystem::path(userDataPath) / "cartridges" / cartId;
+    std::filesystem::path cartPath = std::filesystem::path(userDataPath) / "cartridges" / nextCartridgeId;
 
     // 2. Use a temporary loader to validate the new cartridge before tearing down the old one.
     auto tempLoader = std::make_unique<CartridgeLoader>();
     if (!tempLoader->loadCartridge(cartPath.string())) {
-        std::cerr << "Engine Error: Could not load requested cartridge '" << cartId << "'. Aborting load." << std::endl;
-        // Optionally, we could call enterErrorState here or provide feedback to Lua.
-        // For now, we just abort and the current script continues.
-        return;
+        std::cerr << "Engine Error: Could not load requested cartridge '" << nextCartridgeId << "'. Aborting load." << std::endl;
+        // On failure, return to the boot cartridge.
+        // A more robust system might show an error message for a few seconds.
+        nextCartridgeId = ".ulics_boot";
+        // We try again with the boot cartridge. A recursive failure here would be fatal.
+        // For now, we assume the boot cart is always valid.
+        performCartridgeLoad();
+        return; 
     }
 
     // --- Cartridge is valid, proceed with teardown and reload ---
@@ -240,7 +267,8 @@ void Engine::RequestCartridgeLoad(const std::string& cartId) {
             // Load new script
             size_t lineLimit = config.value("/config/lua_code_limit_lines"_json_pointer, 0);
             if (!scriptingManager->LoadAndRunScript(cartridgeLoader->getLuaScript().c_str(), lineLimit)) {
-                enterErrorState("Failed to run new cartridge script.");
+                // If the new script fails, we enter an error state.
+                enterErrorState("Failed to run new cartridge script: " + nextCartridgeId);
                 return;
             }
 
@@ -248,7 +276,12 @@ void Engine::RequestCartridgeLoad(const std::string& cartId) {
             activeGame = std::make_unique<LuaGame>(scriptingManager.get());
 
             // 6. Transition to the new game state.
-            currentState = EngineState::GameRunning;
+            if (nextCartridgeId == ".ulics_boot") {
+                currentState = EngineState::BootCartridgeRunning;
+            } else {
+                currentState = EngineState::GameRunning;
+            }
+            nextCartridgeId.clear();
             std::cout << "Engine: Switched to GameRunning state." << std::endl;
         }
     } catch (const std::exception& e) {
@@ -287,6 +320,12 @@ void Engine::deployDefaultCartridgeIfNeeded() {
     } catch (const std::filesystem::filesystem_error& e) {
         enterErrorState("Failed to write default cartridge files: " + std::string(e.what()));
     }
+}
+
+void Engine::drawLoadingScreen() {
+    aestheticLayer->SetCamera(0, 0);
+    aestheticLayer->Clear(1); // Dark Blue background
+    aestheticLayer->Print("LOADING...", 100, 124, 7); // White text
 }
 
 void Engine::drawErrorScreen() {

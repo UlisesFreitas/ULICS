@@ -13,7 +13,7 @@
 #include <fstream>
 
 Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
-                   window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
+                   currentState(EngineState::Initializing), window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
                    activeGame(nullptr), scriptingManager(nullptr), inputManager(nullptr),
                    cartridgeLoader(nullptr) {
     // Constructor
@@ -88,6 +88,7 @@ bool Engine::Initialize(const char* title, int width, int height) {
         if (!cartridgeLoader->loadCartridge(bootCartPath.string())) {
             enterErrorState("Failed to load default cartridge.");
             // We don't return false here, so the error screen can be shown.
+            return true; // Return true to allow error screen to be drawn.
         } else {
             // Cartridge loaded, now apply its configuration.
             const auto& config = cartridgeLoader->getConfig();
@@ -115,6 +116,7 @@ bool Engine::Initialize(const char* title, int width, int height) {
     }
 
     try {
+        // The activeGame will initially be the boot cartridge.
         activeGame = std::make_unique<LuaGame>(scriptingManager.get());
     } catch (const std::exception& e) {
         std::cerr << "Error creating game instance: " << e.what() << std::endl;
@@ -122,6 +124,7 @@ bool Engine::Initialize(const char* title, int width, int height) {
     }
 
     isRunning = true;
+    currentState = EngineState::BootCartridgeRunning; // If initialization is successful, transition to running state.
     startTime = std::chrono::high_resolution_clock::now();
     std::cout << "Engine initialized successfully." << std::endl;
     return true;
@@ -159,24 +162,34 @@ void Engine::Run() {
         }
 
         // Fixed timestep logic update loop.
-        // It runs as many times as necessary to 'catch up' with real time.
-        while (lag >= MS_PER_UPDATE) {
-            // Do not update logic if we are in an error state.
-            if (activeGame && !inErrorState) {
-                if (!activeGame->_update()) {
-                    enterErrorState(scriptingManager->GetLastLuaError());
+        // It runs as many times as necessary to 'catch up' with real time,
+        // but only if the engine is in a running state.
+        if (currentState == EngineState::BootCartridgeRunning || currentState == EngineState::GameRunning) {
+            while (lag >= MS_PER_UPDATE) {
+                if (activeGame) {
+                    if (!activeGame->_update()) {
+                        enterErrorState(scriptingManager->GetLastLuaError());
+                    }
                 }
+                lag -= MS_PER_UPDATE;
             }
-            lag -= MS_PER_UPDATE;
         }
 
         // Render loop. It runs once per main loop iteration.
-        if (inErrorState) {
-            drawErrorScreen();
-        } else {
-            if (activeGame) {
-                activeGame->_draw(*aestheticLayer);
-            }
+        switch (currentState) {
+            case EngineState::BootCartridgeRunning:
+            case EngineState::GameRunning:
+                if (activeGame) {
+                    activeGame->_draw(*aestheticLayer);
+                }
+                break;
+            case EngineState::Error:
+                drawErrorScreen();
+                break;
+            case EngineState::Initializing:
+                // Should not happen in Run() loop, but handle defensively.
+                drawErrorScreen(); // Or a blank screen, depending on desired behavior.
+                break;
         }
         aestheticLayer->Present(); // Present the result regardless.
     }
@@ -185,6 +198,7 @@ void Engine::Run() {
 void Engine::enterErrorState(const std::string& message) {
     inErrorState = true;
     errorMessage = message;
+    currentState = EngineState::Error; // Transition to error state.
     std::cerr << "Engine entering error state: " << errorMessage << std::endl;
 }
 

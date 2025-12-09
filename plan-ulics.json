@@ -323,8 +323,8 @@
         {
           "id": "4.6",
           "description": "Implement the **execution state logic** in the `Engine` (e.g., using an `enum` for `STATE_BOOT`, `STATE_MENU`, `STATE_GAME`, `STATE_ERROR`).",
-          "status": "pending",
-          "notes": "This state machine will control the main loop's behavior."
+          "status": "completed",
+          "notes": "Defined EngineState enum (Initializing, BootCartridgeRunning, GameRunning, Error). Engine::Initialize sets initial state, Engine::enterErrorState transitions to Error, and Engine::Run uses a switch statement to control update/draw logic based on the current state."
         },
         {
           "id": "4.7",

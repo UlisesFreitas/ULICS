@@ -12,6 +12,14 @@ class ScriptingManager;
 class InputManager;
 class CartridgeLoader;
 
+/// @brief Defines the possible execution states of the engine.
+enum class EngineState {
+    Initializing,           ///< The engine is currently setting up.
+    BootCartridgeRunning,   ///< The default boot cartridge is loaded and running.
+    GameRunning,            ///< A user-selected game cartridge is loaded and running.
+    Error                   ///< An unrecoverable error has occurred.
+};
+
 class Engine {
 public:
     Engine();
@@ -37,6 +45,7 @@ private:
     bool isRunning;
     bool inErrorState;
     std::string errorMessage;
+    EngineState currentState;
     std::string userDataPath;
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     SDL_Window* window;

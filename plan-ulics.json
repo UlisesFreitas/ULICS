@@ -311,8 +311,8 @@
         {
           "id": "4.4",
           "description": "Adapt the engine to use the cartridge's configuration: dynamically adjust the palette size in the Aesthetic Layer (16, 32, 64, 128).",
-          "status": "pending",
-          "notes": "The engine will read 'palette_size' from config.json and resize AestheticLayer's palette vector accordingly."
+          "status": "completed",
+          "notes": "Added ResizePalette() to AestheticLayer. The Engine now reads 'palette_size' from config.json after loading a cartridge and resizes the palette accordingly."
         },
         {
           "id": "4.5",

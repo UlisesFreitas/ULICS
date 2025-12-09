@@ -58,6 +58,22 @@ void AestheticLayer::SetTransparentColor(std::optional<uint8_t> colorIndex) {
     transparentColor = colorIndex;
 }
 
+void AestheticLayer::ResizePalette(size_t new_size) {
+    if (new_size == 0) {
+        new_size = 1; // Palette must have at least one color.
+    }
+
+    // Keep a copy of the original 16 colors.
+    std::vector<SDL_Color> base_palette = palette;
+
+    palette.resize(new_size);
+
+    // Restore the base colors, making sure not to write past the new size.
+    for (size_t i = 0; i < base_palette.size() && i < new_size; ++i) {
+        palette[i] = base_palette[i];
+    }
+}
+
 void AestheticLayer::Clear(uint8_t colorIndex) {
     // Ensure the fill value is of the correct type (uint8_t) to avoid conversion warnings.
     uint8_t finalColorIndex = colorIndex % static_cast<uint8_t>(palette.size());

@@ -1,6 +1,6 @@
 ﻿**********************
 Windows PowerShell transcript start
-Start time: 20251209175726
+Start time: 20251209181306
 Username: LEGION25\Ulises
 RunAs User: LEGION25\Ulises
 Configuration Name: 
@@ -22,8 +22,8 @@ Lua source found.
 nlohmann/json found.
 Performing a clean build. Removing and recreating build directory...
 [1/2] Configuring project with CMake...
---  EXTRA_LDFLAGS:
---  EXTRA_LIBS:    kernel32;user32;gdi32;winmm;imm32;ole32;oleaut32;version;uuid;advapi32;setupapi;shell32;dinput8
+--  EXTRA_LIBS:    kernel32;user32;gdi32;winmm;imm32;ole32;oleaut32;version;uuid;advapi32;setupapi;shell32
+;dinput8
 --
 --  Build Shared Library: OFF
 --  Build Static Library: ON
@@ -32,7 +32,7 @@ Performing a clean build. Removing and recreating build directory...
 -- Project configured. Executable will be named UliCS.exe
 -- Build type:
 -- Executable will be generated in: U:/ULICS/build/bin
--- Configuring done (18.6s)
+-- Configuring done (18.5s)
 -- Generating done (0.1s)
 -- Build files have been written to: U:/ULICS/build
 CMake configuration successful.
@@ -42,5 +42,5 @@ Project built successfully!
 You can find the executable at: U:\ULICS\build\bin\Release\UliCS.exe
 **********************
 Windows PowerShell transcript end
-End time: 20251209175759
+End time: 20251209181339
 **********************

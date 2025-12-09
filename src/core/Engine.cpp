@@ -88,6 +88,13 @@ bool Engine::Initialize(const char* title, int width, int height) {
         if (!cartridgeLoader->loadCartridge(bootCartPath.string())) {
             enterErrorState("Failed to load default cartridge.");
             // We don't return false here, so the error screen can be shown.
+        } else {
+            // Cartridge loaded, now apply its configuration.
+            const auto& config = cartridgeLoader->getConfig();
+            // Default to 16 if not specified.
+            size_t paletteSize = config.value("/config/palette_size"_json_pointer, 16);
+            aestheticLayer->ResizePalette(paletteSize);
+            std::cout << "Engine: Palette size set to " << paletteSize << " as per cartridge config." << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "Error initializing CartridgeLoader: " << e.what() << std::endl;

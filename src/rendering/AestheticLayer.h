@@ -22,6 +22,9 @@ public:
     // Sets the color that will be treated as transparent during drawing operations.
     void SetTransparentColor(std::optional<uint8_t> colorIndex);
 
+    // Resizes the color palette.
+    void ResizePalette(size_t new_size);
+
     // Clears the framebuffer with a palette color index.
     void Clear(uint8_t colorIndex);
 

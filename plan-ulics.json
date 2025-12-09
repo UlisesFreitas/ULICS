@@ -269,14 +269,14 @@
         {
           "id": "4.3.2",
           "description": "Implement platform-agnostic logic to get the user's application data path.",
-          "status": "pending",
-          "notes": "Use SDL_GetPrefPath() to find the appropriate directory on Windows, macOS, and Linux."
+          "status": "completed",
+          "notes": "Created a FileSystem utility module. The Engine now uses SDL_GetPrefPath() to determine the user data directory at startup and attempts to load cartridges from there."
         },
         {
           "id": "4.3.3",
           "description": "Embed the default 'demo' cartridge (main.lua and config.json) into the executable.",
-          "status": "pending",
-          "notes": "Create a new header, similar to EmbeddedScripts.h, to hold the content of the default cartridge files."
+          "status": "completed",
+          "notes": "Created 'src/cartridge/EmbeddedCartridge.h' which contains the content of the demo's main.lua and config.json as string literals. The obsolete EmbeddedScripts.h has been removed."
         },
         {
           "id": "4.3.4",

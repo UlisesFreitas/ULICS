@@ -53,16 +53,17 @@ target_include_directories(lua_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/
 add_executable(UliCS WIN32
     src/main.cpp
     src/core/Engine.cpp src/core/Engine.h
+    src/core/FileSystem.cpp src/core/FileSystem.h
     src/core/Constants.h
     src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h
     src/game/Game.h
     src/demos/DemoGame.cpp src/demos/DemoGame.h
     src/scripting/LuaGame.cpp src/scripting/LuaGame.h
-    src/scripting/EmbeddedScripts.h
     src/rendering/EmbeddedFont.h
     src/input/InputManager.cpp src/input/InputManager.h
     src/scripting/ScriptingManager.cpp src/scripting/ScriptingManager.h
     src/cartridge/CartridgeLoader.cpp src/cartridge/CartridgeLoader.h
+    src/cartridge/EmbeddedCartridge.h
 )
 
 # Add the 'src' directory to the include path.

@@ -36,6 +36,7 @@ private:
     bool isRunning;
     bool inErrorState;
     std::string errorMessage;
+    std::string userDataPath;
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     SDL_Window* window;
     SDL_Renderer* renderer;

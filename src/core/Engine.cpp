@@ -3,6 +3,8 @@
 #include "scripting/LuaGame.h" // Include our Lua game bridge.
 #include "input/InputManager.h" // Include the new InputManager.
 #include "cartridge/CartridgeLoader.h" // Include the new CartridgeLoader.
+#include "core/Constants.h" // Include our application constants.
+#include "core/FileSystem.h" // Include our new FileSystem utility.
 #include <iostream>
 #include <chrono>
 #include "scripting/ScriptingManager.h"
@@ -57,6 +59,14 @@ bool Engine::Initialize(const char* title, int width, int height) {
         return false;
     }
 
+    // Get the application's user data path.
+    userDataPath = Ulics::FileSystem::getUserDataPath(Ulics::Constants::ORGANIZATION_NAME.data(), Ulics::Constants::APP_NAME.data());
+    if (userDataPath.empty()) {
+        std::cerr << "Fatal: Could not determine user data path. Shutting down." << std::endl;
+        return false;
+    }
+    std::cout << "User data path set to: " << userDataPath << std::endl;
+
     try {
         inputManager = std::make_unique<InputManager>();
     }
@@ -67,7 +77,8 @@ bool Engine::Initialize(const char* title, int width, int height) {
 
     try {
         cartridgeLoader = std::make_unique<CartridgeLoader>();
-        if (!cartridgeLoader->loadCartridge("cartridges/demo")) {
+        std::string demoCartPath = userDataPath + "cartridges/demo";
+        if (!cartridgeLoader->loadCartridge(demoCartPath)) {
             enterErrorState("Failed to load default cartridge.");
             // We don't return false here, so the error screen can be shown.
         }

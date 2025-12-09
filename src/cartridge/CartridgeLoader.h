@@ -2,19 +2,30 @@
 #define CARTRIDGE_LOADER_H
 
 #include <string>
-#include <vector>
-#include "nlohmann/json.hpp" // Test the integration of the JSON library.
+#include "nlohmann/json.hpp"
 
 class CartridgeLoader {
 public:
     CartridgeLoader();
 
-    // Placeholder for cartridge loading logic.
-    bool loadCartridge(const std::string& path);
+    /**
+     * @brief Loads a cartridge from the specified directory path.
+     * 
+     * This function reads the 'config.json' and 'main.lua' files from the
+     * given directory, parsing the configuration and loading the script content.
+     * @param cartridgeDirectoryPath The path to the cartridge's root folder.
+     * @return True if the cartridge was loaded successfully, false otherwise.
+     */
+    bool loadCartridge(const std::string& cartridgeDirectoryPath);
+
+    const nlohmann::json& getConfig() const { return config; }
+    const std::string& getLuaScript() const { return luaScript; }
+    bool isLoaded() const { return loaded; }
 
 private:
-    // Placeholder for cartridge metadata.
     nlohmann::json config;
+    std::string luaScript;
+    bool loaded = false;
 };
 
 #endif // CARTRIDGE_LOADER_H

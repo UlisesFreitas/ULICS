@@ -257,7 +257,32 @@
         {
           "id": "4.3",
           "description": "Implement a 'CartridgeLoader' class that reads a cartridge directory, parses 'config.json', and loads it into the engine.",
-          "status": "pending"
+          "status": "completed",
+          "notes": "CartridgeLoader now reads config.json and main.lua from a given directory. The Engine has been updated to use this loader to run the 'cartridges/demo' game instead of the embedded script."
+        },
+        {
+          "id": "4.3.1",
+          "description": "Define application constants (name, version, organization) in a centralized header.",
+          "status": "completed",
+          "notes": "Created 'src/core/Constants.h' with app name, organization, and version info. The main window now uses the app name constant for its title."
+        },
+        {
+          "id": "4.3.2",
+          "description": "Implement platform-agnostic logic to get the user's application data path.",
+          "status": "pending",
+          "notes": "Use SDL_GetPrefPath() to find the appropriate directory on Windows, macOS, and Linux."
+        },
+        {
+          "id": "4.3.3",
+          "description": "Embed the default 'demo' cartridge (main.lua and config.json) into the executable.",
+          "status": "pending",
+          "notes": "Create a new header, similar to EmbeddedScripts.h, to hold the content of the default cartridge files."
+        },
+        {
+          "id": "4.3.4",
+          "description": "Implement the first-run deployment logic: check for the data path and extract the embedded default cartridge if it's missing.",
+          "status": "pending",
+          "notes": "The Engine will manage this process during initialization."
         },
         {
           "id": "4.4",

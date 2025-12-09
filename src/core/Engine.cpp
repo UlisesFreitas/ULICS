@@ -2,15 +2,15 @@
 #include "rendering/AestheticLayer.h"
 #include "scripting/LuaGame.h" // Include our Lua game bridge.
 #include "input/InputManager.h" // Include the new InputManager.
+#include "cartridge/CartridgeLoader.h" // Include the new CartridgeLoader.
 #include <iostream>
 #include <chrono>
 #include "scripting/ScriptingManager.h"
-#include "scripting/EmbeddedScripts.h" // Include our new embedded script header.
 
 Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
-                   activeGame(nullptr), scriptingManager(nullptr),
-                   inputManager(nullptr) {
+                   activeGame(nullptr), scriptingManager(nullptr), inputManager(nullptr),
+                   cartridgeLoader(nullptr) {
     // Constructor
 }
 
@@ -66,11 +66,20 @@ bool Engine::Initialize(const char* title, int width, int height) {
     }
 
     try {
+        cartridgeLoader = std::make_unique<CartridgeLoader>();
+        if (!cartridgeLoader->loadCartridge("cartridges/demo")) {
+            enterErrorState("Failed to load default cartridge.");
+            // We don't return false here, so the error screen can be shown.
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error initializing CartridgeLoader: " << e.what() << std::endl;
+        return false;
+    }
+
+    try {
         scriptingManager = std::make_unique<ScriptingManager>(this);
-        // Load the demo cartridge directly from the embedded string.
-        if (!scriptingManager->LoadAndRunScript(EmbeddedScripts::DEMO_CART)) {
-            std::cerr << "Could not load the embedded demo cartridge." << std::endl;
-            return false;
+        if (cartridgeLoader->isLoaded()) {
+            scriptingManager->LoadAndRunScript(cartridgeLoader->getLuaScript().c_str());
         }
     } catch (const std::exception& e) {
         std::cerr << "Error initializing ScriptingManager: " << e.what() << std::endl;
@@ -152,6 +161,9 @@ void Engine::enterErrorState(const std::string& message) {
 }
 
 void Engine::drawErrorScreen() {
+    // Reset camera to ensure error message is always visible
+    aestheticLayer->SetCamera(0, 0);
+
     aestheticLayer->Clear(2); // Dark Purple background for errors
     aestheticLayer->Print("LUA ERROR:", 4, 4, 8); // Red title
     aestheticLayer->Print(errorMessage, 4, 20, 7); // White error message
@@ -159,6 +171,7 @@ void Engine::drawErrorScreen() {
 
 void Engine::Shutdown() {
     inputManager.reset();
+    cartridgeLoader.reset();
     scriptingManager.reset();
     aestheticLayer.reset(); // Release the unique_ptr
 

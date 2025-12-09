@@ -53,6 +53,7 @@ target_include_directories(lua_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/
 add_executable(UliCS WIN32
     src/main.cpp
     src/core/Engine.cpp src/core/Engine.h
+    src/core/Constants.h
     src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h
     src/game/Game.h
     src/demos/DemoGame.cpp src/demos/DemoGame.h
@@ -84,3 +85,10 @@ set_target_properties(UliCS PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_
 message(STATUS "Project configured. Executable will be named UliCS.exe")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Executable will be generated in: ${CMAKE_BINARY_DIR}/bin")
+
+# --- Post-Build Step: Copy Cartridges ---
+# This command ensures that the 'cartridges' directory is copied to the
+# same directory as the final executable, so the engine can find them at runtime.
+add_custom_command(TARGET UliCS POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/cartridges" "$<TARGET_FILE_DIR:UliCS>/cartridges"
+    COMMENT "Copying cartridges to output directory...")

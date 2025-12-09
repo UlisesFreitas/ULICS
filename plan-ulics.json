@@ -305,33 +305,44 @@
         {
           "id": "4.3.8",
           "description": "Modify the engine to always load the boot cartridge by default.",
-          "status": "pending",
-          "notes": "The Engine will now be hardcoded to load from 'cartridges/.ulics_boot/' on startup, ensuring a consistent boot experience."
+          "status": "completed",
+          "notes": "Verified that the Engine is now hardcoded to load from 'cartridges/.ulics_boot/' on startup as part of the changes in previous tasks. This ensures a consistent and self-healing boot experience. No code changes were needed."
         },
         {
           "id": "4.4",
           "description": "Adapt the engine to use the cartridge's configuration: dynamically adjust the palette size in the Aesthetic Layer (16, 32, 64, 128).",
-          "status": "pending"
+          "status": "pending",
+          "notes": "The engine will read 'palette_size' from config.json and resize AestheticLayer's palette vector accordingly."
         },
         {
           "id": "4.5",
           "description": "Implement limit-checking logic (e.g., Lua code lines) in the 'ScriptingManager' as an informative 'soft' constraint.",
-          "status": "pending"
+          "status": "pending",
+          "notes": "The engine will read 'lua_code_limit_lines' and print a warning if the loaded script exceeds it."
         },
         {
           "id": "4.6",
           "description": "Implement the **execution state logic** in the `Engine` (e.g., using an `enum` for `STATE_BOOT`, `STATE_MENU`, `STATE_GAME`, `STATE_ERROR`).",
-          "status": "pending"
+          "status": "pending",
+          "notes": "This state machine will control the main loop's behavior."
         },
         {
           "id": "4.7",
-          "description": "Create the **`cartridges/` directory** and implement the scanning logic in the `CartridgeLoader` to list all available cartuchos.",
-          "status": "pending"
+          "description": "Expose a `listcarts()` function to Lua that returns a table of available cartridges.",
+          "status": "pending",
+          "notes": "The CartridgeLoader will scan the user's cartridges directory and return metadata (title, author) for each valid cartridge found."
         },
         {
           "id": "4.8",
-          "description": "Modify the `Engine` to, if no cartridge is specified, automatically enter `STATE_MENU` and launch an **internal system script** (e.g., `system/menu.lua`) to render the initial UI.",
-          "status": "pending"
+          "description": "Expose a `loadcart(id)` function to Lua to load and run a specific cartridge.",
+          "status": "pending",
+          "notes": "This function will trigger a state change in the Engine to load and switch to the selected game."
+        },
+        {
+          "id": "4.9",
+          "description": "Update the boot cartridge script to act as a system menu.",
+          "status": "pending",
+          "notes": "The .ulics_boot/main.lua will use `listcarts()` to display available games and `loadcart()` to launch one."
         }
       ]
     },

@@ -27,6 +27,7 @@ public:
 
     bool Initialize(const char* title, int width, int height);
     void Run();
+    void RequestCartridgeLoad(const std::string& cartId);
     
     // Public getters for subsystems
     AestheticLayer* getAestheticLayer() const { return aestheticLayer.get(); }

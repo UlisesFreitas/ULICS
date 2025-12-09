@@ -202,6 +202,60 @@ void Engine::enterErrorState(const std::string& message) {
     std::cerr << "Engine entering error state: " << errorMessage << std::endl;
 }
 
+void Engine::RequestCartridgeLoad(const std::string& cartId) {
+    std::cout << "Engine: Received request to load cartridge '" << cartId << "'." << std::endl;
+
+    // 1. Construct path to the new cartridge.
+    std::filesystem::path cartPath = std::filesystem::path(userDataPath) / "cartridges" / cartId;
+
+    // 2. Use a temporary loader to validate the new cartridge before tearing down the old one.
+    auto tempLoader = std::make_unique<CartridgeLoader>();
+    if (!tempLoader->loadCartridge(cartPath.string())) {
+        std::cerr << "Engine Error: Could not load requested cartridge '" << cartId << "'. Aborting load." << std::endl;
+        // Optionally, we could call enterErrorState here or provide feedback to Lua.
+        // For now, we just abort and the current script continues.
+        return;
+    }
+
+    // --- Cartridge is valid, proceed with teardown and reload ---
+    std::cout << "Engine: New cartridge is valid. Proceeding with reload." << std::endl;
+
+    // 3. Reset game-specific subsystems. Order is important.
+    activeGame.reset();
+    scriptingManager.reset();
+
+    // 4. The new cartridge is now the official one.
+    cartridgeLoader = std::move(tempLoader);
+
+    // 5. Re-initialize the scripting manager and load the new script.
+    try {
+        scriptingManager = std::make_unique<ScriptingManager>(this);
+        if (cartridgeLoader->isLoaded()) {
+            // Apply new config
+            const auto& config = cartridgeLoader->getConfig();
+            size_t paletteSize = config.value("/config/palette_size"_json_pointer, 16);
+            aestheticLayer->ResizePalette(paletteSize);
+            std::cout << "Engine: Palette size set to " << paletteSize << " for new cartridge." << std::endl;
+
+            // Load new script
+            size_t lineLimit = config.value("/config/lua_code_limit_lines"_json_pointer, 0);
+            if (!scriptingManager->LoadAndRunScript(cartridgeLoader->getLuaScript().c_str(), lineLimit)) {
+                enterErrorState("Failed to run new cartridge script.");
+                return;
+            }
+
+            // Create the new game instance
+            activeGame = std::make_unique<LuaGame>(scriptingManager.get());
+
+            // 6. Transition to the new game state.
+            currentState = EngineState::GameRunning;
+            std::cout << "Engine: Switched to GameRunning state." << std::endl;
+        }
+    } catch (const std::exception& e) {
+        enterErrorState("Exception during cartridge reload: " + std::string(e.what()));
+    }
+}
+
 void Engine::deployDefaultCartridgeIfNeeded() {
     std::filesystem::path bootCartridgeDir = std::filesystem::path(userDataPath) / "cartridges" / ".ulics_boot";
     std::filesystem::path bootConfigPath = bootCartridgeDir / "config.json";

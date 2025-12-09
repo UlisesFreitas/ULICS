@@ -80,6 +80,7 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("camera", &ScriptingManager::Lua_Camera);
     RegisterFunction("tcolor", &ScriptingManager::Lua_TColor);
     RegisterFunction("listcarts", &ScriptingManager::Lua_ListCarts);
+    RegisterFunction("loadcart", &ScriptingManager::Lua_LoadCart);
 
     // Math functions
     RegisterFunction("sin", &ScriptingManager::Lua_Sin);
@@ -344,6 +345,18 @@ int ScriptingManager::Lua_ListCarts(lua_State* L) {
     }
 
     return 1; // We are returning one value: the main table.
+}
+
+int ScriptingManager::Lua_LoadCart(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    Engine* engine = sm->engineInstance;
+
+    // Get the cartridge ID (directory name) from Lua.
+    const char* cartId = luaL_checkstring(L, 1);
+
+    engine->RequestCartridgeLoad(cartId);
+
+    return 0; // This function returns nothing to Lua.
 }
 
 int ScriptingManager::Lua_Sin(lua_State* L) {

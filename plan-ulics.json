@@ -335,8 +335,8 @@
         {
           "id": "4.8",
           "description": "Expose a `loadcart(id)` function to Lua to load and run a specific cartridge.",
-          "status": "pending",
-          "notes": "This function will trigger a state change in the Engine to load and switch to the selected game."
+          "status": "completed",
+          "notes": "Added Engine::RequestCartridgeLoad to handle reloading logic. Exposed to Lua via `loadcart(id)`. The engine now cleanly tears down the old script state and initializes the new one."
         },
         {
           "id": "4.9",

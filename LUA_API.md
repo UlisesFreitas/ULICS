@@ -87,6 +87,17 @@ Functions for interacting with the tilemap data.
 
 ---
 
+## System API
+
+Functions for interacting with the console's system, like loading other cartridges.
+
+| Function | Parameters | Description | Status |
+| :--- | :--- | :--- | :--- |
+| `listcarts()` | - | Returns a table of all available cartridges. | ✅ **Implemented** |
+| `loadcart(id)` | `cartridge_id` | Requests the engine to load and run a different cartridge. | ✅ **Implemented** |
+
+---
+
 ## Memory API
 
 Advanced functions for direct memory manipulation.

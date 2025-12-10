@@ -1,21 +1,21 @@
 #include "core/Engine.h"
 #include "rendering/AestheticLayer.h"
-#include "scripting/LuaGame.h" // Include our Lua game bridge.
-#include "input/InputManager.h" // Include the new InputManager.
-#include "cartridge/CartridgeLoader.h" // Include the new CartridgeLoader.
-#include "core/Constants.h" // Include our application constants.
-#include "core/FileSystem.h" // Include our new FileSystem utility.
-#include "cartridge/EmbeddedBootCartridge.h" // Include the embedded default cartridge data.
+#include "scripting/LuaGame.h"
+#include "input/InputManager.h"
+#include "cartridge/GameLoader.h"
+#include "core/Constants.h"
+#include "core/FileSystem.h"
+#include "cartridge/EmbeddedBootCartridge.h"
 #include <iostream>
 #include <chrono>
-#include "scripting/ScriptingManager.h"
+#include <thread>
 #include <filesystem>
 #include <fstream>
 
-Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
-                   currentState(EngineState::Initializing), window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
-                   activeGame(nullptr), scriptingManager(nullptr), inputManager(nullptr),
-                   cartridgeLoader(nullptr) {
+// No forward declaration needed, GameLoader.h provides it.
+
+Engine::Engine() : isRunning(false),
+                   currentState(EngineState::Initializing), window(nullptr), renderer(nullptr) {
     // Constructor
 }
 
@@ -25,106 +25,54 @@ Engine::~Engine() {
 
 bool Engine::Initialize(const char* title, int width, int height) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        std::cerr << "Error initializing SDL: " << SDL_GetError() << std::endl;
+        enterErrorState("SDL Init failed: " + std::string(SDL_GetError()));
         return false;
     }
 
-    window = SDL_CreateWindow(
-        title,
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        width,
-        height,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
-    );
-
+    window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (!window) {
-        std::cerr << "Error creating window: " << SDL_GetError() << std::endl;
-        SDL_Quit();
+        enterErrorState("Window creation failed: " + std::string(SDL_GetError()));
         return false;
     }
 
-    // Create an accelerated renderer. We disable VSYNC so the game loop is not limited by the monitor's refresh rate.
-    // Our fixed timestep will handle consistency.
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!renderer) {
-        std::cerr << "Error creating renderer: " << SDL_GetError() << std::endl;
-        Shutdown();
+        enterErrorState("Renderer creation failed: " + std::string(SDL_GetError()));
         return false;
     }
-    // Maintain aspect ratio when scaling.
     SDL_RenderSetLogicalSize(renderer, AestheticLayer::FRAMEBUFFER_WIDTH, AestheticLayer::FRAMEBUFFER_HEIGHT);
 
-    try {
-        aestheticLayer = std::make_unique<AestheticLayer>(renderer);
-    } catch (const std::exception& e) {
-        std::cerr << "Error initializing AestheticLayer: " << e.what() << std::endl;
-        return false;
-    }
+    // Initialize core subsystems
+    aestheticLayer = std::make_unique<AestheticLayer>(renderer);
+    inputManager = std::make_unique<InputManager>();
+    gameLoader = std::make_unique<GameLoader>(this);
 
-    // Get the application's user data path.
+    // Set up user data directory and deploy boot cartridge if needed
     userDataPath = Ulics::FileSystem::getUserDataPath(Ulics::Constants::ORGANIZATION_NAME.data(), Ulics::Constants::APP_NAME.data());
     if (userDataPath.empty()) {
-        std::cerr << "Fatal: Could not determine user data path. Shutting down." << std::endl;
-        return false;
+        enterErrorState("Could not determine user data path.");
+        return true; // Return true to allow error screen to be shown.
     }
     std::cout << "User data path set to: " << userDataPath << std::endl;
-
-    // On first run, deploy the embedded default cartridge.
     deployDefaultCartridgeIfNeeded();
 
-    try {
-        inputManager = std::make_unique<InputManager>();
-    }
+    // Synchronously load the boot cartridge on startup. This is the only time we block.
+    activeGame = GameLoader::loadAndInitializeGame(this, ".ulics_boot");
 
-    catch (const std::exception& e) {
-        std::cerr << "Error initializing InputManager: " << e.what() << std::endl;
-        return false;
+    if (!activeGame) {
+        enterErrorState("Failed to load embedded boot cartridge.");
+        return true;
     }
-
-    try {
-        cartridgeLoader = std::make_unique<CartridgeLoader>();
-        std::filesystem::path bootCartPath = std::filesystem::path(userDataPath) / "cartridges" / ".ulics_boot";
-        if (!cartridgeLoader->loadCartridge(bootCartPath.string())) {
-            enterErrorState("Failed to load default cartridge.");
-            // We don't return false here, so the error screen can be shown.
-            return true; // Return true to allow error screen to be drawn.
-        } else {
-            // Cartridge loaded, now apply its configuration.
-            const auto& config = cartridgeLoader->getConfig();
-            // Default to 16 if not specified.
-            size_t paletteSize = config.value("/config/palette_size"_json_pointer, 16);
-            aestheticLayer->ResizePalette(paletteSize);
-            std::cout << "Engine: Palette size set to " << paletteSize << " as per cartridge config." << std::endl;
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Error initializing CartridgeLoader: " << e.what() << std::endl;
-        return false;
-    }
-
-    try {
-        scriptingManager = std::make_unique<ScriptingManager>(this);
-        if (cartridgeLoader->isLoaded()) {
-            const auto& config = cartridgeLoader->getConfig();
-            size_t lineLimit = config.value("/config/lua_code_limit_lines"_json_pointer, 0);
-            scriptingManager->LoadAndRunScript(cartridgeLoader->getLuaScript().c_str(), lineLimit);
-            std::cout << "ScriptingManager: Successfully loaded and executed script." << std::endl;
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Error initializing ScriptingManager: " << e.what() << std::endl;
-        return false;
-    }
-
-    try {
-        // The activeGame will initially be the boot cartridge.
-        activeGame = std::make_unique<LuaGame>(scriptingManager.get());
-    } catch (const std::exception& e) {
-        std::cerr << "Error creating game instance: " << e.what() << std::endl;
-        return false;
-    }
+    
+    // Apply boot cartridge config
+    auto* luaGame = static_cast<LuaGame*>(activeGame.get());
+    const auto& config = luaGame->getConfig();
+    size_t paletteSize = config.value("/config/palette_size"_json_pointer, 16);
+    aestheticLayer->ResizePalette(paletteSize);
+    std::cout << "Engine: Boot cartridge palette size set to " << paletteSize << std::endl;
 
     isRunning = true;
-    currentState = EngineState::BootCartridgeRunning; // If initialization is successful, transition to running state.
+    currentState = EngineState::Running;
     startTime = std::chrono::high_resolution_clock::now();
     std::cout << "Engine initialized successfully." << std::endl;
     return true;
@@ -138,7 +86,6 @@ double Engine::getElapsedTime() const {
 
 void Engine::Run() {
     using clock = std::chrono::high_resolution_clock;
-
     SDL_Event event;
     auto previousTime = clock::now();
     double lag = 0.0;
@@ -149,144 +96,85 @@ void Engine::Run() {
         previousTime = currentTime;
         lag += elapsed;
 
-        // Prepare for new input.
         inputManager->beginNewFrame();
-
-        // Process all pending events.
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                isRunning = false;
-            }
-            // The InputManager doesn't need to handle events directly for now,
-            // as SDL_GetKeyboardState is updated by SDL_PollEvent/SDL_PumpEvents.
+            if (event.type == SDL_QUIT) isRunning = false;
         }
 
-        // Fixed timestep logic update loop.
-        // It runs as many times as necessary to 'catch up' with real time,
-        // but only if the engine is in a running state.
-        bool isGameRunning = (currentState == EngineState::BootCartridgeRunning || currentState == EngineState::GameRunning);
-        if (isGameRunning) {
-            while (lag >= MS_PER_UPDATE) {
-                if (activeGame) {
-                    if (!activeGame->_update()) {
-                        enterErrorState(scriptingManager->GetLastLuaError());
-                    }
-                }
-                lag -= MS_PER_UPDATE;
-            }
-        }
-
-        // Render loop. It runs once per main loop iteration.
+        // Handle states and updates
         switch (currentState) {
-            case EngineState::BootCartridgeRunning:
-            case EngineState::GameRunning: {
-                if (activeGame) {
-                    activeGame->_draw(*aestheticLayer);
+            case EngineState::Running: {
+                while (lag >= MS_PER_UPDATE) {
+                    if (activeGame && !activeGame->_update()) {
+                        // A runtime Lua error occurred.
+                        // For now, we don't have a good way to get the error from the background
+                        // so we show a generic message.
+                        enterErrorState("A runtime error occurred in the cartridge.");
+                        break;
+                    }
+                    lag -= MS_PER_UPDATE;
                 }
+                if(activeGame) activeGame->_draw(*aestheticLayer);
                 break;
             }
-            case EngineState::LoadingCartridge: {
+            case EngineState::Loading: {
                 drawLoadingScreen();
+
+                // Check if the future has a result without blocking.
+                if (nextGameFuture.valid() && nextGameFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                    std::unique_ptr<LuaGame> newGame = nextGameFuture.get();
+                    
+                    if (newGame) {
+                        // Success! Swap the new game in. This is fast.
+                        activeGame = std::move(newGame);
+
+                        // Apply new cartridge config
+                        auto* luaGame = static_cast<LuaGame*>(activeGame.get());
+                        const auto& config = luaGame->getConfig();
+                        size_t paletteSize = config.value("/config/palette_size"_json_pointer, 16);
+                        aestheticLayer->ResizePalette(paletteSize);
+                        std::cout << "Engine: New cartridge palette size set to " << paletteSize << std::endl;
+                        
+                        currentState = EngineState::Running;
+                        std::cout << "Engine: Async load finished. Switched to running state." << std::endl;
+                    } else {
+                        // The background loading failed.
+                        enterErrorState("Failed to load the requested cartridge.");
+                    }
+                }
+                lag = 0.0; // Prevent lag accumulation while loading.
                 break;
             }
             case EngineState::Error: {
                 drawErrorScreen();
+                lag = 0.0;
                 break;
             }
             case EngineState::Initializing: {
-                // Should not happen in Run() loop, but handle defensively.
-                drawErrorScreen(); // Or a blank screen, depending on desired behavior.
+                // Should not happen in Run() loop.
+                lag = 0.0;
                 break;
+            }
         }
-        }
-        aestheticLayer->Present(); // Present the result regardless.
-
-        // If we were in the loading state, perform the actual load *after* presenting the frame.
-        if (currentState == EngineState::LoadingCartridge) {
-            performCartridgeLoad();
-        }
+        
+        aestheticLayer->Present();
     }
 }
 
 void Engine::enterErrorState(const std::string& message) {
-    inErrorState = true;
     errorMessage = message;
-    currentState = EngineState::Error; // Transition to error state.
+    currentState = EngineState::Error;
     std::cerr << "Engine entering error state: " << errorMessage << std::endl;
 }
 
 void Engine::RequestCartridgeLoad(const std::string& cartId) {
-    // This function is now asynchronous. It just sets the state and the target ID.
-    // The actual loading happens in the main loop.
-    if (currentState == EngineState::LoadingCartridge) {
+    if (currentState == EngineState::Loading) {
         std::cout << "Engine: Ignoring load request, a cartridge is already being loaded." << std::endl;
         return;
     }
     std::cout << "Engine: Queued request to load cartridge '" << cartId << "'." << std::endl;
-    nextCartridgeId = cartId;
-    currentState = EngineState::LoadingCartridge;
-}
-
-void Engine::performCartridgeLoad() {
-    // 1. Construct path to the new cartridge.
-    std::filesystem::path cartPath = std::filesystem::path(userDataPath) / "cartridges" / nextCartridgeId;
-
-    // 2. Use a temporary loader to validate the new cartridge before tearing down the old one.
-    auto tempLoader = std::make_unique<CartridgeLoader>();
-    if (!tempLoader->loadCartridge(cartPath.string())) {
-        std::cerr << "Engine Error: Could not load requested cartridge '" << nextCartridgeId << "'. Aborting load." << std::endl;
-        // On failure, return to the boot cartridge.
-        // A more robust system might show an error message for a few seconds.
-        nextCartridgeId = ".ulics_boot";
-        // We try again with the boot cartridge. A recursive failure here would be fatal.
-        // For now, we assume the boot cart is always valid.
-        performCartridgeLoad();
-        return; 
-    }
-
-    // --- Cartridge is valid, proceed with teardown and reload ---
-    std::cout << "Engine: New cartridge is valid. Proceeding with reload." << std::endl;
-
-    // 3. Reset game-specific subsystems. Order is important.
-    activeGame.reset();
-    scriptingManager.reset();
-
-    // 4. The new cartridge is now the official one.
-    cartridgeLoader = std::move(tempLoader);
-
-    // 5. Re-initialize the scripting manager and load the new script.
-    try {
-        scriptingManager = std::make_unique<ScriptingManager>(this);
-        if (cartridgeLoader->isLoaded()) {
-            // Apply new config
-            const auto& config = cartridgeLoader->getConfig();
-            size_t paletteSize = config.value("/config/palette_size"_json_pointer, 16);
-            aestheticLayer->ResizePalette(paletteSize);
-            std::cout << "Engine: Palette size set to " << paletteSize << " for new cartridge." << std::endl;
-
-            // Load new script
-            size_t lineLimit = config.value("/config/lua_code_limit_lines"_json_pointer, 0);
-            if (!scriptingManager->LoadAndRunScript(cartridgeLoader->getLuaScript().c_str(), lineLimit)) {
-                // If the new script fails, we enter an error state.
-                enterErrorState("Failed to run new cartridge script: " + nextCartridgeId);
-                return;
-            }
-
-            // Create the new game instance
-            activeGame = std::make_unique<LuaGame>(scriptingManager.get());
-
-            // 6. Transition to the new game state.
-            if (nextCartridgeId == ".ulics_boot") {
-                currentState = EngineState::BootCartridgeRunning;
-            } else {
-                currentState = EngineState::GameRunning;
-            }
-            nextCartridgeId.clear();
-            std::cout << "Engine: Switched to GameRunning state." << std::endl;
-        }
-    } catch (const std::exception& e) {
-        enterErrorState("Exception during cartridge reload: " + std::string(e.what()));
-    }
+    nextGameFuture = gameLoader->loadGameAsync(cartId);
+    currentState = EngineState::Loading;
 }
 
 void Engine::deployDefaultCartridgeIfNeeded() {
@@ -294,31 +182,24 @@ void Engine::deployDefaultCartridgeIfNeeded() {
     std::filesystem::path bootConfigPath = bootCartridgeDir / "config.json";
     std::filesystem::path bootScriptPath = bootCartridgeDir / "main.lua";
 
-    // If both essential files of the boot cartridge exist, do nothing.
-    if (std::filesystem::exists(bootConfigPath) && std::filesystem::exists(bootScriptPath)) {
-        return;
-    }
-
-    // If we are here, at least one file is missing.
-    std::cout << "Boot cartridge is missing or incomplete. Verifying/Deploying..." << std::endl;
-
+    // Always overwrite the boot cartridge to ensure it's the correct version for system stability.
+    std::cout << "Deploying embedded boot cartridge to ensure system integrity..." << std::endl;
 
     try {
-        // Create the directory structure.
         std::filesystem::create_directories(bootCartridgeDir);
 
-        // Write the config.json file.
-        std::ofstream configFile(bootConfigPath);
+        std::ofstream configFile(bootConfigPath, std::ios::binary | std::ios::trunc);
         configFile << Ulics::EmbeddedCartridge::BOOT_CONFIG_JSON;
         configFile.close();
 
-        // Write the main.lua file. This will create or overwrite it.
-        std::ofstream scriptFile(bootScriptPath);
+        std::ofstream scriptFile(bootScriptPath, std::ios::binary | std::ios::trunc);
         scriptFile << Ulics::EmbeddedCartridge::BOOT_LUA_SCRIPT;
         scriptFile.close();
 
+        std::cout << "Boot cartridge deployment successful." << std::endl;
+
     } catch (const std::filesystem::filesystem_error& e) {
-        enterErrorState("Failed to write default cartridge files: " + std::string(e.what()));
+        enterErrorState("Fatal: Failed to write default cartridge files: " + std::string(e.what()));
     }
 }
 
@@ -329,29 +210,25 @@ void Engine::drawLoadingScreen() {
 }
 
 void Engine::drawErrorScreen() {
-    // Reset camera to ensure error message is always visible
     aestheticLayer->SetCamera(0, 0);
-
     aestheticLayer->Clear(2); // Dark Purple background for errors
-    aestheticLayer->Print("LUA ERROR:", 4, 4, 8); // Red title
+    aestheticLayer->Print("ENGINE ERROR:", 4, 4, 8); // Red title
     aestheticLayer->Print(errorMessage, 4, 20, 7); // White error message
 }
 
 void Engine::Shutdown() {
+    // Resetting unique_ptrs will handle deletion.
+    activeGame.reset();
+    gameLoader.reset();
     inputManager.reset();
-    cartridgeLoader.reset();
-    scriptingManager.reset();
-    aestheticLayer.reset(); // Release the unique_ptr
+    aestheticLayer.reset(); 
 
-    if (renderer) {
-        SDL_DestroyRenderer(renderer);
-        renderer = nullptr;
-    }
+    if (renderer) SDL_DestroyRenderer(renderer);
+    if (window) SDL_DestroyWindow(window);
+    
+    renderer = nullptr;
+    window = nullptr;
 
-    if (window) {
-        SDL_DestroyWindow(window);
-        window = nullptr;
-    }
     SDL_Quit();
     std::cout << "Engine shut down." << std::endl;
 }

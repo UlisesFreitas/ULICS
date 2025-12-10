@@ -5,20 +5,21 @@
 #include <string>
 #include <memory>
 #include <chrono>
+#include <future>
 
+// Forward declarations
 class AestheticLayer;
 class Game;
-class ScriptingManager;
 class InputManager;
-class CartridgeLoader;
+class GameLoader;
+class LuaGame;
 
 /// @brief Defines the possible execution states of the engine.
 enum class EngineState {
-    Initializing,           ///< The engine is currently setting up.
-    BootCartridgeRunning,   ///< The default boot cartridge is loaded and running.
-    GameRunning,            ///< A user-selected game cartridge is loaded and running.
-    LoadingCartridge,       ///< The engine is currently loading a new cartridge.
-    Error                   ///< An unrecoverable error has occurred.
+    Initializing,
+    Running,
+    Loading,
+    Error
 };
 
 class Engine {
@@ -33,35 +34,38 @@ public:
     // Public getters for subsystems
     AestheticLayer* getAestheticLayer() const { return aestheticLayer.get(); }
     InputManager* getInputManager() const { return inputManager.get(); }
+    GameLoader* getGameLoader() const { return gameLoader.get(); }
     double getElapsedTime() const;
-    CartridgeLoader* getCartridgeLoader() const { return cartridgeLoader.get(); }
     const std::string& getUserDataPath() const { return userDataPath; }
 
 private:
     // Constants for the fixed timestep game loop.
     static constexpr int UPDATES_PER_SECOND = 60;
     static constexpr double MS_PER_UPDATE = 1000.0 / UPDATES_PER_SECOND;
+    
     void enterErrorState(const std::string& message);
     void deployDefaultCartridgeIfNeeded();
-    void performCartridgeLoad();
     void drawLoadingScreen();
     void drawErrorScreen();
     void Shutdown();
 
     bool isRunning;
-    bool inErrorState;
-    std::string errorMessage;
     EngineState currentState;
     std::string userDataPath;
-    std::string nextCartridgeId;
+    std::string errorMessage;
+
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     SDL_Window* window;
     SDL_Renderer* renderer;
+
+    // Core subsystems
     std::unique_ptr<AestheticLayer> aestheticLayer;
-    std::unique_ptr<Game> activeGame;
-    std::unique_ptr<ScriptingManager> scriptingManager;
     std::unique_ptr<InputManager> inputManager;
-    std::unique_ptr<CartridgeLoader> cartridgeLoader;
+    std::unique_ptr<GameLoader> gameLoader;
+    
+    // Game state
+    std::unique_ptr<Game> activeGame;
+    std::future<std::unique_ptr<LuaGame>> nextGameFuture;
 };
 
 #endif // ENGINE_H

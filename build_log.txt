@@ -1,12 +1,12 @@
 ﻿**********************
 Windows PowerShell transcript start
-Start time: 20251209203123
+Start time: 20251210023602
 Username: LEGION25\Ulises
 RunAs User: LEGION25\Ulises
 Configuration Name: 
 Machine: LEGION25 (Microsoft Windows NT 10.0.26200.0)
 Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass
-Process ID: 16580
+Process ID: 23656
 PSVersion: 5.1.26100.7309
 PSEdition: Desktop
 PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7309
@@ -22,17 +22,13 @@ Lua source found.
 nlohmann/json found.
 Performing a clean build. Removing and recreating build directory...
 [1/2] Configuring project with CMake...
---  EXTRA_LIBS:    kernel32;user32;gdi32;winmm;imm32;ole32;oleaut32;version;uuid;advapi32;set
-upapi;shell32;dinput8
---
---  Build Shared Library: OFF
---  Build Static Library: ON
---  Build Static Library with Position Independent Code: OFF
---
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - not found
+-- Found Threads: TRUE
 -- Project configured. Executable will be named UliCS.exe
 -- Build type:
 -- Executable will be generated in: U:/ULICS/build/bin
--- Configuring done (18.6s)
+-- Configuring done (21.6s)
 -- Generating done (0.1s)
 -- Build files have been written to: U:/ULICS/build
 CMake configuration successful.
@@ -42,5 +38,5 @@ Project built successfully!
 You can find the executable at: U:\ULICS\build\bin\Release\UliCS.exe
 **********************
 Windows PowerShell transcript end
-End time: 20251209203156
+End time: 20251210023655
 **********************

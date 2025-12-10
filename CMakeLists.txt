@@ -2,6 +2,13 @@
 cmake_minimum_required(VERSION 3.16)
 project(UliCS LANGUAGES CXX)
 
+# Set modern CMake policies to avoid warnings and ensure robust behavior.
+# CMP0135: The DOWNLOAD_EXTRACT_TIMESTAMP option for FetchContent_Declare()
+#          is now respected. Setting this to NEW uses the time of extraction.
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)
+endif()
+
 # --- Compiler Settings ---
 # Request C++20 standard.
 set(CMAKE_CXX_STANDARD 20)
@@ -48,10 +55,9 @@ set_target_properties(lua_lib PROPERTIES OUTPUT_NAME lua)
 # 4. Specify that anyone linking against lua_lib should also get its include directory.
 target_include_directories(lua_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/lua")
 
-# --- Main Application Target ---
-# Add our executable. The WIN32 flag is important for GUI applications on Windows.
-add_executable(UliCS WIN32
-    src/main.cpp
+# --- Core Engine Library ---
+# We compile all engine code into a static library that can be shared.
+add_library(UlicsEngineLib STATIC
     src/core/Engine.cpp src/core/Engine.h
     src/core/FileSystem.cpp src/core/FileSystem.h
     src/core/Constants.h
@@ -63,25 +69,52 @@ add_executable(UliCS WIN32
     src/input/InputManager.cpp src/input/InputManager.h
     src/scripting/ScriptingManager.cpp src/scripting/ScriptingManager.h
     src/cartridge/CartridgeLoader.cpp src/cartridge/CartridgeLoader.h
+    src/cartridge/GameLoader.cpp src/cartridge/GameLoader.h
+    src/cartridge/Cartridge.h
     src/cartridge/EmbeddedBootCartridge.h
 )
 
-# Add the 'src' directory to the include path.
-# This allows us to use includes relative to the src root, like #include "core/Engine.h".
-# PUBLIC means that any other target linking against UliCS would also inherit this include directory.
-target_include_directories(UliCS PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_include_directories(UliCS PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann_json/include")
+# Targets linking against our library need access to the 'src' and 'external' include paths.
+target_include_directories(UlicsEngineLib PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann_json/include"
+)
 
-# Link our application against the static SDL2 library (SDL2::SDL2-static).
-# This target is created by the add_subdirectory(sdl) command above.
-# It automatically handles include directories and system library dependencies.
-target_link_libraries(UliCS PRIVATE SDL2::SDL2-static SDL2::SDL2main lua_lib)
+# Link the engine library against its dependencies.
+target_link_libraries(UlicsEngineLib PUBLIC SDL2::SDL2-static PRIVATE SDL2::SDL2main lua_lib)
+
+# --- Main Application Executable ---
+# The main executable is now very simple: it's just the entry point.
+add_executable(UliCS WIN32 src/main.cpp)
+
+# Link the executable against our engine library.
+target_link_libraries(UliCS PRIVATE UlicsEngineLib)
+
+# --- Google Test Integration ---
+# Fetch GTest if it's not already present.
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+)
+FetchContent_MakeAvailable(googletest)
+
+# --- Test Executable Target ---
+# Create the test executable.
+add_executable(ulics_tests
+    tests/CartridgeLoader_test.cpp
+)
+
+# Link the test executable against our engine library and GTest.
+target_link_libraries(ulics_tests PRIVATE UlicsEngineLib gtest_main)
+
+# Include the GTest source for discovery.
+include(GoogleTest)
 
 # --- Build Output ---
 
-# Optional: Place the final executable in a clean directory.
-# By default, it goes to build/Debug/ or build/Release/.
-set_target_properties(UliCS PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+# Place both executables in a clean output directory.
+set_target_properties(UliCS ulics_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 message(STATUS "Project configured. Executable will be named UliCS.exe")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")

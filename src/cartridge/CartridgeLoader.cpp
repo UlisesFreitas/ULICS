@@ -4,48 +4,45 @@
 #include <sstream>
 #include <filesystem>
 
-CartridgeLoader::CartridgeLoader() {
-    std::cout << "CartridgeLoader initialized." << std::endl;
-}
-
-bool CartridgeLoader::loadCartridge(const std::string& cartridgeDirectoryPath) {
+std::unique_ptr<Cartridge> CartridgeLoader::loadCartridge(const std::string& cartridgeDirectoryPath) {
     std::filesystem::path basePath(cartridgeDirectoryPath);
     std::filesystem::path configPath = basePath / "config.json";
     std::filesystem::path scriptPath = basePath / "main.lua";
+
+    auto cartridge = std::make_unique<Cartridge>();
 
     // 1. Load and parse config.json
     std::ifstream configFileStream(configPath);
     if (!configFileStream.is_open()) {
         std::cerr << "CartridgeLoader Error: Could not open config file at " << configPath << std::endl;
-        return false;
+        return nullptr;
     }
 
     try {
-        configFileStream >> config;
-        std::cout << "Cartridge '" << config.value("title", "N/A") << "' config loaded." << std::endl;
+        configFileStream >> cartridge->config;
+        std::cout << "Cartridge '" << cartridge->config.value("title", "N/A") << "' config loaded." << std::endl;
     } catch (const nlohmann::json::parse_error& e) {
         std::cerr << "CartridgeLoader Error: Failed to parse " << configPath << ". " << e.what() << std::endl;
-        return false;
+        return nullptr;
     }
 
     // 2. Load main.lua script content
     std::ifstream scriptFileStream(scriptPath);
     if (!scriptFileStream.is_open()) {
         std::cerr << "CartridgeLoader Error: Could not open script file at " << scriptPath << std::endl;
-        return false;
+        return nullptr;
     }
 
     std::stringstream buffer;
     buffer << scriptFileStream.rdbuf();
-    luaScript = buffer.str();
+    cartridge->luaScript = buffer.str();
 
-    if (luaScript.empty()) {
+    if (cartridge->luaScript.empty()) {
         std::cerr << "CartridgeLoader Error: Script file at " << scriptPath << " is empty." << std::endl;
-        return false;
+        return nullptr;
     }
 
-    loaded = true;
-    return true;
+    return cartridge;
 }
 
 std::vector<CartridgeInfo> CartridgeLoader::scanForCartridges(const std::string& cartridgesBasePath) {

@@ -340,9 +340,21 @@
         },
         {
           "id": "4.9",
-          "description": "Update the boot cartridge script to act as a system menu.",
+          "description": "Refactor the cartridge loading process to be fully asynchronous to prevent UI freezes.",
           "status": "pending",
-          "notes": "The .ulics_boot/main.lua will use `listcarts()` to display available games and `loadcart()` to launch one."
+          "notes": "The current `finalizeCartridgeLoad` method blocks the main thread. The new approach will move all heavy lifting (script parsing, Lua state creation) to a background thread."
+        },
+        {
+          "id": "4.10",
+          "description": "Create a new 'GameLoader' class responsible for preparing a complete 'LuaGame' instance in the background.",
+          "status": "pending",
+          "notes": "This class will encapsulate the entire loading pipeline, from reading files to initializing the Lua environment, returning a future to a ready-to-run game object."
+        },
+        {
+          "id": "4.11",
+          "description": "Update the Engine's state machine to manage the new non-blocking loading flow.",
+          "status": "pending",
+          "notes": "The `LoadingCartridge` state will now poll a future provided by the `GameLoader`. When ready, it will perform a quick, non-blocking swap of the active game instance."
         }
       ]
     },

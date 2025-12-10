@@ -1,6 +1,7 @@
 #ifndef CARTRIDGE_LOADER_H
 #define CARTRIDGE_LOADER_H
 
+#include "cartridge/Cartridge.h"
 #include <string>
 #include <vector>
 #include "nlohmann/json.hpp"
@@ -13,35 +14,32 @@ struct CartridgeInfo {
     std::string description;
 };
 
+/// @class CartridgeLoader
+/// @brief A static utility class for loading cartridge data from disk.
+/// This class provides functions to scan for cartridges and load their
+/// raw data (config and script) into a Cartridge object. It is stateless.
 class CartridgeLoader {
 public:
-    CartridgeLoader();
-
     /**
-     * @brief Loads a cartridge from the specified directory path.
+     * @brief Loads cartridge data from the specified directory path.
      * 
      * This function reads the 'config.json' and 'main.lua' files from the
      * given directory, parsing the configuration and loading the script content.
      * @param cartridgeDirectoryPath The path to the cartridge's root folder.
-     * @return True if the cartridge was loaded successfully, false otherwise.
+     * @return A unique_ptr to a Cartridge struct on success, or nullptr on failure.
      */
-    bool loadCartridge(const std::string& cartridgeDirectoryPath);
+    static std::unique_ptr<Cartridge> loadCartridge(const std::string& cartridgeDirectoryPath);
 
     /**
      * @brief Scans a directory for valid cartridges.
      * @param cartridgesBasePath The path to the main 'cartridges' folder.
      * @return A vector of CartridgeInfo structs for each valid cartridge found.
      */
-    std::vector<CartridgeInfo> scanForCartridges(const std::string& cartridgesBasePath);
-
-    const nlohmann::json& getConfig() const { return config; }
-    const std::string& getLuaScript() const { return luaScript; }
-    bool isLoaded() const { return loaded; }
+    static std::vector<CartridgeInfo> scanForCartridges(const std::string& cartridgesBasePath);
 
 private:
-    nlohmann::json config;
-    std::string luaScript;
-    bool loaded = false;
+    // This is now a static utility class, so it has no constructor or members.
+    CartridgeLoader() = delete;
 };
 
 #endif // CARTRIDGE_LOADER_H

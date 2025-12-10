@@ -1,7 +1,7 @@
 #include "scripting/ScriptingManager.h"
 #include "rendering/AestheticLayer.h"
 #include "input/InputManager.h"
-#include "cartridge/CartridgeLoader.h"
+#include "cartridge/CartridgeLoader.h" // Include the necessary header
 #include "core/Engine.h"
 #include <iostream>
 #include <string>
@@ -319,10 +319,10 @@ int ScriptingManager::Lua_TColor(lua_State* L) {
 int ScriptingManager::Lua_ListCarts(lua_State* L) {
     auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
     Engine* engine = sm->engineInstance;
-    CartridgeLoader* loader = engine->getCartridgeLoader();
 
     std::string cartridgesPath = engine->getUserDataPath() + "cartridges";
-    auto foundCarts = loader->scanForCartridges(cartridgesPath);
+    // The scanning logic now resides in the static CartridgeLoader class.
+    auto foundCarts = CartridgeLoader::scanForCartridges(cartridgesPath);
 
     // Create the main table that will be returned to Lua.
     lua_newtable(L); // This will be our array of cartridge tables.

@@ -81,7 +81,7 @@ target_include_directories(UlicsEngineLib PUBLIC
 )
 
 # Link the engine library against its dependencies.
-target_link_libraries(UlicsEngineLib PUBLIC SDL2::SDL2-static PRIVATE SDL2::SDL2main lua_lib)
+target_link_libraries(UlicsEngineLib PUBLIC SDL2::SDL2-static lua_lib PRIVATE SDL2::SDL2main)
 
 # --- Main Application Executable ---
 # The main executable is now very simple: it's just the entry point.
@@ -103,6 +103,7 @@ FetchContent_MakeAvailable(googletest)
 # Create the test executable.
 add_executable(ulics_tests
     tests/CartridgeLoader_test.cpp
+    tests/GameLoader_test.cpp
 )
 
 # Link the test executable against our engine library and GTest.
@@ -110,6 +111,9 @@ target_link_libraries(ulics_tests PRIVATE UlicsEngineLib gtest_main)
 
 # Include the GTest source for discovery.
 include(GoogleTest)
+
+# Automatically discover all tests in the 'ulics_tests' executable and add them to CTest.
+gtest_discover_tests(ulics_tests)
 
 # --- Build Output ---
 

@@ -3,6 +3,8 @@
 
 #include <SDL.h>
 #include <vector>
+#include <array>
+#include <memory>
 
 /// @class InputManager
 /// @brief Manages keyboard input state for the engine.
@@ -13,28 +15,40 @@ class InputManager {
 public:
     InputManager();
 
-    /// @brief Prepares the manager for a new frame.
-    /// This should be called once at the beginning of the main loop, before event polling.
-    void beginNewFrame();
+    /// @brief Updates the internal state of the input manager.
+    /// This should be called once per frame, before the game logic.
+    void update();
+    
+    // Controller management
+    void addController(int deviceIndex);
+    void removeController(int instanceId);
 
-    /// @brief Processes an SDL keyboard event.
-    /// This should be called for each SDL_KEYDOWN and SDL_KEYUP event.
+    /// @brief Processes an SDL keyboard event (kept for future use).
     void handleKeyEvent(const SDL_Event& event);
 
-    /// @brief Checks if a key is currently held down.
-    /// @param scancode The SDL_Scancode of the key to check.
-    /// @return True if the key is held down, false otherwise.
+    /// @brief Checks if a key is currently held down.    
     bool isKeyDown(SDL_Scancode scancode) const;
 
-    /// @brief Checks if a key was just pressed in the current frame.
-    /// @param scancode The SDL_Scancode of the key to check.
-    /// @return True if the key was pressed this frame, false otherwise.
+    /// @brief Checks if a key was just pressed in the current frame.    
     bool isKeyPressed(SDL_Scancode scancode) const;
 
 private:
-    std::vector<Uint8> previousKeyStates;
-    const Uint8* currentKeyStates;
-    int numKeys;
+    // Player 0 (Keyboard) state
+    std::vector<Uint8> previousKeyStates; // State from the previous frame.
+    std::vector<Uint8> currentKeyStates;  // State for the current frame.
+
+    // Gamepad state
+    static constexpr int MAX_CONTROLLERS = 4;
+    struct ControllerState {
+        SDL_GameController* handle = nullptr;
+        std::array<Uint8, SDL_CONTROLLER_BUTTON_MAX> previousButtons{};
+        std::array<Uint8, SDL_CONTROLLER_BUTTON_MAX> currentButtons{};
+    };
+    std::array<ControllerState, MAX_CONTROLLERS> controllers;
+
+public: // Public for Lua bindings, but should be treated as internal
+    bool isGamepadButtonDown(int playerIndex, int button) const;
+    bool isGamepadButtonPressed(int playerIndex, int button) const;
 };
 
 #endif // INPUT_MANAGER_H

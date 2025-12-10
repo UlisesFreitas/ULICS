@@ -341,20 +341,20 @@
         {
           "id": "4.9",
           "description": "Refactor the cartridge loading process to be fully asynchronous to prevent UI freezes.",
-          "status": "pending",
-          "notes": "The current `finalizeCartridgeLoad` method blocks the main thread. The new approach will move all heavy lifting (script parsing, Lua state creation) to a background thread."
+          "status": "completed",
+          "notes": "The GameLoader now uses std::async to move all heavy lifting (script parsing, Lua state creation) to a background thread, returning a future."
         },
         {
           "id": "4.10",
           "description": "Create a new 'GameLoader' class responsible for preparing a complete 'LuaGame' instance in the background.",
-          "status": "pending",
-          "notes": "This class will encapsulate the entire loading pipeline, from reading files to initializing the Lua environment, returning a future to a ready-to-run game object."
+          "status": "completed",
+          "notes": "The GameLoader class encapsulates the entire loading pipeline, from reading files to initializing the Lua environment, returning a future to a ready-to-run game object."
         },
         {
           "id": "4.11",
           "description": "Update the Engine's state machine to manage the new non-blocking loading flow.",
-          "status": "pending",
-          "notes": "The `LoadingCartridge` state will now poll a future provided by the `GameLoader`. When ready, it will perform a quick, non-blocking swap of the active game instance."
+          "status": "completed",
+          "notes": "The Engine's `Loading` state now polls the future provided by the GameLoader without blocking. When ready, it performs a quick swap of the active game instance."
         }
       ]
     },

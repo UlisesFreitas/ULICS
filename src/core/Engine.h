@@ -17,17 +17,19 @@ class LuaGame;
 /// @brief Defines the possible execution states of the engine.
 enum class EngineState {
     Initializing,
-    Running,
-    Loading,
+    BootCartridgeRunning, // The system menu is active.
+    GameRunning,          // A user cartridge is active.
+    Loading,              // A new cartridge is being loaded asynchronously.
     Error
 };
 
 class Engine {
 public:
-    Engine();
+    explicit Engine(bool headless = false);
     ~Engine();
 
     bool Initialize(const char* title, int width, int height);
+    bool InitializeHeadless(const std::string& testUserDataPath);
     void Run();
     void RequestCartridgeLoad(const std::string& cartId);
     
@@ -50,6 +52,7 @@ private:
     void Shutdown();
 
     bool isRunning;
+    bool isHeadless;
     EngineState currentState;
     std::string userDataPath;
     std::string errorMessage;
@@ -66,6 +69,7 @@ private:
     // Game state
     std::unique_ptr<Game> activeGame;
     std::future<std::unique_ptr<LuaGame>> nextGameFuture;
+    std::shared_ptr<std::atomic<float>> loadProgress;
 };
 
 #endif // ENGINE_H

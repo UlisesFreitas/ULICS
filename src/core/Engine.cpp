@@ -14,7 +14,8 @@
 
 // No forward declaration needed, GameLoader.h provides it.
 
-Engine::Engine() : isRunning(false),
+Engine::Engine(bool headless) : isRunning(false),
+                   isHeadless(headless),
                    currentState(EngineState::Initializing), window(nullptr), renderer(nullptr) {
     // Constructor
 }
@@ -24,7 +25,11 @@ Engine::~Engine() {
 }
 
 bool Engine::Initialize(const char* title, int width, int height) {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (isHeadless) {
+        enterErrorState("Cannot call graphical Initialize() on a headless engine.");
+        return false;
+    }
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) < 0) {
         enterErrorState("SDL Init failed: " + std::string(SDL_GetError()));
         return false;
     }
@@ -57,7 +62,7 @@ bool Engine::Initialize(const char* title, int width, int height) {
     deployDefaultCartridgeIfNeeded();
 
     // Synchronously load the boot cartridge on startup. This is the only time we block.
-    activeGame = GameLoader::loadAndInitializeGame(this, ".ulics_boot");
+    activeGame = GameLoader::loadAndInitializeGame(this, ".ulics_boot", nullptr);
 
     if (!activeGame) {
         enterErrorState("Failed to load embedded boot cartridge.");
@@ -72,9 +77,26 @@ bool Engine::Initialize(const char* title, int width, int height) {
     std::cout << "Engine: Boot cartridge palette size set to " << paletteSize << std::endl;
 
     isRunning = true;
-    currentState = EngineState::Running;
+    currentState = EngineState::BootCartridgeRunning;
     startTime = std::chrono::high_resolution_clock::now();
     std::cout << "Engine initialized successfully." << std::endl;
+    return true;
+}
+
+bool Engine::InitializeHeadless(const std::string& testUserDataPath) {
+    if (!isHeadless) {
+        enterErrorState("Cannot call InitializeHeadless() on a graphical engine.");
+        return false;
+    }
+
+    // For headless tests, we don't initialize SDL video, window, or renderer.
+    // We only need the subsystems required for loading and logic.
+    inputManager = std::make_unique<InputManager>();
+    gameLoader = std::make_unique<GameLoader>(this);
+    userDataPath = testUserDataPath;
+
+    // No game is loaded, no state is set to running.
+    // The engine is now ready for test-driven commands.
     return true;
 }
 
@@ -96,14 +118,29 @@ void Engine::Run() {
         previousTime = currentTime;
         lag += elapsed;
 
-        inputManager->beginNewFrame();
+        // 1. Update the input manager to capture the new frame's state.
+        // This internally handles event pumping.
+        inputManager->update();
+
+        // 2. Process the event queue, primarily for the quit event.
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) isRunning = false;
+            switch (event.type) {
+                case SDL_QUIT:
+                    isRunning = false;
+                    break;
+                case SDL_CONTROLLERDEVICEADDED:
+                    inputManager->addController(event.cdevice.which);
+                    break;
+                case SDL_CONTROLLERDEVICEREMOVED:
+                    inputManager->removeController(event.cdevice.which);
+                    break;
+            }
         }
 
         // Handle states and updates
         switch (currentState) {
-            case EngineState::Running: {
+            case EngineState::BootCartridgeRunning:
+            case EngineState::GameRunning: {
                 while (lag >= MS_PER_UPDATE) {
                     if (activeGame && !activeGame->_update()) {
                         // A runtime Lua error occurred.
@@ -134,8 +171,8 @@ void Engine::Run() {
                         size_t paletteSize = config.value("/config/palette_size"_json_pointer, 16);
                         aestheticLayer->ResizePalette(paletteSize);
                         std::cout << "Engine: New cartridge palette size set to " << paletteSize << std::endl;
-                        
-                        currentState = EngineState::Running;
+
+                        currentState = EngineState::GameRunning;
                         std::cout << "Engine: Async load finished. Switched to running state." << std::endl;
                     } else {
                         // The background loading failed.
@@ -173,7 +210,9 @@ void Engine::RequestCartridgeLoad(const std::string& cartId) {
         return;
     }
     std::cout << "Engine: Queued request to load cartridge '" << cartId << "'." << std::endl;
-    nextGameFuture = gameLoader->loadGameAsync(cartId);
+    auto loadResult = gameLoader->loadGameAsync(cartId);
+    nextGameFuture = std::move(loadResult.gameFuture);
+    loadProgress = loadResult.progress;
     currentState = EngineState::Loading;
 }
 
@@ -206,6 +245,13 @@ void Engine::deployDefaultCartridgeIfNeeded() {
 void Engine::drawLoadingScreen() {
     aestheticLayer->SetCamera(0, 0);
     aestheticLayer->Clear(1); // Dark Blue background
+
+    // Draw the progress bar
+    float progress = loadProgress ? loadProgress->load() : 0.0f;
+    int barWidth = static_cast<int>(200 * progress);
+    aestheticLayer->RectFill(28, 118, 200, 10, 0); // Black background for the bar
+    aestheticLayer->RectFill(28, 118, barWidth, 10, 7); // White progress
+
     aestheticLayer->Print("LOADING...", 100, 124, 7); // White text
 }
 

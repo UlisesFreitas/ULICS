@@ -223,8 +223,8 @@ int ScriptingManager::Lua_Pget(lua_State* L) {
     return 1;
 }
 
-// Defines the mapping from fantasy console button indices to keyboard scancodes.
-static const std::array<SDL_Scancode, 6> buttonMapping = {
+// Defines the mapping from fantasy console button indices to physical inputs.
+static const std::array<SDL_Scancode, 6> keyboardMapping = {
     SDL_SCANCODE_LEFT,  // Button 0: Left
     SDL_SCANCODE_RIGHT, // Button 1: Right
     SDL_SCANCODE_UP,    // Button 2: Up
@@ -233,15 +233,34 @@ static const std::array<SDL_Scancode, 6> buttonMapping = {
     SDL_SCANCODE_X      // Button 5: Action 2 (X)
 };
 
+static const std::array<SDL_GameControllerButton, 6> gamepadMapping = {
+    SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+    SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
+    SDL_CONTROLLER_BUTTON_DPAD_UP,
+    SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+    SDL_CONTROLLER_BUTTON_A, // Action 1 (A button on Xbox/Nintendo)
+    SDL_CONTROLLER_BUTTON_B  // Action 2 (B button on Xbox/Nintendo)
+};
+
 int ScriptingManager::Lua_Btn(lua_State* L) {
     auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
     InputManager* input = sm->engineInstance->getInputManager();
 
     int buttonIndex = luaL_checkinteger(L, 1);
+    int playerIndex = luaL_optinteger(L, 2, 0); // Default to player 0 (keyboard)
     bool isDown = false;
 
-    if (buttonIndex >= 0 && buttonIndex < buttonMapping.size()) {
-        isDown = input->isKeyDown(buttonMapping[buttonIndex]);
+    if (buttonIndex < 0 || buttonIndex >= keyboardMapping.size()) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+
+    if (playerIndex == 0) {
+        // Player 0 is the keyboard
+        isDown = input->isKeyDown(keyboardMapping[buttonIndex]);
+    } else {
+        // Players 1-4 are gamepads
+        isDown = input->isGamepadButtonDown(playerIndex, gamepadMapping[buttonIndex]);
     }
 
     lua_pushboolean(L, isDown);
@@ -253,10 +272,20 @@ int ScriptingManager::Lua_Btnp(lua_State* L) {
     InputManager* input = sm->engineInstance->getInputManager();
 
     int buttonIndex = luaL_checkinteger(L, 1);
+    int playerIndex = luaL_optinteger(L, 2, 0); // Default to player 0
     bool isPressed = false;
 
-    if (buttonIndex >= 0 && buttonIndex < buttonMapping.size()) {
-        isPressed = input->isKeyPressed(buttonMapping[buttonIndex]);
+    if (buttonIndex < 0 || buttonIndex >= keyboardMapping.size()) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+
+    if (playerIndex == 0) {
+        // Player 0 is the keyboard
+        isPressed = input->isKeyPressed(keyboardMapping[buttonIndex]);
+    } else {
+        // Players 1-4 are gamepads
+        isPressed = input->isGamepadButtonPressed(playerIndex, gamepadMapping[buttonIndex]);
     }
 
     lua_pushboolean(L, isPressed);

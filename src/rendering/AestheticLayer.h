@@ -45,6 +45,25 @@ public:
     // Draws text on the framebuffer using the embedded font.
     void Print(const std::string& text, int x, int y, uint8_t colorIndex);
 
+    // Sets the transparent color index for sprite operations.
+    void SetTransparentColor(int colorIndex);
+
+    // === Palette Management ===
+    // Sets the palette size (must be 16, 32, 64, or 128).
+    void SetPaletteSize(int size);
+
+    // Loads a complete custom palette.
+    void LoadPalette(const std::vector<SDL_Color>& newPalette);
+
+    // Sets an individual color in the palette.
+    void SetPaletteColor(int index, uint8_t r, uint8_t g, uint8_t b);
+
+    // Gets the current palette size.
+    int GetPaletteSize() const;
+
+    // Resets the palette to the default PICO-8 16-color palette.
+    void ResetToDefaultPalette();
+
     // Renders the framebuffer to the main window.
     void Present();
 
@@ -56,6 +75,7 @@ private:
     std::vector<SDL_Color> palette;    // 16-color palette.
     int cameraX = 0;
     int cameraY = 0;
+    int transparentColorIndex = -1; // -1 means no transparent color set.
 };
 
 #endif // AESTHETIC_LAYER_H

@@ -10,7 +10,9 @@
 Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
                    activeGame(nullptr), scriptingManager(nullptr),
-                   inputManager(nullptr) {
+                   inputManager(nullptr),
+                   currentState(EngineState::BOOT), previousState(EngineState::BOOT),
+                   currentCartridgePath("") {
     // Constructor
 }
 
@@ -18,7 +20,7 @@ Engine::~Engine() {
     Shutdown();
 }
 
-bool Engine::Initialize(const char* title, int width, int height) {
+bool Engine::Initialize(const char* title, int width, int height, const std::string& cartridgePath) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "Error initializing SDL: " << SDL_GetError() << std::endl;
         return false;
@@ -67,11 +69,38 @@ bool Engine::Initialize(const char* title, int width, int height) {
 
     try {
         scriptingManager = std::make_unique<ScriptingManager>(this);
-        // Load the demo cartridge directly from the embedded string.
-        if (!scriptingManager->LoadAndRunScript(EmbeddedScripts::DEMO_CART)) {
-            std::cerr << "Could not load the embedded demo cartridge." << std::endl;
-            return false;
+        
+        // Determine what to load based on cartridgePath
+        bool scriptLoaded = false;
+        
+        if (cartridgePath.empty()) {
+            // No cartridge specified - load embedded demo
+            std::cout << "No cartridge specified. Loading embedded demo..." << std::endl;
+            scriptLoaded = scriptingManager->LoadAndRunScript(EmbeddedScripts::DEMO_CART);
+            if (!scriptLoaded) {
+                std::cerr << "Could not load the embedded demo cartridge." << std::endl;
+                return false;
+            }
+        } else {
+            // Cartridge path specified - try to load it
+            std::cout << "Loading cartridge: " << cartridgePath << std::endl;
+            
+            // Try loading as a .lua file directly
+            if (cartridgePath.find(".lua") != std::string::npos) {
+                scriptLoaded = scriptingManager->LoadScriptFromFile(cartridgePath);
+            } else {
+                // Assume it's a directory, look for main.lua
+                std::string mainLuaPath = cartridgePath + "/main.lua";
+                scriptLoaded = scriptingManager->LoadScriptFromFile(mainLuaPath);
+            }
+            
+            if (!scriptLoaded) {
+                std::cerr << "Failed to load cartridge: " << cartridgePath << std::endl;
+                std::cerr << "Error: " << scriptingManager->GetLastLuaError() << std::endl;
+                return false;
+            }
         }
+        
     } catch (const std::exception& e) {
         std::cerr << "Error initializing ScriptingManager: " << e.what() << std::endl;
         return false;
@@ -86,6 +115,10 @@ bool Engine::Initialize(const char* title, int width, int height) {
 
     isRunning = true;
     startTime = std::chrono::high_resolution_clock::now();
+    
+    // Set state to RUNNING_CARTRIDGE since we loaded a script
+    SetState(EngineState::RUNNING_CARTRIDGE);
+    
     std::cout << "Engine initialized successfully." << std::endl;
     return true;
 }
@@ -155,6 +188,107 @@ void Engine::drawErrorScreen() {
     aestheticLayer->Clear(2); // Dark Purple background for errors
     aestheticLayer->Print("LUA ERROR:", 4, 4, 8); // Red title
     aestheticLayer->Print(errorMessage, 4, 20, 7); // White error message
+}
+
+// === Engine State Machine Implementation ===
+
+void Engine::SetState(EngineState newState) {
+    if (currentState == newState) {
+        return; // No change needed
+    }
+
+    previousState = currentState;
+    currentState = newState;
+
+    std::cout << "Engine state transition: ";
+    
+    // Helper lambda to convert state to string for logging
+    auto stateToString = [](EngineState state) -> const char* {
+        switch (state) {
+            case EngineState::BOOT: return "BOOT";
+            case EngineState::MENU: return "MENU";
+            case EngineState::LOADING_CARTRIDGE: return "LOADING_CARTRIDGE";
+            case EngineState::RUNNING_CARTRIDGE: return "RUNNING_CARTRIDGE";
+            case EngineState::ERROR: return "ERROR";
+            default: return "UNKNOWN";
+        }
+    };
+
+    std::cout << stateToString(previousState) << " -> " << stateToString(currentState) << std::endl;
+
+    // Handle state-specific logic
+    if (newState == EngineState::ERROR) {
+        inErrorState = true;
+    } else {
+        inErrorState = false;
+    }
+}
+
+// === Cartridge Lifecycle Management Implementation ===
+
+bool Engine::LoadCartridge(const std::string& cartridgePath) {
+    std::cout << "Engine: Loading cartridge from: " << cartridgePath << std::endl;
+    
+    SetState(EngineState::LOADING_CARTRIDGE);
+
+    // Unload any existing cartridge first
+    UnloadCartridge();
+
+    // Build the path to main.lua
+    std::string mainLuaPath = cartridgePath + "/main.lua";
+
+    // Try to load the script
+    if (!scriptingManager || !scriptingManager->LoadScriptFromFile(mainLuaPath)) {
+        std::string error = "Failed to load cartridge script: " + mainLuaPath;
+        if (scriptingManager) {
+            error += "\nError: " + scriptingManager->GetLastLuaError();
+        }
+        enterErrorState(error);
+        SetState(EngineState::ERROR);
+        return false;
+    }
+
+    // Create a new LuaGame instance
+    try {
+        activeGame = std::make_unique<LuaGame>(scriptingManager.get());
+        currentCartridgePath = cartridgePath;
+        SetState(EngineState::RUNNING_CARTRIDGE);
+        std::cout << "Engine: Cartridge loaded successfully." << std::endl;
+        return true;
+    } catch (const std::exception& e) {
+        enterErrorState(std::string("Error creating game instance: ") + e.what());
+        SetState(EngineState::ERROR);
+        return false;
+    }
+}
+
+void Engine::UnloadCartridge() {
+    if (currentCartridgePath.empty()) {
+        return; // No cartridge loaded
+    }
+
+    std::cout << "Engine: Unloading cartridge: " << currentCartridgePath << std::endl;
+
+    // Release the game instance
+    activeGame.reset();
+
+    // Clear the script state (we'll need to reinitialize ScriptingManager)
+    // For now, we just mark as unloaded
+    currentCartridgePath.clear();
+
+    std::cout << "Engine: Cartridge unloaded." << std::endl;
+}
+
+bool Engine::ReloadCurrentCartridge() {
+    if (currentCartridgePath.empty()) {
+        std::cerr << "Engine: Cannot reload - no cartridge is currently loaded." << std::endl;
+        return false;
+    }
+
+    std::string pathToReload = currentCartridgePath;
+    std::cout << "Engine: Reloading cartridge: " << pathToReload << std::endl;
+    
+    return LoadCartridge(pathToReload);
 }
 
 void Engine::Shutdown() {

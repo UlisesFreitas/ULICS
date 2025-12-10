@@ -54,6 +54,75 @@ void AestheticLayer::SetCamera(int x, int y) {
     cameraY = y;
 }
 
+void AestheticLayer::SetTransparentColor(int colorIndex) {
+    transparentColorIndex = colorIndex;
+}
+
+// === Palette Management Implementation ===
+
+void AestheticLayer::SetPaletteSize(int size) {
+    // Validate that the size is one of the allowed values.
+    if (size != 16 && size != 32 && size != 64 && size != 128) {
+        throw std::invalid_argument("Palette size must be 16, 32, 64, or 128.");
+    }
+
+    // Resize the palette, keeping existing colors and filling new slots with black.
+    int oldSize = static_cast<int>(palette.size());
+    palette.resize(size);
+
+    // Fill new slots with black if we expanded.
+    for (int i = oldSize; i < size; ++i) {
+        palette[i] = {0, 0, 0, 255};
+    }
+}
+
+void AestheticLayer::LoadPalette(const std::vector<SDL_Color>& newPalette) {
+    if (newPalette.empty()) {
+        throw std::invalid_argument("Cannot load an empty palette.");
+    }
+
+    int size = static_cast<int>(newPalette.size());
+    if (size != 16 && size != 32 && size != 64 && size != 128) {
+        throw std::invalid_argument("Palette size must be 16, 32, 64, or 128.");
+    }
+
+    palette = newPalette;
+}
+
+void AestheticLayer::SetPaletteColor(int index, uint8_t r, uint8_t g, uint8_t b) {
+    if (index < 0 || index >= static_cast<int>(palette.size())) {
+        throw std::out_of_range("Palette index out of range.");
+    }
+
+    palette[index] = {r, g, b, 255};
+}
+
+int AestheticLayer::GetPaletteSize() const {
+    return static_cast<int>(palette.size());
+}
+
+void AestheticLayer::ResetToDefaultPalette() {
+    // Reset to the default PICO-8 16-color palette.
+    palette = {
+        {0, 0, 0, 255},       // 0: Black
+        {29, 43, 83, 255},    // 1: Dark Blue
+        {126, 37, 83, 255},   // 2: Dark Purple
+        {0, 135, 81, 255},    // 3: Dark Green
+        {171, 82, 54, 255},   // 4: Brown
+        {95, 87, 79, 255},    // 5: Dark Gray
+        {194, 195, 199, 255}, // 6: Light Gray
+        {255, 241, 232, 255}, // 7: White
+        {255, 0, 77, 255},    // 8: Red
+        {255, 163, 0, 255},   // 9: Orange
+        {255, 236, 39, 255},  // 10: Yellow
+        {0, 228, 54, 255},    // 11: Green
+        {41, 173, 255, 255},  // 12: Blue
+        {131, 118, 156, 255}, // 13: Lavender
+        {255, 119, 168, 255}, // 14: Pink
+        {255, 204, 170, 255}  // 15: Light Peach
+    };
+}
+
 void AestheticLayer::Clear(uint8_t colorIndex) {
     // Ensure the fill value is of the correct type (uint8_t) to avoid conversion warnings.
     uint8_t finalColorIndex = colorIndex % static_cast<uint8_t>(palette.size());

@@ -19,6 +19,7 @@ Functions for drawing pixels, shapes, and text to the screen.
 | Function | Parameters | Description | Status |
 | :--- | :--- | :--- | :--- |
 | `clear(c)` | `color` | Clears the screen with a specific color. | ✅ **Implemented** |
+| `cls(c)` | `color` | Alias for `clear()`. Clears the screen with a specific color. | ✅ **Implemented** |
 | `pset(x, y, c)` | `x`, `y`, `color` | Draws a single pixel. | ✅ **Implemented** |
 | `line(x1, y1, x2, y2, c)` | `x1`, `y1`, `x2`, `y2`, `color` | Draws a line between two points. | ✅ **Implemented** |
 | `rect(x, y, w, h, c)` | `x`, `y`, `width`, `height`, `color` | Draws the outline of a rectangle. | ✅ **Implemented** |
@@ -30,6 +31,7 @@ Functions for drawing pixels, shapes, and text to the screen.
 | `spr(n, x, y, ...)` | `sprite#`, `x`, `y`, `...` | Draws a sprite from the spritesheet. | ❌ **Future** |
 | `sspr(...)` | `...` | Draws a scaled section of the spritesheet. | ❌ **Future** |
 | `camera(x, y)` | `x`, `y` | Sets the screen's drawing offset (for scrolling). | ✅ **Implemented** |
+| `tcolor(c)` | `color_id` | Sets the transparent color index for sprite operations. Pass -1 to disable transparency. | ✅ **Implemented** |
 | `pal(c1, c2, p)` | `color1`, `color2`, `...` | Swaps palette colors for screen effects. | ❌ **Future** |
 
 ---

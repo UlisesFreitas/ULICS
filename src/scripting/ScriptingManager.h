@@ -23,6 +23,9 @@ public:
     // Loads and runs a Lua script from a string buffer.
     bool LoadAndRunScript(const char* scriptBuffer);
 
+    // Loads and runs a Lua script from an external file.
+    bool LoadScriptFromFile(const std::string& filepath);
+
     // Calls a global Lua function with no arguments or return values.
     // Returns false if an error occurs during the call.
     bool CallLuaFunction(const char* functionName);
@@ -80,6 +83,9 @@ private:
 
     // Static bridge function to call AestheticLayer::SetCamera
     static int Lua_Camera(lua_State* L);
+
+    // Static bridge function to call AestheticLayer::SetTransparentColor
+    static int Lua_Tcolor(lua_State* L);
 
     // --- Math Functions ---
     static int Lua_Sin(lua_State* L);

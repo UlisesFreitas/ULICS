@@ -2,15 +2,25 @@
 // This file initializes the Engine and runs the main application loop.
 
 #include "core/Engine.h"
+#include <iostream>
+#include <string>
 
 // The cross-platform entry point for an SDL application.
 int main(int argc, char* argv[]) {
-    // Unused parameters.
-    (void)argc;
-    (void)argv;
-
     Engine engine;
-    if (engine.Initialize("UliCS Fantasy Console", 1024, 1024)) {
+    
+    // Parse command-line arguments
+    std::string cartridgePath = "";
+    
+    if (argc > 1) {
+        cartridgePath = argv[1];
+        std::cout << "Cartridge path provided: " << cartridgePath << std::endl;
+    } else {
+        std::cout << "No cartridge specified. Will load embedded demo." << std::endl;
+    }
+    
+    // Initialize the engine with optional cartridge path
+    if (engine.Initialize("UliCS Fantasy Console", 1024, 1024, cartridgePath)) {
         engine.Run();
     }
 

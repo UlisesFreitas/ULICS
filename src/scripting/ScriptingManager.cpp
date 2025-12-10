@@ -6,6 +6,8 @@
 #include <string> // Required for std::string
 #include <array>
 #include <cmath> // For standard math functions
+#include <fstream> // For file I/O
+#include <sstream> // For stringstream
 
 constexpr double PI = 3.14159265358979323846;
 
@@ -48,8 +50,36 @@ bool ScriptingManager::LoadAndRunScript(const char* scriptBuffer) {
     return true;
 }
 
+bool ScriptingManager::LoadScriptFromFile(const std::string& filepath) {
+    // Open the file for reading.
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        lastError = "Could not open file: " + filepath;
+        std::cerr << "ScriptingManager: " << lastError << std::endl;
+        return false;
+    }
+
+    // Read the entire file into a string.
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string scriptContent = buffer.str();
+    file.close();
+
+    // Execute the script using the existing LoadAndRunScript method.
+    if (luaL_dostring(L, scriptContent.c_str()) != LUA_OK) {
+        lastError = lua_tostring(L, -1);
+        std::cerr << "Error running script from file '" << filepath << "': " << lastError << std::endl;
+        lua_pop(L, 1);
+        return false;
+    }
+
+    std::cout << "ScriptingManager: Successfully loaded and executed script from: " << filepath << std::endl;
+    return true;
+}
+
 void ScriptingManager::RegisterAPI() {
     RegisterFunction("clear", &ScriptingManager::Lua_Clear);
+    RegisterFunction("cls", &ScriptingManager::Lua_Clear); // Alias for clear (PICO-8 style)
     RegisterFunction("pset", &ScriptingManager::Lua_Pset);
     RegisterFunction("line", &ScriptingManager::Lua_Line);
     RegisterFunction("rect", &ScriptingManager::Lua_Rect);
@@ -62,6 +92,7 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("print", &ScriptingManager::Lua_Print);
     RegisterFunction("time", &ScriptingManager::Lua_Time);
     RegisterFunction("camera", &ScriptingManager::Lua_Camera);
+    RegisterFunction("tcolor", &ScriptingManager::Lua_Tcolor);
 
     // Math functions
     RegisterFunction("sin", &ScriptingManager::Lua_Sin);
@@ -277,6 +308,17 @@ int ScriptingManager::Lua_Camera(lua_State* L) {
     int y = luaL_checkinteger(L, 2);
 
     layer->SetCamera(x, y);
+
+    return 0;
+}
+
+int ScriptingManager::Lua_Tcolor(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
+
+    int colorIndex = luaL_checkinteger(L, 1);
+
+    layer->SetTransparentColor(colorIndex);
 
     return 0;
 }

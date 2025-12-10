@@ -53,10 +53,10 @@
           "files": "build.ps1"
         },
         {
-            "id": "0.5",
-            "description": "Automate dependency fetching and compilation (clone SDL2 from the repository if it doesn't exist).",
-            "status": "completed",
-            "files": "build.ps1, .gitignore"
+          "id": "0.5",
+          "description": "Automate dependency fetching and compilation (clone SDL2 from the repository if it doesn't exist).",
+          "status": "completed",
+          "files": "build.ps1, .gitignore"
         }
       ]
     },
@@ -225,61 +225,136 @@
         {
           "id": "3.13",
           "description": "Implement and expose a function **`tcolor(color_id)`** that sets the current **transparent** color index in the `AestheticLayer`, vital for future `SPRITE` operations.",
-          "status": "pending"
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "phase": 3.5,
+      "title": "Prerequisites for Phase 4 (Cartridge System Foundation)",
+      "description": "Implement critical infrastructure required for the cartridge system: dynamic palette support, external file loading, engine state management, and cartridge lifecycle management.",
+      "tasks": [
+        {
+          "id": "3.14",
+          "description": "Add dynamic palette support to `AestheticLayer`: implement methods to change palette size (16, 32, 64, 128 colors), load custom palettes, and modify individual palette entries.",
+          "status": "completed",
+          "files": "src/rendering/AestheticLayer.h, src/rendering/AestheticLayer.cpp"
+        },
+        {
+          "id": "3.15",
+          "description": "Extend `ScriptingManager` to support loading Lua scripts from external files with `LoadScriptFromFile(filepath)` method.",
+          "status": "completed",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp"
+        },
+        {
+          "id": "3.16",
+          "description": "Implement a comprehensive **Engine State Machine** with states: `BOOT`, `MENU`, `LOADING_CARTRIDGE`, `RUNNING_CARTRIDGE`, `ERROR`. Include state transition logic and validation.",
+          "status": "completed",
+          "files": "src/core/Engine.h, src/core/Engine.cpp"
+        },
+        {
+          "id": "3.17",
+          "description": "Add cartridge lifecycle management to `Engine`: implement `LoadCartridge(path)`, `UnloadCartridge()`, and `ReloadCurrentCartridge()` methods to support dynamic cartridge loading.",
+          "status": "completed",
+          "files": "src/core/Engine.h, src/core/Engine.cpp"
+        },
+        {
+          "id": "3.18",
+          "description": "Expose `cls()` as a convenience alias for `clear()` in the Lua API, following PICO-8 conventions for better user experience.",
+          "status": "completed",
+          "files": "src/scripting/ScriptingManager.cpp, LUA_API.md"
+        },
+        {
+          "id": "3.19",
+          "description": "Update task 5.1 status to reflect that `InputManager` and input functions (`btn`, `btnp`) are already implemented in Phase 3.",
+          "status": "completed",
+          "files": "plan-ulics.json"
+        },
+        {
+          "id": "3.20",
+          "description": "Modify `Engine::Initialize()` to accept an optional cartridge path parameter. If empty, load embedded demo; if specified, load external cartridge; prepare for menu system.",
+          "status": "completed",
+          "files": "src/core/Engine.h, src/core/Engine.cpp, src/main.cpp"
         }
       ]
     },
     {
       "phase": 4,
-      "title": "Cartridge System and Modularity (Base UI Prepared)",
-      "description": "Define and develop the 'cartridge' system for loading games and the console's modular configuration. The engine's state management is prepared for a simple UI.",
-      "management": "The application will be managed via 'cartridges'. A cartridge will be a directory containing a 'main.lua' file for code and a 'config.json' for metadata and modular configuration. Optionally, it can include an 'assets' directory.",
+      "title": "Cartridge System (High-Performance Fantasy Console)",
+      "description": "Implement ULICS's cartridge system with its unique selling point: massive resources (512MB-1GB RAM, 1M lines of Lua) in a fantasy console package. Cartridges remain self-contained Lua files but can be HUGE compared to PICO-8/TIC-80. This enables ambitious projects like complex RPGs, procedural worlds, or AI-driven games.",
+      "philosophy": "ULICS differentiates from PICO-8/TIC-80 by offering modern resources with retro aesthetics. Developers get generous limits (configurable per cartridge) to create complex games while maintaining the 'everything in code' fantasy console philosophy. Sprites, maps, and data are Lua tables, but you can have MILLIONS of tiles, thousands of sprites, or complex procedural generation.",
+      "cartridge_structure": "cartridges/my_game/main.lua (+ optional config.json). No external assets - all data is Lua code, but with 512MB-1GB to work with.",
       "libraries": [
         {
           "name": "nlohmann/json",
-          "purpose": "A modern C++ library to easily parse the 'config.json' file of each cartridge."
+          "purpose": "Parse optional config.json files for cartridge metadata and configuration."
         }
       ],
       "tasks": [
         {
           "id": "4.1",
-          "description": "Design the 'cartridge' structure and the 'config.json' file format (will include 'memory_limit_mb', 'lua_code_limit_lines', 'palette_size').",
-          "status": "pending"
+          "description": "Design the cartridge structure and config.json format. Config includes: metadata (name, author, version), console settings (palette_size, framebuffer_width, framebuffer_height), and **critical resource limits** (memory_limit_mb: 512-1024MB, lua_code_limit_lines: up to 1,000,000). These generous limits differentiate ULICS from PICO-8/TIC-80.",
+          "status": "pending",
+          "notes": "Example config.json: {\"name\": \"Epic RPG\", \"author\": \"Dev\", \"memory_limit_mb\": 768, \"lua_code_limit_lines\": 500000, \"palette_size\": 128}"
         },
         {
           "id": "4.2",
-          "description": "Integrate the 'nlohmann/json' library for configuration parsing.",
+          "description": "Integrate nlohmann/json library into CMake build system.",
           "status": "pending"
         },
         {
           "id": "4.3",
-          "description": "Implement a 'CartridgeLoader' class that reads a cartridge directory, parses 'config.json', and loads it into the engine.",
-          "status": "pending"
+          "description": "Create `CartridgeConfig` struct to hold cartridge metadata and settings parsed from config.json.",
+          "status": "pending",
+          "files": "src/cartridge/CartridgeConfig.h"
         },
         {
           "id": "4.4",
-          "description": "Adapt the engine to use the cartridge's configuration: dynamically adjust the palette size in the Aesthetic Layer (16, 32, 64, 128).",
-          "status": "pending"
+          "description": "Implement `CartridgeLoader` class with methods: `loadCartridge(path)`, `listAvailableCartridges(directory)`, and `parseConfig(path)`.",
+          "status": "pending",
+          "files": "src/cartridge/CartridgeLoader.h, src/cartridge/CartridgeLoader.cpp"
         },
         {
           "id": "4.5",
-          "description": "Implement limit-checking logic (e.g., Lua code lines) in the 'ScriptingManager' as an informative 'soft' constraint.",
-          "status": "pending"
+          "description": "Integrate `CartridgeLoader` with `Engine::LoadCartridge()` to parse config.json and apply settings (palette size, etc.) before loading main.lua.",
+          "status": "pending",
+          "files": "src/core/Engine.cpp"
         },
         {
           "id": "4.6",
-          "description": "Implement the **execution state logic** in the `Engine` (e.g., using an `enum` for `STATE_BOOT`, `STATE_MENU`, `STATE_GAME`, `STATE_ERROR`).",
+          "description": "Create `cartridges/` directory structure and implement at least 2 example cartridges (e.g., 'hello_world' and 'bouncing_ball') to test the system.",
           "status": "pending"
         },
         {
           "id": "4.7",
-          "description": "Create the **`cartridges/` directory** and implement the scanning logic in the `CartridgeLoader` to list all available cartuchos.",
-          "status": "pending"
+          "description": "Create `system/menu.lua` - a special internal cartridge that scans and displays available cartridges, allowing the user to select one to load.",
+          "status": "pending",
+          "files": "src/system/menu.lua OR src/scripting/SystemScripts.h"
         },
         {
           "id": "4.8",
-          "description": "Modify the `Engine` to, if no cartridge is specified, automatically enter `STATE_MENU` and launch an **internal system script** (e.g., `system/menu.lua`) to render the initial UI.",
-          "status": "pending"
+          "description": "Modify `Engine::Initialize()` boot logic: if no cartridge path is provided, enter `STATE_MENU` and load the system menu script.",
+          "status": "pending",
+          "files": "src/core/Engine.cpp"
+        },
+        {
+          "id": "4.9",
+          "description": "Expose Lua function `load_cartridge(name)` to allow the menu script to dynamically load selected cartridges.",
+          "status": "pending",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp"
+        },
+        {
+          "id": "4.10",
+          "description": "Add `list_cartridges()` Lua function to return available cartridges as a Lua table for the menu system.",
+          "status": "pending",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp"
+        },
+        {
+          "id": "4.11",
+          "description": "Implement resource limit enforcement: track Lua memory usage (via `lua_gc`) and code line count. Display warnings/stats but allow configurable limits per cartridge (512MB-1GB RAM, up to 1M lines). This is a CORE differentiator of ULICS.",
+          "status": "pending",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, src/cartridge/CartridgeConfig.h",
+          "notes": "Limits should be informative (show current usage) but not rigid. Allow developers to go BIG."
         }
       ]
     },
@@ -301,7 +376,8 @@
         {
           "id": "5.1",
           "description": "Create an 'InputManager' to handle keyboard and gamepad, and expose a simple API to Lua (btn(), btnp()).",
-          "status": "pending"
+          "status": "completed",
+          "notes": "Already implemented in Phase 3 (tasks 3.6 and 3.7). InputManager exists and btn(), btnp() are exposed to Lua."
         },
         {
           "id": "5.2",

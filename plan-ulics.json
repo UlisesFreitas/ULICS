@@ -319,8 +319,8 @@
         {
           "id": "4.5",
           "description": "Integrate `CartridgeLoader` with `Engine::LoadCartridge()` to parse config.json and apply settings (palette size, etc.) before loading main.lua.",
-          "status": "pending",
-          "files": "src/core/Engine.cpp"
+          "status": "completed",
+          "files": "src/core/Engine.cpp, src/core/Engine.h"
         },
         {
           "id": "4.6",

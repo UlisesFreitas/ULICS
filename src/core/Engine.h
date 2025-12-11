@@ -10,6 +10,7 @@ class AestheticLayer;
 class Game;
 class ScriptingManager;
 class InputManager;
+class CartridgeLoader;
 
 class Engine {
 public:
@@ -67,6 +68,7 @@ private:
     std::unique_ptr<Game> activeGame;
     std::unique_ptr<ScriptingManager> scriptingManager;
     std::unique_ptr<InputManager> inputManager;
+    std::unique_ptr<CartridgeLoader> cartridgeLoader;
 
     // State machine
     EngineState currentState;

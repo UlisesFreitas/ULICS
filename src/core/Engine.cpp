@@ -2,6 +2,8 @@
 #include "rendering/AestheticLayer.h"
 #include "scripting/LuaGame.h" // Include our Lua game bridge.
 #include "input/InputManager.h" // Include the new InputManager.
+#include "cartridge/CartridgeLoader.h" // Cartridge system
+#include "cartridge/CartridgeConfig.h" // Cartridge configuration
 #include <iostream>
 #include <chrono>
 #include "scripting/ScriptingManager.h"
@@ -10,7 +12,7 @@
 Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
                    activeGame(nullptr), scriptingManager(nullptr),
-                   inputManager(nullptr),
+                   inputManager(nullptr), cartridgeLoader(nullptr),
                    currentState(EngineState::BOOT), previousState(EngineState::BOOT),
                    currentCartridgePath("") {
     // Constructor
@@ -64,6 +66,15 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
     }
     catch (const std::exception& e) {
         std::cerr << "Error initializing InputManager: " << e.what() << std::endl;
+        return false;
+    }
+
+    // Initialize CartridgeLoader
+    try {
+        cartridgeLoader = std::make_unique<CartridgeLoader>();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error initializing CartridgeLoader: " << e.what() << std::endl;
         return false;
     }
 
@@ -234,10 +245,51 @@ bool Engine::LoadCartridge(const std::string& cartridgePath) {
     // Unload any existing cartridge first
     UnloadCartridge();
 
-    // Build the path to main.lua
-    std::string mainLuaPath = cartridgePath + "/main.lua";
+    if (!cartridgeLoader) {
+        enterErrorState("CartridgeLoader not initialized");
+        SetState(EngineState::ERROR);
+        return false;
+    }
 
-    // Try to load the script
+    // Validate cartridge
+    if (!cartridgeLoader->IsValidCartridge(cartridgePath)) {
+        std::string error = "Invalid cartridge: " + cartridgePath;
+        error += "\nError: " + cartridgeLoader->GetLastError();
+        enterErrorState(error);
+        SetState(EngineState::ERROR);
+        return false;
+    }
+
+    // Load and parse config.json (returns defaults if no config)
+    CartridgeConfig config = cartridgeLoader->LoadCartridge(cartridgePath);
+    
+    std::cout << "Engine: Cartridge configuration loaded:" << std::endl;
+    std::cout << "  - Name: " << config.name << std::endl;
+    std::cout << "  - Author: " << config.author << std::endl;
+    std::cout << "  - Memory Limit: " << config.memory_limit_mb << " MB" << std::endl;
+    std::cout << "  - Code Limit: " << config.lua_code_limit_lines << " lines" << std::endl;
+    std::cout << "  - Palette Size: " << config.palette_size << " colors" << std::endl;
+
+    // Apply configuration to engine subsystems
+    // 1. Apply palette size to AestheticLayer
+    if (aestheticLayer) {
+        try {
+            aestheticLayer->SetPaletteSize(config.palette_size);
+            std::cout << "Engine: Applied palette size: " << config.palette_size << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "Warning: Could not set palette size: " << e.what() << std::endl;
+            // Not fatal - continue with default palette
+        }
+    }
+
+    // 2. TODO: Apply framebuffer size (requires AestheticLayer modification)
+    // 3. TODO: Apply memory limits to Lua (track via lua_gc)
+    // 4. TODO: Apply code line limits (count on load)
+
+    // Get path to main.lua
+    std::string mainLuaPath = cartridgeLoader->GetMainLuaPath(cartridgePath);
+
+    // Load the Lua script
     if (!scriptingManager || !scriptingManager->LoadScriptFromFile(mainLuaPath)) {
         std::string error = "Failed to load cartridge script: " + mainLuaPath;
         if (scriptingManager) {
@@ -253,7 +305,7 @@ bool Engine::LoadCartridge(const std::string& cartridgePath) {
         activeGame = std::make_unique<LuaGame>(scriptingManager.get());
         currentCartridgePath = cartridgePath;
         SetState(EngineState::RUNNING_CARTRIDGE);
-        std::cout << "Engine: Cartridge loaded successfully." << std::endl;
+        std::cout << "Engine: Cartridge '" << config.name << "' loaded successfully." << std::endl;
         return true;
     } catch (const std::exception& e) {
         enterErrorState(std::string("Error creating game instance: ") + e.what());
@@ -292,6 +344,7 @@ bool Engine::ReloadCurrentCartridge() {
 }
 
 void Engine::Shutdown() {
+    cartridgeLoader.reset();
     inputManager.reset();
     scriptingManager.reset();
     aestheticLayer.reset(); // Release the unique_ptr

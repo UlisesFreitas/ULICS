@@ -1,12 +1,12 @@
 ﻿**********************
 Windows PowerShell transcript start
-Start time: 20251211011158
+Start time: 20251211011646
 Username: LEGION25\Ulises
 RunAs User: LEGION25\Ulises
 Configuration Name: 
 Machine: LEGION25 (Microsoft Windows NT 10.0.26200.0)
 Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command .\build.ps1
-Process ID: 27044
+Process ID: 12860
 PSVersion: 5.1.26100.7309
 PSEdition: Desktop
 PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7309
@@ -30,5 +30,5 @@ Project built successfully!
 You can find the executable at: U:\ULICS\build\bin\Release\UliCS.exe
 **********************
 Windows PowerShell transcript end
-End time: 20251211011232
+End time: 20251211011719
 **********************

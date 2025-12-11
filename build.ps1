@@ -51,6 +51,19 @@ try {
         Write-Host "Lua source found."
     }
 
+    # nlohmann/json (header-only library)
+    $JsonDir = Join-Path -Path $ScriptDir -ChildPath "external/json"
+    $JsonHeaderPath = Join-Path -Path $JsonDir -ChildPath "json.hpp"
+    if (-not (Test-Path -Path $JsonHeaderPath)) {
+        Write-Host "nlohmann/json not found. Downloading..."
+        New-Item -ItemType Directory -Path $JsonDir -ErrorAction SilentlyContinue | Out-Null
+        # Download the single-header version from GitHub releases
+        Invoke-WebRequest -Uri "https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp" -OutFile $JsonHeaderPath
+        Write-Host "nlohmann/json downloaded successfully."
+    } else {
+        Write-Host "nlohmann/json found."
+    }
+
     # --- Step 2: Clean and recreate the build directory ---
     Write-Host "Performing a clean build. Removing and recreating build directory..."
     if (Test-Path -Path $BuildDir -PathType Container) {

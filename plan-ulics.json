@@ -294,18 +294,20 @@
         {
           "id": "4.1",
           "description": "Design the cartridge structure and config.json format. Config includes: metadata (name, author, version), console settings (palette_size, framebuffer_width, framebuffer_height), and **critical resource limits** (memory_limit_mb: 512-1024MB, lua_code_limit_lines: up to 1,000,000). These generous limits differentiate ULICS from PICO-8/TIC-80.",
-          "status": "pending",
-          "notes": "Example config.json: {\"name\": \"Epic RPG\", \"author\": \"Dev\", \"memory_limit_mb\": 768, \"lua_code_limit_lines\": 500000, \"palette_size\": 128}"
+          "status": "completed",
+          "notes": "Example config.json: {\"name\": \"Epic RPG\", \"author\": \"Dev\", \"memory_limit_mb\": 768, \"lua_code_limit_lines\": 500000, \"palette_size\": 128}",
+          "files": "CARTRIDGE_SPEC.md"
         },
         {
           "id": "4.2",
           "description": "Integrate nlohmann/json library into CMake build system.",
-          "status": "pending"
+          "status": "completed",
+          "files": "CMakeLists.txt, build.ps1"
         },
         {
           "id": "4.3",
           "description": "Create `CartridgeConfig` struct to hold cartridge metadata and settings parsed from config.json.",
-          "status": "pending",
+          "status": "completed",
           "files": "src/cartridge/CartridgeConfig.h"
         },
         {

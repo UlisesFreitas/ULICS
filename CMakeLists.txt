@@ -58,6 +58,7 @@ add_executable(UliCS WIN32
     src/demos/DemoGame.cpp src/demos/DemoGame.h
     src/scripting/LuaGame.cpp src/scripting/LuaGame.h
     src/scripting/EmbeddedScripts.h
+    src/scripting/SystemScripts.h
     src/rendering/EmbeddedFont.h
     src/input/InputManager.cpp src/input/InputManager.h
     src/scripting/ScriptingManager.cpp src/scripting/ScriptingManager.h

@@ -8,6 +8,7 @@
 #include <chrono>
 #include "scripting/ScriptingManager.h"
 #include "scripting/EmbeddedScripts.h" // Include our new embedded script header.
+#include "scripting/SystemScripts.h" // System menu
 
 Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
@@ -85,31 +86,25 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         bool scriptLoaded = false;
         
         if (cartridgePath.empty()) {
-            // No cartridge specified - load embedded demo
-            std::cout << "No cartridge specified. Loading embedded demo..." << std::endl;
-            scriptLoaded = scriptingManager->LoadAndRunScript(EmbeddedScripts::DEMO_CART);
+            // No cartridge specified - load system menu
+            std::cout << "No cartridge specified. Loading system menu..." << std::endl;
+            SetState(EngineState::MENU);
+            scriptLoaded = scriptingManager->LoadAndRunScript(SystemScripts::MENU_SCRIPT.c_str());
             if (!scriptLoaded) {
-                std::cerr << "Could not load the embedded demo cartridge." << std::endl;
-                return false;
-            }
-        } else {
-            // Cartridge path specified - try to load it
-            std::cout << "Loading cartridge: " << cartridgePath << std::endl;
-            
-            // Try loading as a .lua file directly
-            if (cartridgePath.find(".lua") != std::string::npos) {
-                scriptLoaded = scriptingManager->LoadScriptFromFile(cartridgePath);
-            } else {
-                // Assume it's a directory, look for main.lua
-                std::string mainLuaPath = cartridgePath + "/main.lua";
-                scriptLoaded = scriptingManager->LoadScriptFromFile(mainLuaPath);
-            }
-            
-            if (!scriptLoaded) {
-                std::cerr << "Failed to load cartridge: " << cartridgePath << std::endl;
+                std::cerr << "Could not load the system menu." << std::endl;
                 std::cerr << "Error: " << scriptingManager->GetLastLuaError() << std::endl;
                 return false;
             }
+        } else {
+            // Cartridge path specified - try to load it via LoadCartridge
+            std::cout << "Loading cartridge via Engine::LoadCartridge(): " << cartridgePath << std::endl;
+            
+            if (!LoadCartridge(cartridgePath)) {
+                std::cerr << "Failed to load cartridge: " << cartridgePath << std::endl;
+                return false;
+            }
+            
+            scriptLoaded = true;  // LoadCartridge handles script loading
         }
         
     } catch (const std::exception& e) {

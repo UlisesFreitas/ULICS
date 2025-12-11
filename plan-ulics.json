@@ -331,13 +331,14 @@
         {
           "id": "4.7",
           "description": "Create `system/menu.lua` - a special internal cartridge that scans and displays available cartridges, allowing the user to select one to load.",
-          "status": "pending",
-          "files": "src/system/menu.lua OR src/scripting/SystemScripts.h"
+          "status": "completed",
+          "files": "src/scripting/SystemScripts.h",
+          "notes": "Menu uses placeholder functions get_cartridge_list() and load_cartridge() which will be implemented in tasks 4.9-4.10"
         },
         {
           "id": "4.8",
           "description": "Modify `Engine::Initialize()` boot logic: if no cartridge path is provided, enter `STATE_MENU` and load the system menu script.",
-          "status": "pending",
+          "status": "completed",
           "files": "src/core/Engine.cpp"
         },
         {

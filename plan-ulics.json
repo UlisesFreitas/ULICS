@@ -325,7 +325,8 @@
         {
           "id": "4.6",
           "description": "Create `cartridges/` directory structure and implement at least 2 example cartridges (e.g., 'hello_world' and 'bouncing_ball') to test the system.",
-          "status": "pending"
+          "status": "completed",
+          "files": "cartridges/hello_world/main.lua, cartridges/hello_world/config.json, cartridges/bouncing_ball/main.lua, cartridges/bouncing_ball/config.json, cartridges/README.md"
         },
         {
           "id": "4.7",

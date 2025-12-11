@@ -1,0 +1,12 @@
+{
+    "name": "Hello World",
+    "author": "ULICS Team",
+    "version": "1.0.0",
+    "description": "A simple hello world example showcasing basic ULICS functionality",
+    "memory_limit_mb": 512,
+    "lua_code_limit_lines": 100000,
+    "palette_size": 16,
+    "framebuffer_width": 256,
+    "framebuffer_height": 256,
+    "target_fps": 60
+}

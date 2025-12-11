@@ -62,6 +62,7 @@ add_executable(UliCS WIN32
     src/input/InputManager.cpp src/input/InputManager.h
     src/scripting/ScriptingManager.cpp src/scripting/ScriptingManager.h
     src/cartridge/CartridgeConfig.h
+    src/cartridge/CartridgeLoader.cpp src/cartridge/CartridgeLoader.h
 )
 
 # Add the 'src' directory to the include path.

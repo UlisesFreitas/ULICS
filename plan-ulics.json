@@ -313,7 +313,7 @@
         {
           "id": "4.4",
           "description": "Implement `CartridgeLoader` class with methods: `loadCartridge(path)`, `listAvailableCartridges(directory)`, and `parseConfig(path)`.",
-          "status": "pending",
+          "status": "completed",
           "files": "src/cartridge/CartridgeLoader.h, src/cartridge/CartridgeLoader.cpp"
         },
         {

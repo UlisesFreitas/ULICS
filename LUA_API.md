@@ -77,6 +77,18 @@ Convenience functions for common mathematical operations.
 
 ---
 
+## System API
+
+Functions for interacting with the ULICS system and cartridge management.
+
+| Function | Parameters | Description | Status |
+| :--- | :--- | :--- | :--- |
+| `time()` | - | Returns the elapsed time in seconds since the cartridge started. | ✅ **Implemented** |
+| `load_cartridge(path)` | `cartridge_path` | Dynamically loads and runs a different cartridge. Used by the system menu. Returns `true` on success. | ✅ **Implemented** |
+| `list_cartridges()` | - | Returns a table of available cartridges in the `cartridges/` directory. Each entry has `name` and `path` fields. | ✅ **Implemented** |
+
+---
+
 ## Map API
 
 Functions for interacting with the tilemap data.

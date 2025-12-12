@@ -34,15 +34,13 @@ const std::string MENU_SCRIPT = R"(
 -- 
 -- Controls:
 --   UP/DOWN   - Navigate cartridges
---   ENTER     - Load selected cartridge
---   ESC       - Quit
+--   Z/X       - Load selected cartridge
 
 local cartridges = {}
 local selected_index = 1
 local scroll_offset = 0
 local max_visible = 10
 
--- Menu colors
 local COLOR_BG = 1        -- Dark blue
 local COLOR_TITLE = 7     -- White
 local COLOR_TEXT = 6      -- Light gray
@@ -50,21 +48,24 @@ local COLOR_SELECTED = 11 -- Green
 local COLOR_HIGHLIGHT = 8 -- Red
 local COLOR_INFO = 13     -- Light blue
 
+-- State variables
+local last_input_time = 0
+local INPUT_DELAY = 0.2  -- 200ms delay between inputs
+
 -- Initialize menu
 function _init()
-    -- Get list of available cartridges
-    -- NOTE: This function will be implemented in tasks 4.9-4.10
-    -- For now, we'll use a placeholder
-    cartridges = get_cartridge_list()
+    -- Get list of available cartridges from C++ API
+    cartridges = list_cartridges()
     
-    if #cartridges == 0 then
-        print("No cartridges found!")
-    end
+    -- Debug: We can't use print() here because it requires x,y,color
+    -- The cartridges list is ready now
 end
 
 function _update()
-    -- Navigate up
-    if btnp(2) then  -- Up arrow
+    local current_time = time()
+    
+    -- Navigate up (using btn with delay instead of btnp)
+    if btn(2) and (current_time - last_input_time) > INPUT_DELAY then
         selected_index = selected_index - 1
         if selected_index < 1 then
             selected_index = #cartridges
@@ -74,10 +75,12 @@ function _update()
         if selected_index < scroll_offset + 1 then
             scroll_offset = selected_index - 1
         end
+        
+        last_input_time = current_time
     end
     
     -- Navigate down
-    if btnp(3) then  -- Down arrow
+    if btn(3) and (current_time - last_input_time) > INPUT_DELAY then
         selected_index = selected_index + 1
         if selected_index > #cartridges then
             selected_index = 1
@@ -87,14 +90,19 @@ function _update()
         if selected_index > scroll_offset + max_visible then
             scroll_offset = selected_index - max_visible
         end
+        
+        last_input_time = current_time
     end
     
-    -- Load cartridge
-    if btnp(4) then  -- Enter/Z key
+    -- Load cartridge with Z or X button
+    if (btn(4) or btn(5)) and (current_time - last_input_time) > INPUT_DELAY then
         if #cartridges > 0 then
             local cart = cartridges[selected_index]
-            load_cartridge(cart.path)
+            if cart.path and cart.path ~= "" then
+                load_cartridge(cart.path)
+            end
         end
+        last_input_time = current_time
     end
 end
 
@@ -146,31 +154,10 @@ function _draw()
         line(0, info_y - 4, 255, info_y - 4, COLOR_TITLE)
         print("SELECTED:", 8, info_y, COLOR_TITLE)
         print(cart.name, 8, info_y + 8, COLOR_TEXT)
-        
-        if cart.author then
-            print("BY: " .. cart.author, 8, info_y + 16, COLOR_TEXT)
-        end
     end
     
     -- Draw controls
-    print("UP/DOWN: SELECT  ENTER: LOAD", 30, 240, COLOR_INFO)
-end
-
--- Placeholder function - will be replaced by C++ API
-function get_cartridge_list()
-    -- This will be implemented in tasks 4.9-4.10
-    -- For now, return a sample list for testing
-    return {
-        {name = "Hello World", path = "cartridges/hello_world", author = "ULICS Team"},
-        {name = "Bouncing Balls", path = "cartridges/bouncing_ball", author = "ULICS Team"},
-        {name = "[Load your own cartridges here]", path = "", author = ""}
-    }
-end
-
--- Placeholder function - will be replaced by C++ API
-function load_cartridge(path)
-    -- This will be implemented in task 4.9
-    print("Loading: " .. path)
+    print("UP/DOWN: SELECT  Z/X: LOAD", 30, 240, COLOR_INFO)
 end
 
 -- Initialize on load

@@ -344,21 +344,79 @@
         {
           "id": "4.9",
           "description": "Expose Lua function `load_cartridge(name)` to allow the menu script to dynamically load selected cartridges.",
-          "status": "pending",
+          "status": "completed",
           "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp"
         },
         {
           "id": "4.10",
           "description": "Add `list_cartridges()` Lua function to return available cartridges as a Lua table for the menu system.",
-          "status": "pending",
+          "status": "completed",
           "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp"
         },
         {
           "id": "4.11",
           "description": "Implement resource limit enforcement: track Lua memory usage (via `lua_gc`) and code line count. Display warnings/stats but allow configurable limits per cartridge (512MB-1GB RAM, up to 1M lines). This is a CORE differentiator of ULICS.",
+          "status": "completed",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, src/core/Engine.cpp",
+          "notes": "Limits are informative (show current usage) but not rigid. Warnings shown when exceeding 80% or 100% of configured limits."
+        }
+      ]
+    },
+    {
+      "phase": 4.5,
+      "title": "Stabilization & API Completion",
+      "description": "Critical fixes and missing implementations discovered during Phase 4. Ensures solid foundation before expanding to Phase 5.",
+      "libraries": [],
+      "tasks": [
+        {
+          "id": "4.5.1",
+          "description": "Implement circfill() - Critical missing function marked as implemented in LUA_API.md but not actually coded. Needed for filled circles.",
+          "status": "completed",
+          "priority": "CRITICAL",
+          "files": "src/rendering/AestheticLayer.h, src/rendering/AestheticLayer.cpp, src/scripting/ScriptingManager.cpp, LUA_API.md",
+          "notes": "Verified: circfill() IS fully implemented - C++ function exists in AestheticLayer.cpp (line 231), Lua bridge exists in ScriptingManager.cpp (line 212), and is registered in RegisterAPI(). The bouncing_ball demo issue was physics bugs, not missing circfill()."
+        },
+        {
+          "id": "4.5.2",
+          "description": "Implement visual error screen - Show Lua errors to user with red screen + scrollable error message instead of just black screen.",
           "status": "pending",
-          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, src/cartridge/CartridgeConfig.h",
-          "notes": "Limits should be informative (show current usage) but not rigid. Allow developers to go BIG."
+          "priority": "CRITICAL",
+          "files": "src/core/Engine.cpp, src/rendering/AestheticLayer.cpp"
+        },
+        {
+          "id": "4.5.3",
+          "description": "Add system control functions to Lua API: exit(), reset(), goto_menu() for better cartridge control flow.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, src/core/Engine.h, src/core/Engine.cpp, LUA_API.md"
+        },
+        {
+          "id": "4.5.4",
+          "description": "Create comprehensive API test cartridge that systematically tests every implemented Lua function with visual feedback.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "cartridges/api_test/main.lua, cartridges/api_test/config.json"
+        },
+        {
+          "id": "4.5.5",
+          "description": "Fix bouncing_ball demo with proper physics that actually works, or replace with a better visual demo.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "cartridges/bouncing_ball/main.lua"
+        },
+        {
+          "id": "4.5.6",
+          "description": "Update README.md with current project state, build instructions, cartridge guide, and quick start tutorial.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "README.md"
+        },
+        {
+          "id": "4.5.7",
+          "description": "Audit all functions marked as ✅ in LUA_API.md - verify they're actually implemented and working correctly.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "LUA_API.md, src/scripting/ScriptingManager.cpp"
         }
       ]
     },

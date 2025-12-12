@@ -2,6 +2,7 @@
 #include "rendering/AestheticLayer.h"
 #include "input/InputManager.h"
 #include "core/Engine.h"
+#include "cartridge/CartridgeLoader.h"
 #include <iostream>
 #include <string> // Required for std::string
 #include <array>
@@ -12,7 +13,7 @@
 constexpr double PI = 3.14159265358979323846;
 
 ScriptingManager::ScriptingManager(Engine* engine)
-    : L(nullptr), engineInstance(engine) {
+    : L(nullptr), engineInstance(engine), codeLineCount(0) {
     // 1. Create a new Lua state.
     L = luaL_newstate();
     if (L) {
@@ -103,6 +104,10 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("flr", &ScriptingManager::Lua_Flr);
     RegisterFunction("ceil", &ScriptingManager::Lua_Ceil);
     RegisterFunction("rnd", &ScriptingManager::Lua_Rnd);
+    
+    // --- Cartridge Management ---
+    RegisterFunction("load_cartridge", &ScriptingManager::Lua_LoadCartridge);
+    RegisterFunction("list_cartridges", &ScriptingManager::Lua_ListCartridges);
 }
 
 void ScriptingManager::RegisterFunction(const char* luaName, lua_CFunction func) {
@@ -396,6 +401,87 @@ int ScriptingManager::Lua_Rnd(lua_State* L) {
     return 1;
 }
 
+// === Cartridge Management Functions ===
+
+/**
+ * @brief Lua function: load_cartridge(path)
+ * 
+ * Dynamically loads a cartridge from the specified path.
+ * This is used by the system menu to load selected cartridges.
+ * 
+ * @param path String - Path to cartridge (directory or .lua file)
+ * @return boolean - true if loaded successfully, false otherwise
+ */
+int ScriptingManager::Lua_LoadCartridge(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    // Get cartridge path argument
+    const char* path = luaL_checkstring(L, 1);
+    
+    std::cout << "Lua: load_cartridge called with path: " << path << std::endl;
+    
+    // Call Engine::LoadCartridge
+    bool success = sm->engineInstance->LoadCartridge(std::string(path));
+    
+    // Return success status to Lua
+    lua_pushboolean(L, success);
+    return 1;
+}
+
+/**
+ * @brief Lua function: list_cartridges()
+ * 
+ * Returns a table of available cartridges in the cartridges/ directory.
+ * Used by the system menu to display available games.
+ * 
+ * OPTIMIZED: Does NOT parse config.json for performance.
+ * Returns only name (from directory/filename) and path.
+ * 
+ * @return table - Array of cartridge info tables with fields: name, path
+ */
+int ScriptingManager::Lua_ListCartridges(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    // Create a CartridgeLoader instance
+    CartridgeLoader loader;
+    
+    // Scan cartridges directory
+    std::string cartridgesDir = "./cartridges";
+    auto cartridges = loader.ListAvailableCartridges(cartridgesDir);
+    
+    std::cout << "Lua: list_cartridges found " << cartridges.size() << " cartridges" << std::endl;
+    
+    // Create Lua table
+    lua_newtable(L);
+    
+    for (size_t i = 0; i < cartridges.size(); i++) {
+        const auto& cart = cartridges[i];
+        
+        // Create table for this cartridge
+        lua_newtable(L);
+        
+        // Set name field (from directory/filename, NOT from config)
+        lua_pushstring(L, "name");
+        lua_pushstring(L, cart.name.c_str());
+        lua_settable(L, -3);
+        
+        // Set path field
+        lua_pushstring(L, "path");
+        lua_pushstring(L, cart.path.c_str());
+        lua_settable(L, -3);
+        
+        // Author field - empty for now (avoid slow config parsing)
+        lua_pushstring(L, "author");
+        lua_pushstring(L, "");
+        lua_settable(L, -3);
+        
+        // Add to main table (1-indexed in Lua)
+        lua_rawseti(L, -2, i + 1);
+    }
+    
+    return 1;
+}
+
 // Calls a global Lua function with no arguments or return values.
 bool ScriptingManager::CallLuaFunction(const char* functionName) {
     lua_getglobal(L, functionName); // Get the function from Lua's global scope
@@ -412,4 +498,34 @@ bool ScriptingManager::CallLuaFunction(const char* functionName) {
         lua_pop(L, 1); // Pop the non-function value from the stack
     }
     return true;
+}
+
+// === Resource Tracking Implementation (Task 4.11) ===
+
+int ScriptingManager::GetLuaMemoryUsageKB() const {
+    if (!L) return 0;
+    
+    // lua_gc with LUA_GCCOUNT returns memory in KB
+    int memKB = lua_gc(L, LUA_GCCOUNT, 0);
+    return memKB;
+}
+
+float ScriptingManager::GetLuaMemoryUsageMB() const {
+    return GetLuaMemoryUsageKB() / 1024.0f;
+}
+
+void ScriptingManager::SetCodeLineCount(int lines) {
+    codeLineCount = lines;
+}
+
+int ScriptingManager::GetCodeLineCount() const {
+    return codeLineCount;
+}
+
+void ScriptingManager::LogResourceStats() const {
+    std::cout << "=== ULICS Resource Statistics ===" << std::endl;
+    std::cout << "  Lua Memory Usage: " << GetLuaMemoryUsageMB() << " MB ("
+              << GetLuaMemoryUsageKB() << " KB)" << std::endl;
+    std::cout << "  Code Lines Loaded: " << codeLineCount << " lines" << std::endl;
+    std::cout << "=================================" << std::endl;
 }

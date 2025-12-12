@@ -5,6 +5,7 @@
 #include "cartridge/CartridgeLoader.h" // Cartridge system
 #include "cartridge/CartridgeConfig.h" // Cartridge configuration
 #include <iostream>
+#include <fstream>  // For file I/O (code line counting)
 #include <chrono>
 #include "scripting/ScriptingManager.h"
 #include "scripting/EmbeddedScripts.h" // Include our new embedded script header.
@@ -122,8 +123,11 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
     isRunning = true;
     startTime = std::chrono::high_resolution_clock::now();
     
-    // Set state to RUNNING_CARTRIDGE since we loaded a script
-    SetState(EngineState::RUNNING_CARTRIDGE);
+    // Only set RUNNING_CARTRIDGE if we're not already in a specific state
+    // (MENU state or RUNNING_CARTRIDGE from LoadCartridge should be preserved)
+    if (currentState == EngineState::BOOT) {
+        SetState(EngineState::RUNNING_CARTRIDGE);
+    }
     
     std::cout << "Engine initialized successfully." << std::endl;
     return true;
@@ -278,12 +282,23 @@ bool Engine::LoadCartridge(const std::string& cartridgePath) {
     }
 
     // 2. TODO: Apply framebuffer size (requires AestheticLayer modification)
-    // 3. TODO: Apply memory limits to Lua (track via lua_gc)
-    // 4. TODO: Apply code line limits (count on load)
-
+    
     // Get path to main.lua
     std::string mainLuaPath = cartridgeLoader->GetMainLuaPath(cartridgePath);
 
+    // 3. Count code lines in the script file
+    int codeLines = 0;
+    {
+        std::ifstream file(mainLuaPath);
+        if (file.is_open()) {
+            std::string line;
+            while (std::getline(file, line)) {
+                codeLines++;
+            }
+            file.close();
+        }
+    }
+    
     // Load the Lua script
     if (!scriptingManager || !scriptingManager->LoadScriptFromFile(mainLuaPath)) {
         std::string error = "Failed to load cartridge script: " + mainLuaPath;
@@ -294,6 +309,28 @@ bool Engine::LoadCartridge(const std::string& cartridgePath) {
         SetState(EngineState::ERROR);
         return false;
     }
+
+    // 4. Set code line count and log resource stats
+    scriptingManager->SetCodeLineCount(codeLines);
+    
+    std::cout << "\n";
+    scriptingManager->LogResourceStats();
+    
+    // Check limits and warn if approaching
+    if (codeLines > config.lua_code_limit_lines) {
+        std::cout << "WARNING: Code exceeds configured limit of " 
+                  << config.lua_code_limit_lines << " lines!" << std::endl;
+    } else if (codeLines > config.lua_code_limit_lines * 0.8) {
+        std::cout << "INFO: Code is at " << (codeLines * 100 / config.lua_code_limit_lines) 
+                  << "% of configured limit." << std::endl;
+    }
+    
+    float memMB = scriptingManager->GetLuaMemoryUsageMB();
+    if (memMB > config.memory_limit_mb) {
+        std::cout << "WARNING: Memory exceeds configured limit of " 
+                  << config.memory_limit_mb << " MB!" << std::endl;
+    }
+    std::cout << "\n";
 
     // Create a new LuaGame instance
     try {

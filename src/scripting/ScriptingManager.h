@@ -34,11 +34,29 @@ public:
 
     const std::string& GetLastLuaError() const { return lastError; }
 
+    // === Resource Tracking (Phase 4 - Task 4.11) ===
+    
+    // Returns current Lua memory usage in KB
+    int GetLuaMemoryUsageKB() const;
+    
+    // Returns current Lua memory usage in MB
+    float GetLuaMemoryUsageMB() const;
+    
+    // Sets and gets the code line count for the loaded cartridge
+    void SetCodeLineCount(int lines);
+    int GetCodeLineCount() const;
+    
+    // Logs resource usage statistics
+    void LogResourceStats() const;
+
 private:
     lua_State* L; // Pointer to the Lua state.
     Engine* engineInstance; // Non-owning pointer to the main engine instance.
     std::string lastError;
     std::mt19937 rng; // Mersenne Twister random number generator.
+    
+    // Resource tracking
+    int codeLineCount; // Number of lines in loaded cartridge
 
     void RegisterAPI();
 
@@ -86,6 +104,13 @@ private:
 
     // Static bridge function to call AestheticLayer::SetTransparentColor
     static int Lua_Tcolor(lua_State* L);
+
+    // --- Cartridge Management Functions ---
+    // Static bridge function to load a cartridge dynamically
+    static int Lua_LoadCartridge(lua_State* L);
+    
+    // Static bridge function to list available cartridges
+    static int Lua_ListCartridges(lua_State* L);
 
     // --- Math Functions ---
     static int Lua_Sin(lua_State* L);

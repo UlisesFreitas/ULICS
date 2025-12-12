@@ -6,6 +6,8 @@
 #include "cartridge/CartridgeConfig.h" // Cartridge configuration
 #include <iostream>
 #include <fstream>  // For file I/O (code line counting)
+#include <sstream>  // For string stream (error screen)
+#include <vector>   // For vector (error screen line wrapping)
 #include <chrono>
 #include "scripting/ScriptingManager.h"
 #include "scripting/EmbeddedScripts.h" // Include our new embedded script header.
@@ -188,17 +190,6 @@ void Engine::Run() {
     }
 }
 
-void Engine::enterErrorState(const std::string& message) {
-    inErrorState = true;
-    errorMessage = message;
-    std::cerr << "Engine entering error state: " << errorMessage << std::endl;
-}
-
-void Engine::drawErrorScreen() {
-    aestheticLayer->Clear(2); // Dark Purple background for errors
-    aestheticLayer->Print("LUA ERROR:", 4, 4, 8); // Red title
-    aestheticLayer->Print(errorMessage, 4, 20, 7); // White error message
-}
 
 // === Engine State Machine Implementation ===
 
@@ -373,6 +364,73 @@ bool Engine::ReloadCurrentCartridge() {
     std::cout << "Engine: Reloading cartridge: " << pathToReload << std::endl;
     
     return LoadCartridge(pathToReload);
+}
+
+// === Error Handling (Task 4.5.2) ===
+
+void Engine::enterErrorState(const std::string& message) {
+    inErrorState = true;
+    errorMessage = message;
+    SetState(EngineState::ERROR);
+    std::cerr << "=== ENGINE ERROR ===" << std::endl;
+    std::cerr << errorMessage << std::endl;
+    std::cerr << "===================" << std::endl;
+}
+
+void Engine::drawErrorScreen() {
+    if (!aestheticLayer) return;
+    
+    // Red background
+    aestheticLayer->Clear(8); // Color 8 is red in PICO-8 palette
+    
+    // Draw error header
+    aestheticLayer->Print("ULICS - ERROR", 70, 10, 7);  // White text
+    aestheticLayer->Line(0, 25, 255, 25, 7);
+    
+    // Parse error message into lines (max ~30 chars per line for 256px width)
+    std::vector<std::string> lines;
+    std::istringstream stream(errorMessage);
+    std::string line;
+    
+    while (std::getline(stream, line)) {
+        // Wrap long lines
+        while (line.length() > 30) {
+            lines.push_back(line.substr(0, 30));
+            line = line.substr(30);
+        }
+        if (!line.empty()) {
+            lines.push_back(line);
+        }
+    }
+    
+    // Display error lines (show up to 20 lines)
+    int y = 35;
+    int maxLines = std::min(20, static_cast<int>(lines.size()));
+    
+    for (int i = 0; i < maxLines && y < 220; i++) {
+        aestheticLayer->Print(lines[i], 5, y, 6); // Light gray
+        y += 10;
+    }
+    
+    // Show controls at bottom
+    aestheticLayer->Line(0, 225, 255, 225, 7);
+    aestheticLayer->Print("ESC: EXIT  R: RELOAD", 50, 235, 14); // Pink text
+    
+    aestheticLayer->Present();
+    
+    // Handle error screen input
+    if (inputManager) {
+        if (inputManager->isKeyPressed(SDL_SCANCODE_ESCAPE)) {
+            isRunning = false;
+        }
+        if (inputManager->isKeyPressed(SDL_SCANCODE_R)) {
+            // Try to reload current cartridge
+            inErrorState = false;
+            if (!currentCartridgePath.empty()) {
+                LoadCartridge(currentCartridgePath);
+            }
+        }
+    }
 }
 
 void Engine::Shutdown() {

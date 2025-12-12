@@ -108,6 +108,11 @@ void ScriptingManager::RegisterAPI() {
     // --- Cartridge Management ---
     RegisterFunction("load_cartridge", &ScriptingManager::Lua_LoadCartridge);
     RegisterFunction("list_cartridges", &ScriptingManager::Lua_ListCartridges);
+    
+    // --- System Control ---
+    RegisterFunction("exit", &ScriptingManager::Lua_Exit);
+    RegisterFunction("reset", &ScriptingManager::Lua_Reset);
+    RegisterFunction("goto_menu", &ScriptingManager::Lua_GotoMenu);
 }
 
 void ScriptingManager::RegisterFunction(const char* luaName, lua_CFunction func) {
@@ -528,4 +533,72 @@ void ScriptingManager::LogResourceStats() const {
               << GetLuaMemoryUsageKB() << " KB)" << std::endl;
     std::cout << "  Code Lines Loaded: " << codeLineCount << " lines" << std::endl;
     std::cout << "=================================" << std::endl;
+}
+
+// === System Control Functions (Task 4.5.3) ===
+
+/**
+ * @brief Lua function: exit()
+ * 
+ * Exits the ULICS application gracefully.
+ */
+int ScriptingManager::Lua_Exit(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    std::cout << "Lua: exit() called - shutting down ULICS..." << std::endl;
+    
+    // Signal the engine to stop running
+    // We access the engine through the upvalue pointer
+    if (sm && sm->engineInstance) {
+        // The engine's Run() loop checks isRunning, but we don't have direct access
+        // Instead, we'll use SDL_Quit event
+        SDL_Event quitEvent;
+        quitEvent.type = SDL_QUIT;
+        SDL_PushEvent(&quitEvent);
+    }
+    
+    return 0;
+}
+
+/**
+ * @brief Lua function: reset()
+ * 
+ * Resets/reloads the current cartridge.
+ */
+int ScriptingManager::Lua_Reset(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    std::cout << "Lua: reset() called - reloading current cartridge..." << std::endl;
+    
+    if (sm && sm->engineInstance) {
+        // Call Engine's ReloadCurrentCartridge method
+        bool success = sm->engineInstance->ReloadCurrentCartridge();
+        lua_pushboolean(L, success);
+        return 1;
+    }
+    
+    lua_pushboolean(L, false);
+    return 1;
+}
+
+/**
+ * @brief Lua function: goto_menu()
+ * 
+ * Returns to the ULICS system menu.
+ */
+int ScriptingManager::Lua_GotoMenu(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    std::cout << "Lua: goto_menu() called - returning to system menu..." << std::endl;
+    
+    if (sm && sm->engineInstance) {
+        // Load the system menu by calling load_cartridge with empty path
+        // The engine will interpret empty path as "load menu"
+        bool success = sm->engineInstance->LoadCartridge("");
+        lua_pushboolean(L, success);
+        return 1;
+    }
+    
+    lua_pushboolean(L, false);
+    return 1;
 }

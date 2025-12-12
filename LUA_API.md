@@ -86,6 +86,9 @@ Functions for interacting with the ULICS system and cartridge management.
 | `time()` | - | Returns the elapsed time in seconds since the cartridge started. | ✅ **Implemented** |
 | `load_cartridge(path)` | `cartridge_path` | Dynamically loads and runs a different cartridge. Used by the system menu. Returns `true` on success. | ✅ **Implemented** |
 | `list_cartridges()` | - | Returns a table of available cartridges in the `cartridges/` directory. Each entry has `name` and `path` fields. | ✅ **Implemented** |
+| `exit()` | - | Gracefully exits the ULICS application. | ✅ **Implemented** |
+| `reset()` | - | Resets/reloads the current cartridge. Returns `true` on success. | ✅ **Implemented** |
+| `goto_menu()` | - | Returns to the ULICS system menu. Returns `true` on success. | ✅ **Implemented** |
 
 ---
 

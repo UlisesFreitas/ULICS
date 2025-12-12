@@ -112,6 +112,16 @@ private:
     // Static bridge function to list available cartridges
     static int Lua_ListCartridges(lua_State* L);
 
+    // --- System Control Functions (Task 4.5.3) ---
+    // Exit the engine/application
+    static int Lua_Exit(lua_State* L);
+    
+    // Reset/reload current cartridge
+    static int Lua_Reset(lua_State* L);
+    
+    // Go back to system menu
+    static int Lua_GotoMenu(lua_State* L);
+
     // --- Math Functions ---
     static int Lua_Sin(lua_State* L);
     static int Lua_Cos(lua_State* L);

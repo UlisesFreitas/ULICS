@@ -1,0 +1,10 @@
+{
+    "name": "API Test Suite",
+    "author": "ULICS Dev Team",
+    "version": "1.0",
+    "memory_limit_mb": 512,
+    "lua_code_limit_lines": 100000,
+    "palette_size": 16,
+    "framebuffer_width": 256,
+    "framebuffer_height": 256
+}

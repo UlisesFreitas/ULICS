@@ -379,87 +379,306 @@
         {
           "id": "4.5.2",
           "description": "Implement visual error screen - Show Lua errors to user with red screen + scrollable error message instead of just black screen.",
-          "status": "pending",
+          "status": "completed",
           "priority": "CRITICAL",
-          "files": "src/core/Engine.cpp, src/rendering/AestheticLayer.cpp"
+          "files": "src/core/Engine.cpp, src/rendering/AestheticLayer.cpp",
+          "notes": "Implemented red error screen with message wrapping (30 chars/line), shows up to 20 lines. ESC to exit, R to reload cartridge."
         },
         {
           "id": "4.5.3",
           "description": "Add system control functions to Lua API: exit(), reset(), goto_menu() for better cartridge control flow.",
-          "status": "pending",
+          "status": "completed",
           "priority": "HIGH",
-          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, src/core/Engine.h, src/core/Engine.cpp, LUA_API.md"
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, src/core/Engine.h, src/core/Engine.cpp, LUA_API.md",
+          "notes": "Implemented exit() (sends SDL_QUIT), reset() (calls ReloadCurrentCartridge), and goto_menu() (loads empty cartridge path). All documented in LUA_API.md."
         },
         {
           "id": "4.5.4",
           "description": "Create comprehensive API test cartridge that systematically tests every implemented Lua function with visual feedback.",
-          "status": "pending",
+          "status": "completed",
           "priority": "HIGH",
-          "files": "cartridges/api_test/main.lua, cartridges/api_test/config.json"
+          "files": "cartridges/api_test/main.lua, cartridges/api_test/config.json",
+          "notes": "Created test suite with 26+ tests covering Graphics (11), Input (2), Math (8), System (5). Uses pcall for safe testing, categorized display, UP/DOWN navigation, Z to return to menu."
         },
         {
           "id": "4.5.5",
           "description": "Fix bouncing_ball demo with proper physics that actually works, or replace with a better visual demo.",
-          "status": "pending",
+          "status": "completed",
           "priority": "MEDIUM",
-          "files": "cartridges/bouncing_ball/main.lua"
+          "files": "cartridges/bouncing_ball/main.lua",
+          "notes": "Completely rewrote with proper physics: 8 balls, gravity, wall/floor/ceiling bounce with damping, friction. Balls stay on screen and behave realistically."
         },
         {
           "id": "4.5.6",
           "description": "Update README.md with current project state, build instructions, cartridge guide, and quick start tutorial.",
-          "status": "pending",
+          "status": "completed",
           "priority": "MEDIUM",
-          "files": "README.md"
+          "files": "README.md",
+          "notes": "Created comprehensive README covering: project overview, philosophy, quick start, API summary, building instructions, project structure, example cartridges, and current status."
         },
         {
           "id": "4.5.7",
           "description": "Audit all functions marked as ✅ in LUA_API.md - verify they're actually implemented and working correctly.",
-          "status": "pending",
+          "status": "completed",
           "priority": "HIGH",
-          "files": "LUA_API.md, src/scripting/ScriptingManager.cpp"
+          "files": "LUA_API.md, src/scripting/ScriptingManager.cpp",
+          "notes": "Audited all ✅ functions: Graphics (11/11), Input (2/2), Math (8/8), System (6/6). All verified via code inspection and will be tested by api_test cartridge. Total: 27 functions confirmed implemented."
         }
       ]
     },
     {
       "phase": 5,
-      "title": "API Expansion and Features",
-      "description": "Add essential features to a fantasy console, such as advanced user input, audio, and a richer drawing API.",
+      "title": "API Expansion - Runtime Systems",
+      "description": "Implement core runtime systems for sprites, maps, audio, and advanced input. Focus on ENGINE/API only - editors come in Phase 5.5.",
       "libraries": [
         {
           "name": "SDL2_mixer",
-          "purpose": "To manage audio and music playback."
+          "purpose": "Audio playback (SFX and music)"
         },
         {
           "name": "SDL2_image",
-          "purpose": "To load sprites from image files (PNG)."
+          "purpose": "Load PNG spritesheets"
+        },
+        {
+          "name": "stb_image",
+          "purpose": "Alternative PNG loader (header-only, lighter)"
         }
       ],
       "tasks": [
         {
           "id": "5.1",
-          "description": "Create an 'InputManager' to handle keyboard and gamepad, and expose a simple API to Lua (btn(), btnp()).",
+          "description": "InputManager - Already completed in Phase 3.",
           "status": "completed",
-          "notes": "Already implemented in Phase 3 (tasks 3.6 and 3.7). InputManager exists and btn(), btnp() are exposed to Lua."
+          "notes": "btn() and btnp() already implemented and working."
         },
         {
           "id": "5.2",
-          "description": "Integrate SDL2_mixer and create an 'AudioManager' with functions to play sounds and music (sfx(), music()), exposed to Lua.",
-          "status": "pending"
+          "description": "Define sprite data format - 128x128 spritesheet, 8x8 or 16x16 tiles, PNG + metadata JSON.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "docs/SPRITE_FORMAT.md, cartridges/[cartridge]/sprites.png, cartridges/[cartridge]/sprites.json",
+          "notes": "Document sprite data structure. For now, manually create PNG files for testing. Editor comes in Phase 5.5."
         },
         {
           "id": "5.3",
-          "description": "Expand the drawing API in the Aesthetic Layer with SPRITE, CIRCLE, and other primitives. Expose to Lua.",
-          "status": "pending"
+          "description": "Implement SpriteSheet class - Load PNG spritesheet, parse metadata, store sprite data in memory.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "src/rendering/SpriteSheet.h, src/rendering/SpriteSheet.cpp",
+          "notes": "Use stb_image or SDL_image to load PNG. Store as indexed color (palette indices)."
         },
         {
           "id": "5.4",
-          "description": "Implement a 'SpriteSheet' system that can be loaded from the cartridge's assets.",
-          "status": "pending"
+          "description": "Add sprite rendering to AestheticLayer - DrawSprite(id, x, y, w, h, flip_x, flip_y).",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "src/rendering/AestheticLayer.h, src/rendering/AestheticLayer.cpp",
+          "notes": "Render sprites with transparency (tcolor), scaling, and flipping."
         },
         {
           "id": "5.5",
-          "description": "Implement a function `mousetoggle(enabled)` to activate/deactivate the mouse cursor and expose the functions `mousex()`, `mousey()` to Lua for basic UI interaction.",
-          "status": "pending"
+          "description": "Expose sprite API to Lua - spr(n, x, y, w, h, flip_x, flip_y), sspr(sx, sy, sw, sh, dx, dy, dw, dh).",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, LUA_API.md",
+          "notes": "spr() draws a sprite. sspr() draws a section of the spritesheet (for animation frames)."
+        },
+        {
+          "id": "5.6",
+          "description": "Define map data format - Grid of tile IDs, multiple layers (up to 8), metadata JSON.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "docs/MAP_FORMAT.md, cartridges/[cartridge]/map.json",
+          "notes": "Define map structure: width, height, layers array, each layer is tile ID grid. For testing, manually create JSON."
+        },
+        {
+          "id": "5.7",
+          "description": "Implement Map class - Load map JSON, store tile grid, support multiple layers.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/rendering/Map.h, src/rendering/Map.cpp",
+          "notes": "Map holds layers of tile IDs. Each tile references a sprite ID."
+        },
+        {
+          "id": "5.8",
+          "description": "Add map rendering to AestheticLayer - DrawMap(map_x, map_y, screen_x, screen_y, w, h, layer_mask).",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/rendering/AestheticLayer.h, src/rendering/AestheticLayer.cpp",
+          "notes": "Render visible portion of map. layer_mask controls which layers to draw (bitfield)."
+        },
+        {
+          "id": "5.9",
+          "description": "Expose map API to Lua - map(mx, my, sx, sy, w, h, layer), mget(x, y), mset(x, y, tile_id).",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, LUA_API.md",
+          "notes": "map() renders map region. mget/mset read/write tile IDs for collision detection."
+        },
+        {
+          "id": "5.10",
+          "description": "Integrate SDL2_mixer - Initialize audio subsystem, create AudioManager singleton.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/audio/AudioManager.h, src/audio/AudioManager.cpp, CMakeLists.txt",
+          "notes": "AudioManager handles all audio playback. Mix_OpenAudio with 4-8 channels."
+        },
+        {
+          "id": "5.11",
+          "description": "Define SFX data format - Waveform type, ADSR envelope, frequency sweep, duration. JSON format.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "docs/SFX_FORMAT.md, cartridges/[cartridge]/sfx.json",
+          "notes": "For testing, manually create JSON with simple square/sine waves. Editor in Phase 5.5."
+        },
+        {
+          "id": "5.12",
+          "description": "Implement SFX synthesis - Generate waveforms from SFX data, play through SDL_mixer.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/audio/SFXSynthesizer.h, src/audio/SFXSynthesizer.cpp",
+          "notes": "Synthesize audio on-the-fly from JSON specs. Support square, triangle, sine, noise."
+        },
+        {
+          "id": "5.13",
+          "description": "Define Music data format - Pattern sequences, tempo, channels referencing SFX IDs.",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "docs/MUSIC_FORMAT.md, cartridges/[cartridge]/music.json",
+          "notes": "Tracker-style: patterns contain note+sfx pairs. Sequences loop patterns."
+        },
+        {
+          "id": "5.14",
+          "description": "Implement Music playback - Pattern player, tempo control, multi-channel mixing.",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/audio/MusicPlayer.h, src/audio/MusicPlayer.cpp",
+          "notes": "Play music patterns by triggering SFX at specified intervals."
+        },
+        {
+          "id": "5.15",
+          "description": "Expose audio API to Lua - sfx(id, channel, offset), music(pattern_id, fade_ms, channel_mask).",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, LUA_API.md",
+          "notes": "sfx() plays sound effect. music() starts/stops music. Both return immediately (async)."
+        },
+        {
+          "id": "5.16",
+          "description": "Implement mouse input - Capture SDL mouse events, expose mouse state in InputManager.",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/input/InputManager.h, src/input/InputManager.cpp",
+          "notes": "Track mouse position and button states (left, right, middle)."
+        },
+        {
+          "id": "5.17",
+          "description": "Expose mouse API to Lua - mouse() returns {x, y, left, right, middle}, mousex(), mousey().",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, LUA_API.md",
+          "notes": "mouse() returns table. mousex/mousey return individual coords. Buttons are booleans."
+        },
+        {
+          "id": "5.18",
+          "description": "Add gamepad support - SDL2 gamepad API, map to fantasy console buttons (0-5 + extra).",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/input/InputManager.h, src/input/InputManager.cpp",
+          "notes": "Detect connected gamepads. Map D-pad and buttons. btn/btnp work with gamepad too."
+        }
+      ]
+    },
+    {
+      "phase": 5.5,
+      "title": "Integrated Development Tools",
+      "description": "Build in-engine editors and tools for creating sprites, maps, audio, and code. This transforms ULICS from a runtime into a complete development environment.",
+      "libraries": [
+        {
+          "name": "Dear ImGui",
+          "purpose": "For creating the development UI/editors overlay"
+        }
+      ],
+      "tasks": [
+        {
+          "id": "5.5.1",
+          "description": "Integrate Dear ImGui for development UI. Create overlay system that can be toggled with F1 key.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "src/ui/ImGuiLayer.h, src/ui/ImGuiLayer.cpp, CMakeLists.txt",
+          "notes": "ImGui will run in overlay mode on top of the game. F1 toggles dev tools."
+        },
+        {
+          "id": "5.5.2",
+          "description": "Create Sprite Editor UI - 8x8 to 128x128 canvas, color picker, preview, import/export PNG.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "src/ui/SpriteEditor.h, src/ui/SpriteEditor.cpp",
+          "notes": "Click to draw pixels, palette selector, zoom controls, save to cartridge spritesheet."
+        },
+        {
+          "id": "5.5.3",
+          "description": "Create Map Editor UI - Grid view, tile placement, layer management (up to 8 layers), copy/paste regions.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "src/ui/MapEditor.h, src/ui/MapEditor.cpp",
+          "notes": "Visual map editing with sprite tiles. Show/hide layers, select active layer, fill tool."
+        },
+        {
+          "id": "5.5.4",
+          "description": "Create SFX Editor UI - Waveform designer, ADSR envelope, frequency sweep controls, preview playback.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/ui/SFXEditor.h, src/ui/SFXEditor.cpp",
+          "notes": "Visual sound effect designer similar to PICO-8's sfx editor."
+        },
+        {
+          "id": "5.5.5",
+          "description": "Create Music Tracker UI - Pattern editor, channel view (4-8 channels), tempo/speed controls, pattern sequencer.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/ui/MusicTracker.h, src/ui/MusicTracker.cpp",
+          "notes": "Tracker-style music composition. Patterns of notes referencing SFX."
+        },
+        {
+          "id": "5.5.6",
+          "description": "Create Code Editor with Lua syntax highlighting, line numbers, auto-indent, and error indicators.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "src/ui/CodeEditor.h, src/ui/CodeEditor.cpp",
+          "notes": "In-engine code editing. Use TextEditor library or custom implementation. Save directly to main.lua."
+        },
+        {
+          "id": "5.5.7",
+          "description": "Implement Hot Reload - Detect file changes and auto-reload cartridge without restarting ULICS.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/core/HotReload.h, src/core/HotReload.cpp",
+          "notes": "Watch main.lua for changes. On change, call reset() automatically. Preserve _init() state if possible."
+        },
+        {
+          "id": "5.5.8",
+          "description": "Create Debug Console - Show print() output, Lua errors, FPS counter, memory stats, input state.",
+          "status": "pending",
+          "priority": "HIGH",
+          "files": "src/ui/DebugConsole.h, src/ui/DebugConsole.cpp",
+          "notes": "Scrollable console overlay. Show all print() calls, errors, and system stats in real-time."
+        },
+        {
+          "id": "5.5.9",
+          "description": "Create Cartridge Manager UI - List cartridges, create new, delete, duplicate, export to .ulics bundle.",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/ui/CartridgeManager.h, src/ui/CartridgeManager.cpp",
+          "notes": "Visual cartridge browser. New project wizard with templates."
+        },
+        {
+          "id": "5.5.10",
+          "description": "Implement Export/Publish system - Bundle cartridge into standalone .exe or web build.",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/export/Exporter.h, src/export/Exporter.cpp",
+          "notes": "Export finished games as standalone executables or WASM for web. Future feature."
         }
       ]
     },

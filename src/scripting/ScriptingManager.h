@@ -122,6 +122,23 @@ private:
     // Go back to system menu
     static int Lua_GotoMenu(lua_State* L);
 
+    // --- Sprite Functions (Phase 5.5) ---
+    // Draw sprite
+    static int Lua_Spr(lua_State* L);
+    
+    // Draw sprite sheet section (advanced)
+    static int Lua_Sspr(lua_State* L);
+
+    // --- Map Functions (Phase 5.9) ---
+    // Draw map
+    static int Lua_Map(lua_State* L);
+    
+    // Get tile ID at map coordinates
+    static int Lua_Mget(lua_State* L);
+    
+    // Set tile ID at map coordinates
+    static int Lua_Mset(lua_State* L);
+
     // --- Math Functions ---
     static int Lua_Sin(lua_State* L);
     static int Lua_Cos(lua_State* L);

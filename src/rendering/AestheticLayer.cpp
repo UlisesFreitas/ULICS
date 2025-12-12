@@ -1,5 +1,6 @@
 #include "AestheticLayer.h"
 #include "rendering/EmbeddedFont.h"
+#include "rendering/Map.h"
 #include <stdexcept>
 
 AestheticLayer::AestheticLayer(SDL_Renderer* renderer) : renderer(renderer) {
@@ -278,6 +279,118 @@ void AestheticLayer::Print(const std::string& text, int x, int y, uint8_t colorI
         }
         // Advance the cursor for the next character.
         cursorX += EmbeddedFont::FONT_WIDTH; // Character spacing is now built into the font glyphs.
+    }
+}
+
+// === Sprite Rendering Implementation (Phase 5) ===
+
+void AestheticLayer::DrawSprite(int spriteId, int x, int y, int w, int h, bool flipX, bool flipY) {
+    if (!spriteSheet || !spriteSheet->IsLoaded()) {
+        return; // No sprite sheet loaded
+    }
+    
+    int tileSize = spriteSheet->GetTileSize();
+    int spritesPerRow = SpriteSheet::SHEET_WIDTH / tileSize;
+    
+    // Draw w x h grid of sprites
+    for (int ty = 0; ty < h; ty++) {
+        for (int tx = 0; tx < w; tx++) {
+            int currentSpriteId = spriteId + ty * spritesPerRow + tx;
+            
+            // Get sprite data
+            std::vector<uint8_t> spriteData(tileSize * tileSize);
+            if (!spriteSheet->GetSpriteData(currentSpriteId, spriteData.data())) {
+                continue; // Sprite doesn't exist
+            }
+            
+            // Calculate destination position
+            int destX = x + (flipX ? (w - 1 - tx) : tx) * tileSize;
+            int destY = y + (flipY ? (h - 1 - ty) : ty) * tileSize;
+            
+            // Draw sprite pixels
+            for (int py = 0; py < tileSize; py++) {
+                for (int px = 0; px < tileSize; px++) {
+                    int srcX = flipX ? (tileSize - 1 - px) : px;
+                    int srcY = flipY ? (tileSize - 1 - py) : py;
+                    
+                    uint8_t colorIndex = spriteData[srcY * tileSize + srcX];
+                    
+                    // Skip transparent pixels
+                    if (transparentColorIndex >= 0 && colorIndex == static_cast<uint8_t>(transparentColorIndex)) {
+                        continue;
+                    }
+                    
+                    SetPixel(destX + px, destY + py, colorIndex);
+                }
+            }
+        }
+    }
+}
+
+void AestheticLayer::DrawSpriteSection(int sx, int sy, int sw, int sh, int dx, int dy, int dw, int dh) {
+    if (!spriteSheet || !spriteSheet->IsLoaded()) {
+        return; // No sprite sheet loaded
+    }
+    
+    // Simple version: no scaling (dw/dh ignored for now, assumes 1:1)
+    // TODO: Add proper scaling support
+    
+    for (int py = 0; py < sh; py++) {
+        for (int px = 0; px < sw; px++) {
+            // Get pixel from sprite sheet
+            uint8_t colorIndex = spriteSheet->GetPixel(sx + px, sy + py);
+            
+            // Skip transparent pixels
+            if (transparentColorIndex >= 0 && colorIndex == static_cast<uint8_t>(transparentColorIndex)) {
+                continue;
+            }
+            
+            // Draw to destination (no scaling)
+            int destX = dx + px;
+            int destY = dy + py;
+            
+            SetPixel(destX, destY, colorIndex);
+        }
+    }
+}
+
+// === Map Rendering Implementation (Phase 5.8) ===
+
+void AestheticLayer::DrawMap(Map* map, int mx, int my, int sx, int sy, int w, int h, uint8_t layerMask) {
+    if (!map || !map->IsLoaded() || !spriteSheet || !spriteSheet->IsLoaded()) {
+        return;
+    }
+    
+    int tileSize = map->GetTileSize();
+    int layerCount = map->GetLayerCount();
+    
+    // Render each layer
+    for (int layer = 0; layer < layerCount; layer++) {
+        // Check if this layer should be rendered
+        if ((layerMask & (1 << layer)) == 0) {
+            continue;
+        }
+        
+        // Render tiles in this layer
+        for (int ty = 0; ty < h; ty++) {
+            for (int tx = 0; tx < w; tx++) {
+                int mapX = mx + tx;
+                int mapY = my + ty;
+                
+                uint8_t tileId = map->GetTile(mapX, mapY, layer);
+                
+                // 0 = empty/transparent
+                if (tileId == 0) {
+                    continue;
+                }
+                
+                int screenX = sx + tx * tileSize;
+                int screenY = sy + ty * tileSize;
+                
+                // Draw the sprite for this tile
+                DrawSprite(tileId, screenX, screenY, 1, 1, false, false);
+            }
+        }
     }
 }
 

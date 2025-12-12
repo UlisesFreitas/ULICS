@@ -54,6 +54,8 @@ add_executable(UliCS WIN32
     src/main.cpp
     src/core/Engine.cpp src/core/Engine.h
     src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h
+    src/rendering/SpriteSheet.cpp src/rendering/SpriteSheet.h
+    src/rendering/Map.cpp src/rendering/Map.h
     src/game/Game.h
     src/demos/DemoGame.cpp src/demos/DemoGame.h
     src/scripting/LuaGame.cpp src/scripting/LuaGame.h

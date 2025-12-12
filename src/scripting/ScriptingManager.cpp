@@ -113,6 +113,15 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("exit", &ScriptingManager::Lua_Exit);
     RegisterFunction("reset", &ScriptingManager::Lua_Reset);
     RegisterFunction("goto_menu", &ScriptingManager::Lua_GotoMenu);
+    
+    // --- Sprite Functions (Phase 5.5) ---
+    RegisterFunction("spr", &ScriptingManager::Lua_Spr);
+    RegisterFunction("sspr", &ScriptingManager::Lua_Sspr);
+    
+    // --- Map Functions (Phase 5.9) ---
+    RegisterFunction("map", &ScriptingManager::Lua_Map);
+    RegisterFunction("mget", &ScriptingManager::Lua_Mget);
+    RegisterFunction("mset", &ScriptingManager::Lua_Mset);
 }
 
 void ScriptingManager::RegisterFunction(const char* luaName, lua_CFunction func) {
@@ -601,4 +610,163 @@ int ScriptingManager::Lua_GotoMenu(lua_State* L) {
     
     lua_pushboolean(L, false);
     return 1;
+}
+
+// === Sprite API Implementation (Phase 5.5) ===
+
+/**
+ * @brief Lua function: spr(n, x, y, [w], [h], [flip_x], [flip_y])
+ * 
+ * Draws a sprite or grid of sprites.
+ * Parameters:
+ *   - n: sprite ID
+ *   - x, y: screen position  
+ *   - w, h: width/height in tiles (default 1)
+ *   - flip_x, flip_y: flip flags (default false)
+ */
+int ScriptingManager::Lua_Spr(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    int argc = lua_gettop(L);
+    if (argc < 3) {
+        return 0; // Need at least n, x, y
+    }
+    
+    int spriteId = static_cast<int>(lua_tointeger(L, 1));
+    int x = static_cast<int>(lua_tointeger(L, 2));
+    int y = static_cast<int>(lua_tointeger(L, 3));
+    int w = (argc >= 4) ? static_cast<int>(lua_tointeger(L, 4)) : 1;
+    int h = (argc >= 5) ? static_cast<int>(lua_tointeger(L, 5)) : 1;
+    bool flipX = (argc >= 6) ? lua_toboolean(L, 6) : false;
+    bool flipY = (argc >= 7) ? lua_toboolean(L, 7) : false;
+    
+    if (sm && sm->engineInstance) {
+        sm->engineInstance->getAestheticLayer()->DrawSprite(spriteId, x, y, w, h, flipX, flipY);
+    }
+    
+    return 0;
+}
+
+/**
+ * @brief Lua function: sspr(sx, sy, sw, sh, dx, dy, [dw], [dh])
+ * 
+ * Draws a section of the sprite sheet.
+ * Parameters:
+ *   - sx, sy: source position in sprite sheet
+ *   - sw, sh: source width/height
+ *   - dx, dy: destination screen position
+ *   - dw, dh: destination width/height (default = sw, sh)
+ */
+int ScriptingManager::Lua_Sspr(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    int argc = lua_gettop(L);
+    if (argc < 6) {
+        return 0; // Need at least sx, sy, sw, sh, dx, dy
+    }
+    
+    int sx = static_cast<int>(lua_tointeger(L, 1));
+    int sy = static_cast<int>(lua_tointeger(L, 2));
+    int sw = static_cast<int>(lua_tointeger(L, 3));
+    int sh = static_cast<int>(lua_tointeger(L, 4));
+    int dx = static_cast<int>(lua_tointeger(L, 5));
+    int dy = static_cast<int>(lua_tointeger(L, 6));
+    int dw = (argc >= 7) ? static_cast<int>(lua_tointeger(L, 7)) : sw;
+    int dh = (argc >= 8) ? static_cast<int>(lua_tointeger(L, 8)) : sh;
+    
+    if (sm && sm->engineInstance) {
+        sm->engineInstance->getAestheticLayer()->DrawSpriteSection(sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+    
+    return 0;
+}
+
+// === Map API Implementation (Phase 5.9) ===
+// Note: Map functionality requires map instance to be stored/managed
+// For now, these are placeholder implementations
+// TODO: Add Map* member to Engine/AestheticLayer for global map access
+
+/**
+ * @brief Lua function: map(mx, my, sx, sy, w, h, [layer])
+ * 
+ * Draws a portion of the map.
+ */
+int ScriptingManager::Lua_Map(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    int argc = lua_gettop(L);
+    if (argc < 6) {
+        return 0; // Need mx, my, sx, sy, w, h at minimum
+    }
+    
+    int mx = static_cast<int>(lua_tointeger(L, 1));
+    int my = static_cast<int>(lua_tointeger(L, 2));
+    int sx = static_cast<int>(lua_tointeger(L, 3));
+    int sy = static_cast<int>(lua_tointeger(L, 4));
+    int w = static_cast<int>(lua_tointeger(L, 5));
+    int h = static_cast<int>(lua_tointeger(L, 6));
+    uint8_t layerMask = (argc >= 7) ? static_cast<uint8_t>(lua_tointeger(L, 7)) : 0xFF;
+    
+    // TODO: Implement global map storage
+    // if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
+    //     sm->engineInstance->getAestheticLayer()->DrawMap(
+    //         sm->engineInstance->getCurrentMap(), mx, my, sx, sy, w, h, layerMask);
+    // }
+    
+    return 0;
+}
+
+/**
+ * @brief Lua function: mget(x, y, [layer])
+ * 
+ * Gets tile ID at map coordinates.
+ */
+int ScriptingManager::Lua_Mget(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    int argc = lua_gettop(L);
+    if (argc < 2) {
+        lua_pushinteger(L, 0);
+        return 1;
+    }
+    
+    int x = static_cast<int>(lua_tointeger(L, 1));
+    int y = static_cast<int>(lua_tointeger(L, 2));
+    int layer = (argc >= 3) ? static_cast<int>(lua_tointeger(L, 3)) : 0;
+    
+    // TODO: Implement global map storage
+    // if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
+    //     uint8_t tile = sm->engineInstance->getCurrentMap()->GetTile(x, y, layer);
+    //     lua_pushinteger(L, tile);
+    //     return 1;
+    // }
+    
+    lua_pushinteger(L, 0);
+    return 1;
+}
+
+/**
+ * @brief Lua function: mset(x, y, tile_id, [layer])
+ * 
+ * Sets tile ID at map coordinates.
+ */
+int ScriptingManager::Lua_Mset(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    int argc = lua_gettop(L);
+    if (argc < 3) {
+        return 0;
+    }
+    
+    int x = static_cast<int>(lua_tointeger(L, 1));
+    int y = static_cast<int>(lua_tointeger(L, 2));
+    uint8_t tileId = static_cast<uint8_t>(lua_tointeger(L, 3));
+    int layer = (argc >= 4) ? static_cast<int>(lua_tointeger(L, 4)) : 0;
+    
+    // TODO: Implement global map storage
+    // if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
+    //     sm->engineInstance->getCurrentMap()->SetTile(x, y, tileId, layer);
+    // }
+    
+    return 0;
 }

@@ -10,13 +10,17 @@ local tests = {
 local test_stage = 1
 local frame_counter = 0
 
+-- Forward declarations
+local pass, fail, run_all_tests
+local test_graphics_api, test_input_api, test_math_api, test_system_api
+
 -- Test result tracking
-function pass(name)
+pass = function(name)
     test_results[test_idx] = { name = name, status = "PASS" }
     test_idx = test_idx + 1
 end
 
-function fail(name, error_msg)
+fail = function(name, error_msg)
     test_results[test_idx] = { name = name, status = "FAIL", error = error_msg }
     test_idx = test_idx + 1
 end
@@ -47,7 +51,7 @@ function _update()
     end
 end
 
-function run_all_tests()
+run_all_tests = function()
     current_test = "Running tests..."
 
     -- === GRAPHICS API TESTS ===
@@ -65,7 +69,7 @@ function run_all_tests()
     current_test = "Tests Complete"
 end
 
-function test_graphics_api()
+test_graphics_api = function()
     -- Test cls/clear
     local ok, err = pcall(function() cls(0) end)
     if ok then pass("cls()") else fail("cls()", err) end
@@ -111,7 +115,7 @@ function test_graphics_api()
     if ok then pass("tcolor()") else fail("tcolor()", err) end
 end
 
-function test_input_api()
+test_input_api = function()
     -- Test btn
     local ok, err = pcall(function() local b = btn(0) end)
     if ok then pass("btn()") else fail("btn()", err) end
@@ -121,7 +125,7 @@ function test_input_api()
     if ok then pass("btnp()") else fail("btnp()", err) end
 end
 
-function test_math_api()
+test_math_api = function()
     -- Test sin
     local ok, err = pcall(function() local s = sin(0.25) end)
     if ok then pass("sin()") else fail("sin()", err) end
@@ -155,7 +159,7 @@ function test_math_api()
     if ok then pass("rnd()") else fail("rnd()", err) end
 end
 
-function test_system_api()
+test_system_api = function()
     -- Test time
     local ok, err = pcall(function() local t = time() end)
     if ok then pass("time()") else fail("time()", err) end

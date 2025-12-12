@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <memory>
+#include "rendering/SpriteSheet.h"
 
 class AestheticLayer {
 public:
@@ -45,6 +47,20 @@ public:
     // Draws text on the framebuffer using the embedded font.
     void Print(const std::string& text, int x, int y, uint8_t colorIndex);
 
+    // === Sprite Rendering (Phase 5) ===
+    // Draws a sprite from the loaded sprite sheet.
+    // Parameters: spriteId, x, y, width (in tiles), height (in tiles), flipX, flipY
+    void DrawSprite(int spriteId, int x, int y, int w = 1, int h = 1, bool flipX = false, bool flipY = false);
+    
+    // Draws a section of the sprite sheet (advanced sprite rendering).
+    // Parameters: source x, y, width, height, destination x, y, dest width, dest height
+    void DrawSpriteSection(int sx, int sy, int sw, int sh, int dx, int dy, int dw, int dh);
+
+    // === Map Rendering (Phase 5.8) ===
+    // Draws a portion of the map
+    // Parameters: map x/y (tiles), screen x/y (pixels), width/height (tiles), layer mask
+    void DrawMap(class Map* map, int mx, int my, int sx, int sy, int w, int h, uint8_t layerMask = 0xFF);
+
     // Sets the transparent color index for sprite operations.
     void SetTransparentColor(int colorIndex);
 
@@ -76,6 +92,9 @@ private:
     int cameraX = 0;
     int cameraY = 0;
     int transparentColorIndex = -1; // -1 means no transparent color set.
+    
+    // Sprite rendering (Phase 5)
+    std::unique_ptr<SpriteSheet> spriteSheet;
 };
 
 #endif // AESTHETIC_LAYER_H

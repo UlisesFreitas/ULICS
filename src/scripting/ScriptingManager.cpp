@@ -1,6 +1,7 @@
 #include "scripting/ScriptingManager.h"
 #include "rendering/AestheticLayer.h"
 #include "input/InputManager.h"
+#include "input/InputConstants.h"
 #include "core/Engine.h"
 #include "cartridge/CartridgeLoader.h"
 #include <iostream>
@@ -126,6 +127,11 @@ void ScriptingManager::RegisterAPI() {
     // --- Audio Functions (Phase 5.15) ---
     RegisterFunction("sfx", &ScriptingManager::Lua_Sfx);
     RegisterFunction("music", &ScriptingManager::Lua_Music);
+    
+    // --- Mouse Input Functions (Phase 5.17) ---
+    RegisterFunction("mouse", &ScriptingManager::Lua_Mouse);
+    RegisterFunction("mousex", &ScriptingManager::Lua_MouseX);
+    RegisterFunction("mousey", &ScriptingManager::Lua_MouseY);
 }
 
 void ScriptingManager::RegisterFunction(const char* luaName, lua_CFunction func) {
@@ -268,6 +274,16 @@ static const std::array<SDL_Scancode, 6> buttonMapping = {
     SDL_SCANCODE_X      // Button 5: Action 2 (X)
 };
 
+// Gamepad button mapping (Phase 5.18)
+static const std::array<int, 6> gamepadButtonMapping = {
+    SDL_CONTROLLER_BUTTON_DPAD_LEFT,  // Button 0
+    SDL_CONTROLLER_BUTTON_DPAD_RIGHT, // Button 1
+    SDL_CONTROLLER_BUTTON_DPAD_UP,    // Button 2
+    SDL_CONTROLLER_BUTTON_DPAD_DOWN,  // Button 3
+    SDL_CONTROLLER_BUTTON_A,          // Button 4: A (like Z)
+    SDL_CONTROLLER_BUTTON_B           // Button 5: B (like X)
+};
+
 int ScriptingManager::Lua_Btn(lua_State* L) {
     auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
     InputManager* input = sm->engineInstance->getInputManager();
@@ -276,7 +292,13 @@ int ScriptingManager::Lua_Btn(lua_State* L) {
     bool isDown = false;
 
     if (buttonIndex >= 0 && buttonIndex < buttonMapping.size()) {
+        // Check keyboard
         isDown = input->isKeyDown(buttonMapping[buttonIndex]);
+        
+        // Also check gamepad (Phase 5.18)
+        if (!isDown && input->getNumGamepads() > 0) {
+            isDown = input->isGamepadButtonDown(gamepadButtonMapping[buttonIndex]);
+        }
     }
 
     lua_pushboolean(L, isDown);
@@ -291,7 +313,13 @@ int ScriptingManager::Lua_Btnp(lua_State* L) {
     bool isPressed = false;
 
     if (buttonIndex >= 0 && buttonIndex < buttonMapping.size()) {
+        // Check keyboard
         isPressed = input->isKeyPressed(buttonMapping[buttonIndex]);
+        
+        // Also check gamepad (Phase 5.18)
+        if (!isPressed && input->getNumGamepads() > 0) {
+            isPressed = input->isGamepadButtonPressed(gamepadButtonMapping[buttonIndex]);
+        }
     }
 
     lua_pushboolean(L, isPressed);
@@ -843,4 +871,68 @@ int ScriptingManager::Lua_Music(lua_State* L) {
     (void)channelMask;
     
     return 0;
+}
+
+// === Mouse Input API Implementation (Phase 5.17) ===
+
+/**
+ * @brief Lua function: mouse()
+ * 
+ * Returns a table with mouse state:
+ * {x = number, y = number, left = boolean, right = boolean, middle = boolean}
+ */
+int ScriptingManager::Lua_Mouse(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    InputManager* input = sm->engineInstance->getInputManager();
+    
+    // Create table
+    lua_newtable(L);
+    
+    // Set x field
+    lua_pushinteger(L, input->getMouseX());
+    lua_setfield(L, -2, "x");
+    
+    // Set y field
+    lua_pushinteger(L, input->getMouseY());
+    lua_setfield(L, -2, "y");
+    
+    // Set left button (SDL_BUTTON_LEFT = 1)
+    lua_pushboolean(L, input->isMouseButtonDown(SDL_BUTTON_LEFT));
+    lua_setfield(L, -2, "left");
+    
+    // Set right button (SDL_BUTTON_RIGHT = 3)
+    lua_pushboolean(L, input->isMouseButtonDown(SDL_BUTTON_RIGHT));
+    lua_setfield(L, -2, "right");
+    
+    // Set middle button (SDL_BUTTON_MIDDLE = 2)
+    lua_pushboolean(L, input->isMouseButtonDown(SDL_BUTTON_MIDDLE));
+    lua_setfield(L, -2, "middle");
+    
+    return 1;  // Return the table
+}
+
+/**
+ * @brief Lua function: mousex()
+ * 
+ * Returns mouse X coordinate in screen space
+ */
+int ScriptingManager::Lua_MouseX(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    InputManager* input = sm->engineInstance->getInputManager();
+    
+    lua_pushinteger(L, input->getMouseX());
+    return 1;
+}
+
+/**
+ * @brief Lua function: mousey()
+ * 
+ * Returns mouse Y coordinate in screen space
+ */
+int ScriptingManager::Lua_MouseY(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    InputManager* input = sm->engineInstance->getInputManager();
+    
+    lua_pushinteger(L, input->getMouseY());
+    return 1;
 }

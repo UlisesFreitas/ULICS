@@ -146,6 +146,16 @@ private:
     // Play/stop music
     static int Lua_Music(lua_State* L);
 
+    // --- Mouse Input Functions (Phase 5.17) ---
+    // Get mouse state (returns table with x, y, left, right, middle)
+    static int Lua_Mouse(lua_State* L);
+    
+    // Get mouse X coordinate
+    static int Lua_MouseX(lua_State* L);
+    
+    // Get mouse Y coordinate
+    static int Lua_MouseY(lua_State* L);
+
     // --- Math Functions ---
     static int Lua_Sin(lua_State* L);
     static int Lua_Cos(lua_State* L);

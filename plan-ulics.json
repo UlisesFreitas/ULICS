@@ -598,26 +598,42 @@
         {
           "id": "5.16",
           "description": "Implement mouse input - Capture SDL mouse events, expose mouse state in InputManager.",
-          "status": "pending",
+          "status": "completed",
           "priority": "LOW",
           "files": "src/input/InputManager.h, src/input/InputManager.cpp",
-          "notes": "Track mouse position and button states (left, right, middle)."
+          "notes": "Mouse position and button states tracked. Events handled in Engine main loop. Full button support (left, right, middle)."
         },
         {
           "id": "5.17",
           "description": "Expose mouse API to Lua - mouse() returns {x, y, left, right, middle}, mousex(), mousey().",
-          "status": "pending",
+          "status": "completed",
           "priority": "LOW",
           "files": "src/scripting/ScriptingManager.h, src/scripting/ScriptingManager.cpp, LUA_API.md",
-          "notes": "mouse() returns table. mousex/mousey return individual coords. Buttons are booleans."
+          "notes": "mouse() returns table with all state. mousex()/mousey() return individual coords. Buttons are booleans."
         },
         {
           "id": "5.18",
           "description": "Add gamepad support - SDL2 gamepad API, map to fantasy console buttons (0-5 + extra).",
-          "status": "pending",
+          "status": "completed",
           "priority": "LOW",
           "files": "src/input/InputManager.h, src/input/InputManager.cpp",
-          "notes": "Detect connected gamepads. Map D-pad and buttons. btn/btnp work with gamepad too."
+          "notes": "Full gamepad support with hot-plug detection. D-pad+A/B mapped to buttons 0-5. btn()/btnp() check both keyboard and gamepad."
+        },
+        {
+          "id": "5.19",
+          "description": "Define input constants - Create InputConstants.h with all keyboard keys and gamepad buttons (10 buttons + analog sticks + D-pad).",
+          "status": "completed",
+          "priority": "MEDIUM",
+          "files": "src/input/InputConstants.h, docs/KEYBOARD_AND_CONTROLLER.md",
+          "notes": "Complete input constants defined: 12 buttons (D-pad, 4 action, 2 shoulder, 2 system), analog sticks, triggers, deadzones. Comprehensive documentation created."
+        },
+        {
+          "id": "5.20",
+          "description": "Input enhanced - Map ALL keyboard keys and ALL gamepad buttons/axes. Add analog stick reading support.",
+          "status": "completed",
+          "priority": "MEDIUM",
+          "files": "src/input/InputConstants.h, src/input/InputManager.h, src/input/InputManager.cpp",
+          "notes": "Complete input mapping: A-Z, 0-9, F1-F12, symbols, modifiers, numpad (100+ keys). All 21 gamepad buttons. Analog stick/trigger reading with deadzone support."
         }
       ]
     },

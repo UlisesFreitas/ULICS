@@ -36,6 +36,9 @@
         "mset",
         "sfx",
         "music",
+        "mouse",
+        "mousex",
+        "mousey",
         "_init",
         "_update",
         "_draw"

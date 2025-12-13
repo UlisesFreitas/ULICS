@@ -27,7 +27,8 @@ Engine::~Engine() {
 }
 
 bool Engine::Initialize(const char* title, int width, int height, const std::string& cartridgePath) {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    // Initialize SDL with video and gamecontroller support
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
         std::cerr << "Error initializing SDL: " << SDL_GetError() << std::endl;
         return false;
     }
@@ -162,7 +163,23 @@ void Engine::Run() {
             if (event.type == SDL_QUIT) {
                 isRunning = false;
             }
-            // The InputManager doesn't need to handle events directly for now,
+            
+            // Handle mouse events (Phase 5.16)
+            if (event.type == SDL_MOUSEMOTION || 
+                event.type == SDL_MOUSEBUTTONDOWN || 
+                event.type == SDL_MOUSEBUTTONUP) {
+                inputManager->handleMouseEvent(event);
+            }
+            
+            // Handle gamepad events (Phase 5.18)
+            if (event.type == SDL_CONTROLLERDEVICEADDED ||
+                event.type == SDL_CONTROLLERDEVICEREMOVED ||
+                event.type == SDL_CONTROLLERBUTTONDOWN ||
+                event.type == SDL_CONTROLLERBUTTONUP) {
+                inputManager->handleGamepadEvent(event);
+            }
+            
+            // The InputManager doesn't need to handle keyboard events directly,
             // as SDL_GetKeyboardState is updated by SDL_PollEvent/SDL_PumpEvents.
         }
 

@@ -1,0 +1,9 @@
+{
+    "name": "TestGame",
+    "author": "Anonymous",
+    "version": "1.0.0",
+    "description": "A new ULICS game",
+    "memoryLimit": 512,
+    "codeLimit": 100000,
+    "paletteSize": 16
+}

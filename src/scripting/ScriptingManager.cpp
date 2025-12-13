@@ -568,7 +568,29 @@ bool ScriptingManager::CallLuaFunction(const char* functionName) {
         // Call the function with 0 arguments and 0 return values.
         if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
             lastError = lua_tostring(L, -1);
-            std::cerr << "Error calling Lua function '" << functionName << "': " << lastError << std::endl;
+            
+            // Enhanced error reporting (v1.1.2 debugging)
+            std::cerr << "\n=== ULICS Lua Error ===" << std::endl;
+            std::cerr << "Function: " << functionName << std::endl;
+            std::cerr << "Error: " << lastError << std::endl;
+            
+            // Try to get stack trace
+            lua_getglobal(L, "debug");
+            if (lua_istable(L, -1)) {
+                lua_getfield(L, -1, "traceback");
+                if (lua_isfunction(L, -1)) {
+                    lua_call(L, 0, 1);
+                    const char* traceback = lua_tostring(L, -1);
+                    if (traceback) {
+                        std::cerr << "Stack Trace:\n" << traceback << std::endl;
+                    }
+                    lua_pop(L, 1);  // Pop traceback
+                }
+                lua_pop(L, 1);  // Pop debug table
+            }
+            
+            std::cerr << "======================\n" << std::endl;
+            
             lua_pop(L, 1); // Pop error message
             return false;
         }

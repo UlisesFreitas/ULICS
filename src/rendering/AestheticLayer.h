@@ -85,6 +85,10 @@ public:
     
     // Captures the current frame as a PNG screenshot (v1.5.3)
     void CaptureScreenshot();
+    
+    // Get pixel data for GIF recording (v1.5.4)
+    const uint8_t* GetPixelData() const;
+    int GetPixelDataSize() const { return FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * 4; }
 
 private:
     SDL_Renderer* renderer;

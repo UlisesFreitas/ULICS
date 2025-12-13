@@ -2,6 +2,7 @@
 #include "core/HotReload.h"  // Hot reload system (v1.5.1)
 #include "ui/DebugConsole.h"  // Debug overlay (v1.5.2)
 #include "capture/Screenshot.h"  // Screenshot system (v1.5.3)
+#include "capture/GifRecorder.h"  // GIF recording system (v1.5.4)
 #include "rendering/AestheticLayer.h"
 #include "rendering/Map.h"  // For global map instance
 #include "scripting/LuaGame.h" // Include our Lua game bridge.
@@ -20,7 +21,7 @@
 Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
                    activeGame(nullptr), scriptingManager(nullptr),
-                   inputManager(nullptr), cartridgeLoader(nullptr), currentMap(nullptr), hotReload(nullptr), debugConsole(nullptr),
+                   inputManager(nullptr), cartridgeLoader(nullptr), currentMap(nullptr), hotReload(nullptr), debugConsole(nullptr), gifRecorder(nullptr),
                    currentState(EngineState::BOOT), previousState(EngineState::BOOT),
                    currentCartridgePath("") {
     // Constructor
@@ -95,6 +96,16 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
     catch (const std::exception& e) {
         std::cerr << "Warning: DebugConsole failed to initialize: " << e.what() << std::endl;
         // Continue without debug console
+    }
+    
+    // Initialize GifRecorder (v1.5.4)
+    try {
+        gifRecorder = std::make_unique<GifRecorder>();
+        std::cout << "GIF Recorder ready - hold Ctrl+F12 to record 5 seconds" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: GifRecorder failed to initialize: " << e.what() << std::endl;
+        // Continue without GIF recording
     }
 
     // Initialize CartridgeLoader
@@ -205,9 +216,22 @@ void Engine::Run() {
             }
             
             // Take Screenshot with F12 (v1.5.3)
+            // Start GIF Recording with Ctrl+F12 (v1.5.4)
             if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F12) {
-                if (aestheticLayer) {
-                    aestheticLayer->CaptureScreenshot();
+                SDL_Keymod modState = SDL_GetModState();
+                
+                if (modState & KMOD_CTRL) {
+                    // Ctrl+F12 - GIF Recording
+                    if (gifRecorder && aestheticLayer) {
+                        if (!gifRecorder->IsRecording()) {
+                            gifRecorder->StartRecording(256, 256);  // UL ICS screen size
+                        }
+                    }
+                } else {
+                    // F12 alone - Screenshot
+                    if (aestheticLayer) {
+                        aestheticLayer->CaptureScreenshot();
+                    }
                 }
             }
             
@@ -266,6 +290,11 @@ void Engine::Run() {
         }
         
         aestheticLayer->Present(); // Present the result regardless.
+        
+        // Feed frame to GIF recorder if recording (v1.5.4)
+        if (gifRecorder && gifRecorder->IsRecording()) {
+            gifRecorder->AddFrame(aestheticLayer->GetPixelData());
+        }
     }
 }
 

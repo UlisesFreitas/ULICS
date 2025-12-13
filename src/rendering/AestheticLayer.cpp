@@ -440,3 +440,12 @@ void AestheticLayer::CaptureScreenshot() {
     // Save using Screenshot class
     Screenshot::SavePNG(rgba_data.data(), FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
 }
+
+const uint8_t* AestheticLayer::GetPixelData() const {
+    // pixelBuffer is ARGB32, but for GIF we need to return the RGBA data
+    // that was just created in CaptureScreenshot. Since we don't have it stored,
+    // we return a pointer to a static buffer that gets updated each frame.
+    // Actually, let's just return the raw pixelBuffer pointer - 
+    // GifRecorder will handle conversion if needed.
+    return reinterpret_cast<const uint8_t*>(pixelBuffer.data());
+}

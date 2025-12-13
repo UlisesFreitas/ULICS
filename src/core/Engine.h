@@ -14,6 +14,7 @@ class CartridgeLoader;
 class Map;
 class HotReload;
 class DebugConsole;
+class GifRecorder;
 
 class Engine {
 public:
@@ -77,6 +78,7 @@ private:
     std::unique_ptr<Map> currentMap;  // Global map instance
     std::unique_ptr<HotReload> hotReload;  // File watching for hot reload (v1.5.1)
     std::unique_ptr<DebugConsole> debugConsole;  // On-screen debug overlay (v1.5.2)
+    std::unique_ptr<GifRecorder> gifRecorder;  // GIF recording (v1.5.4)
 
     // State machine
     EngineState currentState;

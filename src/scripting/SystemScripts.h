@@ -143,7 +143,7 @@ function _draw()
             -- Font is 4px wide per char, add space for "> " prefix and padding
             local text = "> " .. cart.name
             local text_width = #text * 4 + 8  -- 4px per char + 8px padding
-            rectfill(6, y, 6 + text_width, y + 7, COLOR_SELECTED)
+            rectfill(6, y, text_width, 8, COLOR_SELECTED)  -- FIXED: (x,y,width,height)
             print(text, 8, y + 1, COLOR_BG)
         else
             print("  " .. cart.name, 8, y + 1, COLOR_TEXT)

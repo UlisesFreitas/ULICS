@@ -122,25 +122,17 @@ function _draw()
     rectfill(0, 224, 256, 32, 3)
 
     -- Coins (using rect instead of circ)
-    if coins then -- Safety check
-        for i = 1, #coins do
-            local c = coins[i]
-            if c and c.x and c.y then                -- Nil check
-                rectfill(c.x - 3, c.y - 3, 6, 6, 10) -- Yellow square
-                rect(c.x - 3, c.y - 3, 6, 6, 9)      -- Orange border
-            end
-        end
+    for i = 1, #coins do
+        local c = coins[i]
+        rectfill(c.x - 3, c.y - 3, 6, 6, 10) -- Yellow square
+        rect(c.x - 3, c.y - 3, 6, 6, 9)      -- Orange border
     end
 
     -- Player (using only rectfill, no circfill)
-    -- Fix: Floor coordinates to avoid "no integer representation" error
-    local draw_px = flr(px)
-    local draw_py = flr(py)
-
-    rectfill(draw_px, draw_py, 8, 8, 8)          -- Red body
-    rectfill(draw_px + 2, draw_py - 2, 4, 2, 14) -- Pink head
-    pset(draw_px + 2, draw_py - 1, 0)            -- Left eye
-    pset(draw_px + 5, draw_py - 1, 0)            -- Right eye
+    rectfill(px, py, 8, 8, 8)          -- Red body
+    rectfill(px + 2, py - 2, 4, 2, 14) -- Pink head
+    pset(px + 2, py - 1, 0)            -- Left eye
+    pset(px + 5, py - 1, 0)            -- Right eye
 
     -- UI
     print("COINS: " .. collected .. "/5", 4, 4, 7)

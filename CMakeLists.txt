@@ -92,7 +92,27 @@ if(NOT EXISTS "${STB_DIR}/stb_image_write.h")
 else()
     message(STATUS "stb_image_write.h already present")
 endif()
-# --- Main Application Target ---
+
+# Download msf_gif.h if not already present (for GIF recording - v1.5.4)
+# Using msf_gif instead of jo_gif - better API and documentation
+if(NOT EXISTS "${STB_DIR}/msf_gif.h")
+    message(STATUS "Downloading msf_gif.h...")
+    file(DOWNLOAD
+        "https://raw.githubusercontent.com/notnullnotvoid/msf_gif/master/msf_gif.h"
+        "${STB_DIR}/msf_gif.h"
+        SHOW_PROGRESS
+        STATUS download_status
+    )
+    list(GET download_status 0 status_code)
+    if(NOT status_code EQUAL 0)
+        message(WARNING "Failed to download msf_gif.h - GIF recording will not be available")
+    else()
+        message(STATUS "msf_gif.h downloaded successfully")
+    endif()
+else()
+    message(STATUS "msf_gif.h already present")
+endif()
+
 # Add our executable. The WIN32 flag is important for GUI applications on Windows.
 add_executable(UliCS WIN32
     src/main.cpp
@@ -100,6 +120,7 @@ add_executable(UliCS WIN32
     src/core/HotReload.cpp src/core/HotReload.h
     src/ui/DebugConsole.cpp src/ui/DebugConsole.h
     src/capture/Screenshot.cpp src/capture/Screenshot.h
+    src/capture/GifRecorder.cpp src/capture/GifRecorder.h
     src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h
     src/rendering/SpriteSheet.cpp src/rendering/SpriteSheet.h
     src/rendering/Map.cpp src/rendering/Map.h

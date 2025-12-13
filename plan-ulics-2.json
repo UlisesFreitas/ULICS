@@ -23,10 +23,10 @@
                 {
                     "id": "1.1.2",
                     "description": "Fix Platformer player disappearing bug - player sprite vanishes when moving.",
-                    "status": "pending",
+                    "status": "completed",
                     "priority": "HIGH",
-                    "files": "src/rendering/AestheticLayer.cpp",
-                    "notes": "Player rendered with rectfill() disappears on movement. Possible coordinate calculation bug or render pipeline issue."
+                    "files": "cartridges/platformer/main.lua, src/scripting/ScriptingManager.cpp",
+                    "notes": "COMPLETED 2025-12-13. ROOT CAUSE: Floating point coordinates! px/py accumulated fractional values from friction (pvx*0.7) causing 'number has no integer representation' error in rectfill(). FIX: Use flr() to floor coordinates before rendering. Also enhanced Lua error reporting with stack traces for easier debugging. Menu selector also fixed (rectfill API clarification)."
                 },
                 {
                     "id": "1.1.3",
@@ -35,6 +35,14 @@
                     "priority": "HIGH",
                     "files": "src/audio/AudioManager.cpp, src/audio/SFXSynthesizer.cpp",
                     "notes": "Audio synthesis on separate thread blocks main thread. Implement lock-free ring buffer or reduce buffer size from 1024 to 512 samples."
+                },
+                {
+                    "id": "1.1.7",
+                    "description": "Fix critical input lag - severe delay between button press and game response.",
+                    "status": "pending",
+                    "priority": "CRITICAL",
+                    "files": "src/input/InputManager.cpp, src/core/Engine.cpp",
+                    "notes": "REPORTED 2025-12-13. Notable delay (200-500ms?) between pressing buttons (especially Z for jump) and action executing in platformer. Persists with both btn() and btnp(). NOT related to audio (disabled). Possible causes: input polling frequency, SDL event handling delay, fixed timestep lag accumulation, or input state update timing. Affects gameplay significantly. Test with hello_world to isolate."
                 },
                 {
                     "id": "1.1.4",
@@ -104,18 +112,18 @@
                 {
                     "id": "1.5.4",
                     "description": "Add GIF recording - Ctrl+F12 for 5-second GIF.",
-                    "status": "pending",
+                    "status": "completed",
                     "priority": "LOW",
-                    "files": "src/capture/GifRecorder.cpp",
-                    "notes": "Use gifenc or jo_gif. Great for sharing gameplay."
+                    "files": "src/capture/GifRecorder.h, src/capture/GifRecorder.cpp, src/core/Engine.cpp, src/rendering/AestheticLayer.cpp, CMakeLists.txt",
+                    "notes": "COMPLETED 2025-12-13. msf_gif.h integrated. Ctrl+F12 records 5s @ 60fps. Saves to screenshots/recording_*.gif. ARGB→RGBA conversion fixed for proper colors. Perfect for sharing gameplay!"
                 },
                 {
                     "id": "1.5.5",
                     "description": "Create cartridge template system - 'ulics new [name]' command.",
-                    "status": "pending",
+                    "status": "completed",
                     "priority": "LOW",
-                    "files": "tools/create_cartridge.ps1",
-                    "notes": "PowerShell script to scaffold new cartridge with config.json, main.lua template."
+                    "files": "tools/new-cartridge.ps1, ulics.ps1",
+                    "notes": "COMPLETED 2025-12-13. PowerShell script creates full cartridge structure (config.json, main.lua, README.md). 4 templates: Simple, Platformer, TopDown, Puzzle. Usage: .\\tools\\new-cartridge.ps1 -Name 'game' -Template Platformer. Massive productivity boost for developers!"
                 }
             ]
         },

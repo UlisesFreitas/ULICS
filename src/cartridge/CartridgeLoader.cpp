@@ -12,8 +12,19 @@ std::vector<CartridgeLoader::CartridgeInfo> CartridgeLoader::ListAvailableCartri
     last_error.clear();
 
     if (!DirectoryExists(directory_path)) {
+        // v1.1.6: Better error message
         last_error = "Directory does not exist: " + directory_path;
-        std::cerr << "CartridgeLoader: " << last_error << std::endl;
+        std::cerr << "\n=== ULICS Error ===" << std::endl;
+        std::cerr << "Cartridge directory not found: " << directory_path << std::endl;
+        std::cerr << "\nTo fix:" << std::endl;
+        std::cerr << "  1. Create the 'cartridges' folder if it doesn't exist" << std::endl;
+        std::cerr << "  2. Add at least one cartridge subfolder with main.lua" << std::endl;
+        std::cerr << "\nExample structure:" << std::endl;
+        std::cerr << "  cartridges/" << std::endl;
+        std::cerr << "    my_game/" << std::endl;
+        std::cerr << "      main.lua" << std::endl;
+        std::cerr << "      config.json" << std::endl;
+        std::cerr << "==================\n" << std::endl;
         return cartridges;
     }
 

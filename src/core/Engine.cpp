@@ -1,5 +1,9 @@
 #include "core/Engine.h"
+#include "core/HotReload.h"  // Hot reload system (v1.5.1)
+#include "ui/DebugConsole.h"  // Debug overlay (v1.5.2)
+#include "capture/Screenshot.h"  // Screenshot system (v1.5.3)
 #include "rendering/AestheticLayer.h"
+#include "rendering/Map.h"  // For global map instance
 #include "scripting/LuaGame.h" // Include our Lua game bridge.
 #include "input/InputManager.h" // Include the new InputManager.
 #include "cartridge/CartridgeLoader.h" // Cartridge system
@@ -16,7 +20,7 @@
 Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
                    activeGame(nullptr), scriptingManager(nullptr),
-                   inputManager(nullptr), cartridgeLoader(nullptr),
+                   inputManager(nullptr), cartridgeLoader(nullptr), currentMap(nullptr), hotReload(nullptr), debugConsole(nullptr),
                    currentState(EngineState::BOOT), previousState(EngineState::BOOT),
                    currentCartridgePath("") {
     // Constructor
@@ -73,6 +77,26 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         return false;
     }
 
+    // Initialize HotReload (v1.5.1)
+    try {
+        hotReload = std::make_unique<HotReload>();
+        std::cout << "HotReload enabled - edit files and see changes instantly!" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: HotReload failed to initialize: " << e.what() << std::endl;
+        // Continue without hot reload
+    }
+
+    // Initialize DebugConsole (v1.5.2)
+    try {
+        debugConsole = std::make_unique<DebugConsole>();
+        std::cout << "Debug Console ready - press F1 to toggle" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: DebugConsole failed to initialize: " << e.what() << std::endl;
+        // Continue without debug console
+    }
+
     // Initialize CartridgeLoader
     try {
         cartridgeLoader = std::make_unique<CartridgeLoader>();
@@ -80,6 +104,16 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
     catch (const std::exception& e) {
         std::cerr << "Error initializing CartridgeLoader: " << e.what() << std::endl;
         return false;
+    }
+
+    // Create a default map instance (v1.1 - Task 1.1.4)
+    try {
+        currentMap = std::make_unique<Map>();
+        std::cout << "Default map created (128x64)" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error creating map: " << e.what() << std::endl;
+        // Continue anyway - map functions will just not work
     }
 
     try {
@@ -163,6 +197,20 @@ void Engine::Run() {
                 isRunning = false;
             }
             
+            // Toggle Debug Console with F1 (v1.5.2)
+            if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F1) {
+                if (debugConsole) {
+                    debugConsole->Toggle();
+                }
+            }
+            
+            // Take Screenshot with F12 (v1.5.3)
+            if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F12) {
+                if (aestheticLayer) {
+                    aestheticLayer->CaptureScreenshot();
+                }
+            }
+            
             // Handle mouse events (Phase 5.16)
             if (event.type == SDL_MOUSEMOTION || 
                 event.type == SDL_MOUSEBUTTONDOWN || 
@@ -180,6 +228,14 @@ void Engine::Run() {
             
             // The InputManager doesn't need to handle keyboard events directly,
             // as SDL_GetKeyboardState is updated by SDL_PollEvent/SDL_PumpEvents.
+        }
+
+        // Check for file changes and reload if needed (v1.5.1 - Hot Reload)
+        if (hotReload && hotReload->IsEnabled() && currentState == EngineState::RUNNING_CARTRIDGE) {
+            if (hotReload->CheckForChanges()) {
+                std::cout << "\n=== Hot Reload Triggered ===\n" << std::endl;
+                ReloadCurrentCartridge();
+            }
         }
 
         // Fixed timestep logic update loop.
@@ -202,6 +258,13 @@ void Engine::Run() {
                 activeGame->_draw(*aestheticLayer);
             }
         }
+        
+        // Draw debug console on top of everything (v1.5.2)
+        if (debugConsole) {
+            debugConsole->UpdateFPS(elapsed);
+            debugConsole->Draw(*aestheticLayer);
+        }
+        
         aestheticLayer->Present(); // Present the result regardless.
     }
 }
@@ -322,6 +385,12 @@ bool Engine::LoadCartridge(const std::string& cartridgePath) {
     
     std::cout << "\n";
     scriptingManager->LogResourceStats();
+    
+    // Start watching main.lua for changes (v1.5.1 - Hot Reload)
+    if (hotReload) {
+        hotReload->StopWatching();  // Clear previous watches
+        hotReload->WatchFile(mainLuaPath);
+    }
     
     // Check limits and warn if approaching
     if (codeLines > config.lua_code_limit_lines) {

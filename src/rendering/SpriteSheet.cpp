@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <cmath>
 
+// stb_image for PNG loading (v1.1.5)
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 SpriteSheet::SpriteSheet() : loaded(false), tileSize(8) {
     data.resize(SHEET_WIDTH * SHEET_HEIGHT, 0);
 }
@@ -21,29 +25,21 @@ bool SpriteSheet::LoadFromPNG(const std::string& path, int ts) {
     
     tileSize = ts;
     
-    // Load PNG using SDL_Surface (simpler than SDL_image for now)
-    SDL_Surface* surface = SDL_LoadBMP(path.c_str());  // TODO: Use SDL_image or stb_image for PNG
+    // Load image using stb_image (v1.1.5 - supports PNG, JPG, BMP, TGA, etc.)
+    int width, height, channels;
+    unsigned char* pixels = stbi_load(path.c_str(), &width, &height, &channels, 3);  // Force RGB
     
-    if (!surface) {
+    if (!pixels) {
         std::cerr << "SpriteSheet: Failed to load image: " << path << std::endl;
-        std::cerr << "SDL Error: " << SDL_GetError() << std::endl;
+        std::cerr << "stb_image error: " << stbi_failure_reason() << std::endl;
         return false;
     }
     
     // Validate dimensions
-    if (surface->w != SHEET_WIDTH || surface->h != SHEET_HEIGHT) {
-        std::cerr << "SpriteSheet: Invalid dimensions " << surface->w << "x" << surface->h 
+    if (width != SHEET_WIDTH || height != SHEET_HEIGHT) {
+        std::cerr << "SpriteSheet: Invalid dimensions " << width << "x" << height 
                   << ". Must be 128x128." << std::endl;
-        SDL_FreeSurface(surface);
-        return false;
-    }
-    
-    // Convert surface to RGB format for easier processing
-    SDL_Surface* rgbSurface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGB24, 0);
-    SDL_FreeSurface(surface);
-    
-    if (!rgbSurface) {
-        std::cerr << "SpriteSheet: Failed to convert surface format" << std::endl;
+        stbi_image_free(pixels);
         return false;
     }
     
@@ -68,16 +64,12 @@ bool SpriteSheet::LoadFromPNG(const std::string& path, int ts) {
     };
     
     // Convert pixels to palette indices
-    SDL_LockSurface(rgbSurface);
-    uint8_t* pixels = static_cast<uint8_t*>(rgbSurface->pixels);
-    int pitch = rgbSurface->pitch;
-    
     for (int y = 0; y < SHEET_HEIGHT; y++) {
         for (int x = 0; x < SHEET_WIDTH; x++) {
-            uint8_t* pixel = pixels + y * pitch + x * 3;  // RGB24 = 3 bytes per pixel
-            uint8_t r = pixel[0];
-            uint8_t g = pixel[1];
-            uint8_t b = pixel[2];
+            int pixelIndex = (y * width + x) * 3;  // RGB = 3 bytes per pixel
+            uint8_t r = pixels[pixelIndex + 0];
+            uint8_t g = pixels[pixelIndex + 1];
+            uint8_t b = pixels[pixelIndex + 2];
             
             // Convert RGB to palette index
             uint8_t paletteIndex = RGBToPaletteIndex(r, g, b, palette);
@@ -85,8 +77,8 @@ bool SpriteSheet::LoadFromPNG(const std::string& path, int ts) {
         }
     }
     
-    SDL_UnlockSurface(rgbSurface);
-    SDL_FreeSurface(rgbSurface);
+    // Free stb_image data
+    stbi_image_free(pixels);
     
     loaded = true;
     std::cout << "SpriteSheet: Successfully loaded " << path 

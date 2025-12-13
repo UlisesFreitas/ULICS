@@ -1,6 +1,7 @@
 #include "AestheticLayer.h"
 #include "rendering/EmbeddedFont.h"
 #include "rendering/Map.h"
+#include "capture/Screenshot.h"  // For screenshot capture (v1.5.3)
 #include <stdexcept>
 
 AestheticLayer::AestheticLayer(SDL_Renderer* renderer) : renderer(renderer) {
@@ -414,4 +415,28 @@ void AestheticLayer::Present() {
 
     // 5. Show the result on the screen.
     SDL_RenderPresent(renderer);
+}
+
+void AestheticLayer::CaptureScreenshot() {
+    // Convert pixelBuffer (ARGB8888) to RGBA format for PNG saving
+    std::vector<uint8_t> rgba_data(FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * 4);
+    
+    for (size_t i = 0; i < pixelBuffer.size(); ++i) {
+        uint32_t argb = pixelBuffer[i];
+        
+        // Extract ARGB components
+        uint8_t a = (argb >> 24) & 0xFF;
+        uint8_t r = (argb >> 16) & 0xFF;
+        uint8_t g = (argb >> 8) & 0xFF;
+        uint8_t b = argb & 0xFF;
+        
+        // Store as RGBA
+        rgba_data[i * 4 + 0] = r;
+        rgba_data[i * 4 + 1] = g;
+        rgba_data[i * 4 + 2] = b;
+        rgba_data[i * 4 + 3] = a;
+    }
+    
+    // Save using Screenshot class
+    Screenshot::SavePNG(rgba_data.data(), FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
 }

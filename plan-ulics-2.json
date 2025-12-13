@@ -39,26 +39,26 @@
                 {
                     "id": "1.1.4",
                     "description": "Connect Map API to engine - mget/mset/map functions are stubs.",
-                    "status": "pending",
+                    "status": "completed",
                     "priority": "MEDIUM",
-                    "files": "src/scripting/ScriptingManager.cpp, src/core/Engine.h",
-                    "notes": "Map functions registered but not connected to actual Map instance. Need global map reference in Engine."
+                    "files": "src/scripting/ScriptingManager.cpp, src/core/Engine.h, src/core/Engine.cpp, docs/MAP_FORMAT.md",
+                    "notes": "COMPLETED 2025-12-13. Added Map instance to Engine, connected all 3 functions (map/mget/mset). Layer system fully documented with parallax examples."
                 },
                 {
                     "id": "1.1.5",
                     "description": "Add proper PNG loading using stb_image - currently using SDL_LoadBMP fallback.",
-                    "status": "pending",
+                    "status": "completed",
                     "priority": "MEDIUM",
-                    "files": "src/rendering/SpriteSheet.cpp, external/stb/stb_image.h",
-                    "notes": "Download stb_image.h and implement PNG loading properly."
+                    "files": "src/rendering/SpriteSheet.cpp, external/stb/stb_image.h, CMakeLists.txt",
+                    "notes": "COMPLETED 2025-12-13. Auto-downloads stb_image.h from GitHub. Supports PNG, JPG, BMP, TGA, GIF, PSD, HDR formats."
                 },
                 {
                     "id": "1.1.6",
                     "description": "Improve error messages - make runtime errors more helpful for developers.",
-                    "status": "pending",
+                    "status": "completed",
                     "priority": "LOW",
-                    "files": "src/scripting/ScriptingManager.cpp, src/core/Engine.cpp",
-                    "notes": "Add line numbers to Lua errors, better file-not-found messages, etc."
+                    "files": "src/scripting/ScriptingManager.cpp, src/cartridge/CartridgeLoader.cpp",
+                    "notes": "COMPLETED 2025-12-13. Added: Lua stack traces, file-not-found suggestions, formatted error blocks, helpful tips for common issues."
                 },
                 {
                     "id": "1.1.7",
@@ -80,26 +80,26 @@
                 {
                     "id": "1.5.1",
                     "description": "Implement Hot Reload - auto-reload cartridge when main.lua changes.",
-                    "status": "pending",
+                    "status": "completed",
                     "priority": "HIGH",
-                    "files": "src/core/HotReload.h, src/core/HotReload.cpp",
-                    "notes": "Watch file timestamps, call reset() on change. Massive productivity boost for development."
+                    "files": "src/core/HotReload.h, src/core/HotReload.cpp, src/core/Engine.cpp, CMakeLists.txt",
+                    "notes": "COMPLETED 2025-12-13. File watching with std::filesystem, auto-detects changes every frame, instant reload. Massive productivity boost!"
                 },
                 {
                     "id": "1.5.2",
                     "description": "Add simple Debug Console overlay - show print() output and FPS on screen.",
-                    "status": "pending",
+                    "status": "completed",
                     "priority": "HIGH",
-                    "files": "src/ui/DebugConsole.h, src/ui/DebugConsole.cpp",
-                    "notes": "Toggle with F1. Show last 10 print() calls, FPS, memory usage. No ImGui needed - render with print()."
+                    "files": "src/ui/DebugConsole.h, src/ui/DebugConsole.cpp, src/core/Engine.cpp, src/scripting/ScriptingManager.cpp, CMakeLists.txt",
+                    "notes": "COMPLETED 2025-12-13. Toggle with F1. Shows last 10 print() calls, FPS counter, no ImGui needed. Perfect for debugging without console!"
                 },
                 {
                     "id": "1.5.3",
                     "description": "Implement Screenshot capture - F12 to save PNG.",
-                    "status": "pending",
+                    "status": "completed",
                     "priority": "MEDIUM",
-                    "files": "src/capture/Screenshot.cpp",
-                    "notes": "Use stb_image_write. Save to screenshots/ folder with timestamp."
+                    "files": "src/capture/Screenshot.h, src/capture/Screenshot.cpp, src/rendering/AestheticLayer.cpp, src/core/Engine.cpp, CMakeLists.txt",
+                    "notes": "COMPLETED 2025-12-13. F12 captures screenshot to screenshots/ folder. Auto-downloads stb_image_write.h. Timestamped filenames. Perfect for sharing game moments!"
                 },
                 {
                     "id": "1.5.4",

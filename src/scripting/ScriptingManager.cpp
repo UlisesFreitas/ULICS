@@ -1,5 +1,7 @@
 #include "scripting/ScriptingManager.h"
 #include "rendering/AestheticLayer.h"
+#include "rendering/Map.h"  // For map API functions (v1.1.4)
+#include "ui/DebugConsole.h"  // For debug console integration (v1.5.2)
 #include "input/InputManager.h"
 #include "input/InputConstants.h"
 #include "core/Engine.h"
@@ -56,8 +58,16 @@ bool ScriptingManager::LoadScriptFromFile(const std::string& filepath) {
     // Open the file for reading.
     std::ifstream file(filepath);
     if (!file.is_open()) {
+        // v1.1.6: Better error message with suggestions
         lastError = "Could not open file: " + filepath;
-        std::cerr << "ScriptingManager: " << lastError << std::endl;
+        std::cerr << "\n=== ULICS Error ===" << std::endl;
+        std::cerr << "File not found: " << filepath << std::endl;
+        std::cerr << "\nPossible causes:" << std::endl;
+        std::cerr << "  - File doesn't exist in the cartridge folder" << std::endl;
+        std::cerr << "  - Typo in filename (check capitalization)" << std::endl;
+        std::cerr << "  - File is in wrong directory" << std::endl;
+        std::cerr << "\nExpected location: cartridges/<name>/main.lua" << std::endl;
+        std::cerr << "==================\n" << std::endl;
         return false;
     }
 
@@ -69,9 +79,26 @@ bool ScriptingManager::LoadScriptFromFile(const std::string& filepath) {
 
     // Execute the script using the existing LoadAndRunScript method.
     if (luaL_dostring(L, scriptContent.c_str()) != LUA_OK) {
+        // v1.1.6: Enhanced error with stack trace
         lastError = lua_tostring(L, -1);
-        std::cerr << "Error running script from file '" << filepath << "': " << lastError << std::endl;
-        lua_pop(L, 1);
+        
+        std::cerr << "\n=== ULICS Lua Error ===" << std::endl;
+        std::cerr << "Script: " << filepath << std::endl;
+        std::cerr << "\nError: " << lastError << std::endl;
+        
+        // Add stack traceback for better debugging
+        luaL_traceback(L, L, nullptr, 1);
+        const char* traceback = lua_tostring(L, -1);
+        if (traceback) {
+            std::cerr << "\nStack Trace:" << std::endl;
+            std::cerr << traceback << std::endl;
+            lua_pop(L, 1);  // Pop traceback
+        }
+        
+        std::cerr << "\nTip: Check line numbers above for the error location" << std::endl;
+        std::cerr << "======================\n" << std::endl;
+        
+        lua_pop(L, 1);  // Pop error message
         return false;
     }
 
@@ -338,6 +365,11 @@ int ScriptingManager::Lua_Print(lua_State* L) {
 
     // Call the C++ function.
     layer->Print(text, x, y, colorIndex);
+    
+    // Also send to debug console (v1.5.2)
+    if (sm->engineInstance->getDebugConsole()) {
+        sm->engineInstance->getDebugConsole()->AddMessage(text);
+    }
 
     return 0; // No return values.
 }
@@ -739,11 +771,11 @@ int ScriptingManager::Lua_Map(lua_State* L) {
     int h = static_cast<int>(lua_tointeger(L, 6));
     uint8_t layerMask = (argc >= 7) ? static_cast<uint8_t>(lua_tointeger(L, 7)) : 0xFF;
     
-    // TODO: Implement global map storage
-    // if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
-    //     sm->engineInstance->getAestheticLayer()->DrawMap(
-    //         sm->engineInstance->getCurrentMap(), mx, my, sx, sy, w, h, layerMask);
-    // }
+    // Implemented in v1.1.4 - Connect to Engine's currentMap
+    if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
+        sm->engineInstance->getAestheticLayer()->DrawMap(
+            sm->engineInstance->getCurrentMap(), mx, my, sx, sy, w, h, layerMask);
+    }
     
     return 0;
 }
@@ -766,12 +798,12 @@ int ScriptingManager::Lua_Mget(lua_State* L) {
     int y = static_cast<int>(lua_tointeger(L, 2));
     int layer = (argc >= 3) ? static_cast<int>(lua_tointeger(L, 3)) : 0;
     
-    // TODO: Implement global map storage
-    // if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
-    //     uint8_t tile = sm->engineInstance->getCurrentMap()->GetTile(x, y, layer);
-    //     lua_pushinteger(L, tile);
-    //     return 1;
-    // }
+    // Implemented in v1.1.4 - Connect to Engine's currentMap
+    if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
+        uint8_t tile = sm->engineInstance->getCurrentMap()->GetTile(x, y, layer);
+        lua_pushinteger(L, tile);
+        return 1;
+    }
     
     lua_pushinteger(L, 0);
     return 1;
@@ -795,10 +827,10 @@ int ScriptingManager::Lua_Mset(lua_State* L) {
     uint8_t tileId = static_cast<uint8_t>(lua_tointeger(L, 3));
     int layer = (argc >= 4) ? static_cast<int>(lua_tointeger(L, 4)) : 0;
     
-    // TODO: Implement global map storage
-    // if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
-    //     sm->engineInstance->getCurrentMap()->SetTile(x, y, tileId, layer);
-    // }
+    // Implemented in v1.1.4 - Connect to Engine's currentMap
+    if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
+        sm->engineInstance->getCurrentMap()->SetTile(x, y, tileId, layer);
+    }
     
     return 0;
 }

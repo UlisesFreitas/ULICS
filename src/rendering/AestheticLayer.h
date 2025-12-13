@@ -82,6 +82,9 @@ public:
 
     // Renders the framebuffer to the main window.
     void Present();
+    
+    // Captures the current frame as a PNG screenshot (v1.5.3)
+    void CaptureScreenshot();
 
 private:
     SDL_Renderer* renderer;

@@ -111,7 +111,7 @@ function _draw()
     
     -- Draw header
     print("ULICS FANTASY CONSOLE", 40, 8, COLOR_TITLE)
-    print("HIGH-PERFORMANCE EDITION", 35, 16, COLOR_INFO)
+    print("v1.1.0 - PHOENIX RISING", 40, 16, COLOR_INFO)  -- Version info
     line(0, 24, 255, 24, COLOR_TITLE)
     
     -- Draw stats
@@ -139,10 +139,14 @@ function _draw()
         
         -- Highlight selected
         if cart_index == selected_index then
-            rectfill(4, y - 1, 251, y + line_height - 3, COLOR_SELECTED)
-            print("> " .. cart.name, 8, y, COLOR_BG)
+            -- Draw selection bar that fits the text nicely
+            -- Font is 4px wide per char, add space for "> " prefix and padding
+            local text = "> " .. cart.name
+            local text_width = #text * 4 + 8  -- 4px per char + 8px padding
+            rectfill(6, y, 6 + text_width, y + 7, COLOR_SELECTED)
+            print(text, 8, y + 1, COLOR_BG)
         else
-            print("  " .. cart.name, 8, y, COLOR_TEXT)
+            print("  " .. cart.name, 8, y + 1, COLOR_TEXT)
         end
     end
     

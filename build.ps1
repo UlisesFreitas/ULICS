@@ -36,7 +36,8 @@ try {
         # Remove the .git folder from the cloned SDL directory.
         # This prevents VS Code from detecting it as a nested repository.
         Remove-Item -Path (Join-Path $SdlDir ".git") -Recurse -Force
-    } else {
+    }
+    else {
         Write-Host "SDL2 source found."
     }
 
@@ -47,7 +48,8 @@ try {
         git clone --depth 1 https://github.com/lua/lua.git $LuaDir
         # Remove the .git folder to prevent nested repository detection.
         Remove-Item -Path (Join-Path $LuaDir ".git") -Recurse -Force
-    } else {
+    }
+    else {
         Write-Host "Lua source found."
     }
 
@@ -60,9 +62,14 @@ try {
         # Download the single-header version from GitHub releases
         Invoke-WebRequest -Uri "https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp" -OutFile $JsonHeaderPath
         Write-Host "nlohmann/json downloaded successfully."
-    } else {
+    }
+    else {
         Write-Host "nlohmann/json found."
     }
+
+    # stb_image (header-only library) - Downloaded automatically by CMake
+    # CMakeLists.txt handles stb_image.h download via file(DOWNLOAD)
+    # No action needed here - just noting for documentation
 
     # --- Step 2: Clean and recreate the build directory ---
     Write-Host "Performing a clean build. Removing and recreating build directory..."
@@ -90,13 +97,15 @@ try {
     Write-Host "Project built successfully!" -ForegroundColor Green
     Write-Host "You can find the executable at: $($BuildDir)\bin\Release\UliCS.exe"
 
-} catch {
+}
+catch {
     Write-Error "An error occurred during the build process: $_"
     # Save the specific error to the error log file.
     "$_" | Out-File -FilePath $ErrorLogFile -Append
     # Exit with a non-zero code to indicate failure
     exit 1
-} finally {
+}
+finally {
     # Ensure the transcript is always stopped.
     Stop-Transcript
 }

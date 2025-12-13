@@ -48,11 +48,58 @@ set_target_properties(lua_lib PROPERTIES OUTPUT_NAME lua)
 # 4. Specify that anyone linking against lua_lib should also get its include directory.
 target_include_directories(lua_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/lua")
 
+# --- stb_image Header-Only Library (v1.1 - Task 1.1.5) ---
+# Download stb_image.h automatically if not present
+include(FetchContent)
+
+set(STB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/stb")
+
+# Create directory if it doesn't exist
+file(MAKE_DIRECTORY "${STB_DIR}")
+
+# Download stb_image.h if not already present
+if(NOT EXISTS "${STB_DIR}/stb_image.h")
+    message(STATUS "Downloading stb_image.h...")
+    file(DOWNLOAD
+        "https://raw.githubusercontent.com/nothings/stb/master/stb_image.h"
+        "${STB_DIR}/stb_image.h"
+        SHOW_PROGRESS
+        STATUS download_status
+    )
+    list(GET download_status 0 status_code)
+    if(NOT status_code EQUAL 0)
+        message(FATAL_ERROR "Failed to download stb_image.h")
+    endif()
+    message(STATUS "stb_image.h downloaded successfully")
+else()
+    message(STATUS "stb_image.h already present")
+endif()
+
+# Download stb_image_write.h if not already present (for screenshots - v1.5.3)
+if(NOT EXISTS "${STB_DIR}/stb_image_write.h")
+    message(STATUS "Downloading stb_image_write.h...")
+    file(DOWNLOAD
+        "https://raw.githubusercontent.com/nothings/stb/master/stb_image_write.h"
+        "${STB_DIR}/stb_image_write.h"
+        SHOW_PROGRESS
+        STATUS download_status
+    )
+    list(GET download_status 0 status_code)
+    if(NOT status_code EQUAL 0)
+        message(FATAL_ERROR "Failed to download stb_image_write.h")
+    endif()
+    message(STATUS "stb_image_write.h downloaded successfully")
+else()
+    message(STATUS "stb_image_write.h already present")
+endif()
 # --- Main Application Target ---
 # Add our executable. The WIN32 flag is important for GUI applications on Windows.
 add_executable(UliCS WIN32
     src/main.cpp
     src/core/Engine.cpp src/core/Engine.h
+    src/core/HotReload.cpp src/core/HotReload.h
+    src/ui/DebugConsole.cpp src/ui/DebugConsole.h
+    src/capture/Screenshot.cpp src/capture/Screenshot.h
     src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h
     src/rendering/SpriteSheet.cpp src/rendering/SpriteSheet.h
     src/rendering/Map.cpp src/rendering/Map.h
@@ -78,6 +125,9 @@ target_include_directories(UliCS PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # Add nlohmann/json header-only library
 target_include_directories(UliCS PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/json")
+
+# Add stb (stb_image.h) header-only library
+target_include_directories(UliCS PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/stb")
 
 # Link our application against the static SDL2 library (SDL2::SDL2-static).
 # This target is created by the add_subdirectory(sdl) command above.

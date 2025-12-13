@@ -11,6 +11,9 @@ class Game;
 class ScriptingManager;
 class InputManager;
 class CartridgeLoader;
+class Map;
+class HotReload;
+class DebugConsole;
 
 class Engine {
 public:
@@ -48,6 +51,8 @@ public:
     // Public getters for subsystems
     AestheticLayer* getAestheticLayer() const { return aestheticLayer.get(); }
     InputManager* getInputManager() const { return inputManager.get(); }
+    Map* getCurrentMap() const { return currentMap.get(); }
+    DebugConsole* getDebugConsole() const { return debugConsole.get(); }
     double getElapsedTime() const;
 
 private:
@@ -69,6 +74,9 @@ private:
     std::unique_ptr<ScriptingManager> scriptingManager;
     std::unique_ptr<InputManager> inputManager;
     std::unique_ptr<CartridgeLoader> cartridgeLoader;
+    std::unique_ptr<Map> currentMap;  // Global map instance
+    std::unique_ptr<HotReload> hotReload;  // File watching for hot reload (v1.5.1)
+    std::unique_ptr<DebugConsole> debugConsole;  // On-screen debug overlay (v1.5.2)
 
     // State machine
     EngineState currentState;

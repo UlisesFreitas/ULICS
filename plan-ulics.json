@@ -639,12 +639,20 @@
     },
     {
       "phase": 5.5,
-      "title": "Integrated Development Tools",
-      "description": "Build in-engine editors and tools for creating sprites, maps, audio, and code. This transforms ULICS from a runtime into a complete development environment.",
+      "title": "Integrated Development Tools & IDE Features",
+      "description": "Transform ULICS into a complete fantasy console IDE. Build in-engine editors for sprites, maps, audio, and code. Add profiling, debugging, asset management, and quality-of-life features for rapid game development.",
       "libraries": [
         {
           "name": "Dear ImGui",
-          "purpose": "For creating the development UI/editors overlay"
+          "purpose": "Development UI/editors overlay system"
+        },
+        {
+          "name": "stb_image_write",
+          "purpose": "Screenshot/GIF capture (if not already included)"
+        },
+        {
+          "name": "gifenc (optional)",
+          "purpose": "GIF recording for gameplay capture"
         }
       ],
       "tasks": [
@@ -727,6 +735,62 @@
           "priority": "LOW",
           "files": "src/export/Exporter.h, src/export/Exporter.cpp",
           "notes": "Export finished games as standalone executables or WASM for web. Future feature."
+        },
+        {
+          "id": "5.5.11",
+          "description": "Create Palette Editor - Customize 16-color palette, import PICO-8/TIC-80 palettes, color picker HSL/RGB.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/ui/PaletteEditor.h, src/ui/PaletteEditor.cpp",
+          "notes": "Edit all 16 palette colors. Presets for PICO-8, TIC-80, DB16, etc. Save to cartridge config."
+        },
+        {
+          "id": "5.5.12",
+          "description": "Create Asset Browser - Visual grid of sprites, maps, SFX, music. Quick preview and delete.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/ui/AssetBrowser.h, src/ui/AssetBrowser.cpp",
+          "notes": "Thumbnail view of all cartridge assets. Click to open in respective editor."
+        },
+        {
+          "id": "5.5.13",
+          "description": "Implement Performance Profiler - CPU/GPU time, draw call count, Lua execution time per frame.",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/ui/Profiler.h, src/ui/Profiler.cpp",
+          "notes": "Real-time performance graphs. Identify bottlenecks in _update() and _draw()."
+        },
+        {
+          "id": "5.5.14",
+          "description": "Add Save State System - Quick save/load game state (F5/F9). Preserve Lua globals for testing.",
+          "status": "pending",
+          "priority": "MEDIUM",
+          "files": "src/core/SaveState.h, src/core/SaveState.cpp",
+          "notes": "Serialize Lua state to file. Useful for testing specific game scenarios without replaying."
+        },
+        {
+          "id": "5.5.15",
+          "description": "Implement Screenshot/GIF Capture - F12 for PNG screenshot, Ctrl+F12 for 5-second GIF recording.",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/capture/Capture.h, src/capture/Capture.cpp",
+          "notes": "Save to screenshots/ folder. GIF uses stb_image_write or gifenc. For sharing gameplay."
+        },
+        {
+          "id": "5.5.16",
+          "description": "Create Keybinding Editor - Remap fantasy console buttons to any keyboard/gamepad input.",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/ui/KeybindingEditor.h, src/ui/KeybindingEditor.cpp",
+          "notes": "Allow users to customize controls. Save to user preferences, not cartridge config."
+        },
+        {
+          "id": "5.5.17",
+          "description": "Add In-Game Help/Cheatsheet - F1 overlay showing all API functions with quick examples.",
+          "status": "pending",
+          "priority": "LOW",
+          "files": "src/ui/HelpOverlay.h, src/ui/HelpOverlay.cpp",
+          "notes": "Quick reference for API. Search by function name. Copy code examples."
         }
       ]
     },

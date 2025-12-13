@@ -1,0 +1,47 @@
+{
+    "version": "1.0",
+    "sfx": [
+        {
+            "id": 0,
+            "name": "beep",
+            "waveform": "square",
+            "frequency": 440,
+            "duration": 0.15,
+            "volume": 0.5,
+            "envelope": {
+                "attack": 0.01,
+                "decay": 0.05,
+                "sustain": 0.7,
+                "release": 0.09
+            }
+        },
+        {
+            "id": 1,
+            "name": "boop",
+            "waveform": "sine",
+            "frequency": 220,
+            "duration": 0.2,
+            "volume": 0.6,
+            "envelope": {
+                "attack": 0.02,
+                "decay": 0.08,
+                "sustain": 0.5,
+                "release": 0.1
+            }
+        },
+        {
+            "id": 2,
+            "name": "explosion",
+            "waveform": "noise",
+            "frequency": 0,
+            "duration": 0.4,
+            "volume": 0.7,
+            "envelope": {
+                "attack": 0.001,
+                "decay": 0.15,
+                "sustain": 0.3,
+                "release": 0.25
+            }
+        }
+    ]
+}

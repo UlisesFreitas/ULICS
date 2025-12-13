@@ -139,6 +139,13 @@ private:
     // Set tile ID at map coordinates
     static int Lua_Mset(lua_State* L);
 
+    // --- Audio Functions (Phase 5.15) ---
+    // Play sound effect
+    static int Lua_Sfx(lua_State* L);
+    
+    // Play/stop music
+    static int Lua_Music(lua_State* L);
+
     // --- Math Functions ---
     static int Lua_Sin(lua_State* L);
     static int Lua_Cos(lua_State* L);

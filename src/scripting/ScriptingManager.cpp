@@ -122,6 +122,10 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("map", &ScriptingManager::Lua_Map);
     RegisterFunction("mget", &ScriptingManager::Lua_Mget);
     RegisterFunction("mset", &ScriptingManager::Lua_Mset);
+    
+    // --- Audio Functions (Phase 5.15) ---
+    RegisterFunction("sfx", &ScriptingManager::Lua_Sfx);
+    RegisterFunction("music", &ScriptingManager::Lua_Music);
 }
 
 void ScriptingManager::RegisterFunction(const char* luaName, lua_CFunction func) {
@@ -767,6 +771,76 @@ int ScriptingManager::Lua_Mset(lua_State* L) {
     // if (sm && sm->engineInstance && sm->engineInstance->getCurrentMap()) {
     //     sm->engineInstance->getCurrentMap()->SetTile(x, y, tileId, layer);
     // }
+    
+    return 0;
+}
+
+// === Audio API Implementation (Phase 5.15) ===
+
+/**
+ * @brief Lua function: sfx(id, [channel], [offset])
+ * 
+ * Plays a sound effect.
+ * 
+ * @param id SFX ID (0-255) or -1 to stop
+ * @param channel Channel (0-7) or -1 for auto, or -1 with id=-1 to stop all
+ * @param offset Time offset in seconds (optional)
+ */
+int ScriptingManager::Lua_Sfx(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    int argc = lua_gettop(L);
+    if (argc < 1) {
+        return 0;
+    }
+    
+    int sfxId = static_cast<int>(lua_tointeger(L, 1));
+    int channel = (argc >= 2) ? static_cast<int>(lua_tointeger(L, 2)) : -1;
+    float offset = (argc >= 3) ? static_cast<float>(lua_tonumber(L, 3)) : 0.0f;
+    
+    // TODO Phase 5.12: Implement SFX playback via AudioManager
+    // AudioManager::getInstance().PlaySFX(sfxId, channel, offset);
+    
+    (void)sm;
+    (void)sfxId;
+    (void)channel;
+    (void)offset;
+    
+    return 0;
+}
+
+/**
+ * @brief Lua function: music(pattern_id, [fade_ms], [channel_mask])
+ * 
+ * Plays or stops music.
+ * 
+ * @param pattern_id Pattern ID (0-255) or -1 to stop
+ * @param fade_ms Fade duration in milliseconds (optional)
+ * @param channel_mask Channel mask for which channels to play (optional, default all)
+ */
+int ScriptingManager::Lua_Music(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    int argc = lua_gettop(L);
+    if (argc < 1) {
+        return 0;
+    }
+    
+    int patternId = static_cast<int>(lua_tointeger(L, 1));
+    int fadeMs = (argc >= 2) ? static_cast<int>(lua_tointeger(L, 2)) : 0;
+    int channelMask = (argc >= 3) ? static_cast<int>(lua_tointeger(L, 3)) : 0x0F;  // All 4 channels
+    
+    // TODO Phase 5.14: Implement music playback via AudioManager
+    // if (patternId == -1) {
+    //     AudioManager::getInstance().StopMusic(fadeMs);
+    // } else {
+    //     AudioManager::getInstance().PlayMusic(patternId, fadeMs, channelMask);
+    // }
+    
+    (void)sm;
+    (void)patternId;
+    (void)fadeMs;
+    (void)channelMask;
     
     return 0;
 }

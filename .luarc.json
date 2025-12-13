@@ -34,6 +34,8 @@
         "map",
         "mget",
         "mset",
+        "sfx",
+        "music",
         "_init",
         "_update",
         "_draw"

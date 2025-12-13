@@ -56,6 +56,9 @@ add_executable(UliCS WIN32
     src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h
     src/rendering/SpriteSheet.cpp src/rendering/SpriteSheet.h
     src/rendering/Map.cpp src/rendering/Map.h
+    src/audio/AudioManager.cpp src/audio/AudioManager.h
+    src/audio/SFXSynthesizer.cpp src/audio/SFXSynthesizer.h
+    src/audio/MusicPlayer.cpp src/audio/MusicPlayer.h
     src/game/Game.h
     src/demos/DemoGame.cpp src/demos/DemoGame.h
     src/scripting/LuaGame.cpp src/scripting/LuaGame.h

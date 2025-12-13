@@ -1,0 +1,7 @@
+{
+    "name": "Platformer",
+    "author": "ULICS Demo",
+    "version": "1.0",
+    "description": "Simple platformer demo. Collect all 5 coins to win! Arrow keys to move, Z to jump.",
+    "palette": "default"
+}

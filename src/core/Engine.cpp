@@ -48,9 +48,8 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         return false;
     }
 
-    // Create an accelerated renderer. We disable VSYNC so the game loop is not limited by the monitor's refresh rate.
-    // Our fixed timestep will handle consistency.
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    // Create an accelerated renderer with V-Sync to prevent screen tearing/flickering
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!renderer) {
         std::cerr << "Error creating renderer: " << SDL_GetError() << std::endl;
         Shutdown();

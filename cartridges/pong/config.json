@@ -1,0 +1,7 @@
+{
+    "name": "Pong",
+    "author": "ULICS Demo",
+    "version": "1.0",
+    "description": "Classic 2-player Pong. Player 1: Arrow Keys, Player 2: Mouse. First to 5 wins!",
+    "palette": "default"
+}

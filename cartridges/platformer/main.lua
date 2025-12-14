@@ -23,6 +23,11 @@ local SPEED = 2
 local coins = {}
 local collected = 0
 
+-- DEBUG
+local jump_attempts = 0
+local last_jump_frame = 0
+local frame_count = 0
+
 function _init()
     -- Place coins
     add_coin(80, 180)
@@ -33,9 +38,7 @@ function _init()
 end
 
 function _update()
-    -- Debug: Track that update is running
-    if not _update_counter then _update_counter = 0 end
-    _update_counter = _update_counter + 1
+    frame_count = frame_count + 1
 
     -- Horizontal movement
     if btn(BTN_LEFT) then
@@ -46,10 +49,12 @@ function _update()
         pvx = pvx * 0.7 -- Friction
     end
 
-    -- Jump
+    -- Jump with DEBUG
     if btnp(BTN_A) and on_ground then
         pvy = JUMP
         on_ground = false
+        jump_attempts = jump_attempts + 1
+        last_jump_frame = frame_count
     end
 
     -- Gravity
@@ -60,13 +65,14 @@ function _update()
     px = px + pvx
     py = py + pvy
 
-    -- Floor collision
-    if py > 216 then
+    -- RESET grounded state (will be set by collisions below)
+    on_ground = false
+
+    -- Floor collision (ONLY when FALLING, not when jumping UP!)
+    if py >= 216 and pvy >= 0 then
         py = 216
         pvy = 0
         on_ground = true
-    else
-        on_ground = false
     end
 
     -- Platform collisions
@@ -121,26 +127,25 @@ function _draw()
     -- Floor
     rectfill(0, 224, 256, 32, 3)
 
-    -- Coins (using rect instead of circ)
-    if coins then -- Safety check
+    -- Coins
+    if coins then
         for i = 1, #coins do
             local c = coins[i]
-            if c and c.x and c.y then                -- Nil check
-                rectfill(c.x - 3, c.y - 3, 6, 6, 10) -- Yellow square
-                rect(c.x - 3, c.y - 3, 6, 6, 9)      -- Orange border
+            if c and c.x and c.y then
+                rectfill(c.x - 3, c.y - 3, 6, 6, 10)
+                rect(c.x - 3, c.y - 3, 6, 6, 9)
             end
         end
     end
 
-    -- Player (using only rectfill, no circfill)
-    -- Fix: Floor coordinates to avoid "no integer representation" error
+    -- Player
     local draw_px = flr(px)
     local draw_py = flr(py)
 
-    rectfill(draw_px, draw_py, 8, 8, 8)          -- Red body
-    rectfill(draw_px + 2, draw_py - 2, 4, 2, 14) -- Pink head
-    pset(draw_px + 2, draw_py - 1, 0)            -- Left eye
-    pset(draw_px + 5, draw_py - 1, 0)            -- Right eye
+    rectfill(draw_px, draw_py, 8, 8, 8)
+    rectfill(draw_px + 2, draw_py - 2, 4, 2, 14)
+    pset(draw_px + 2, draw_py - 1, 0)
+    pset(draw_px + 5, draw_py - 1, 0)
 
     -- UI
     print("COINS: " .. collected .. "/5", 4, 4, 7)
@@ -150,6 +155,42 @@ function _draw()
         print("PRESS Z TO PLAY AGAIN", 55, 135, 7)
     end
 
+    -- === DEBUG HUD ===
+    local dx = 130
+    local dy = 4
+
+    -- Ground state (GREEN if true, RED if false)
+    local gcolor = on_ground and 11 or 8
+    print("GROUND: " .. tostring(on_ground), dx, dy, gcolor)
+    dy = dy + 8
+
+    -- Position
+    print("PY: " .. flr(py), dx, dy, 6)
+    dy = dy + 8
+
+    -- Velocity
+    print("VY: " .. flr(pvy * 10) / 10, dx, dy, 6)
+    dy = dy + 8
+
+    -- Button states
+    if btn(BTN_LEFT) then
+        print("LEFT", dx, dy, 11)
+        dy = dy + 8
+    end
+    if btn(BTN_RIGHT) then
+        print("RIGHT", dx, dy, 11)
+        dy = dy + 8
+    end
+    if btn(BTN_A) then
+        print("Z-DOWN", dx, dy, 11)
+        dy = dy + 8
+    end
+
+    -- Big flash when btnp detects
+    if btnp(BTN_A) then
+        print("*** Z PRESS! ***", 50, 90, 10)
+    end
+
     print("ARROWS: MOVE  Z: JUMP", 50, 245, 6)
 end
 
@@ -157,18 +198,19 @@ function check_plat(x, y, w, h)
     -- AABB collision
     if px + 8 > x and px < x + w and
         py + 8 > y and py < y + h then
-        -- Landing from above
+        -- Landing from above (ONLY if moving DOWN, not jumping up!)
         if pvy > 0 and py < y + 4 then
             py = y - 8
             pvy = 0
             on_ground = true
         end
+        -- REMOVED: Don't touch pvy if jumping upward (pvy < 0)
     end
 end
 
 function draw_plat(x, y, w, h)
-    rectfill(x, y, w, h, 4) -- Brown platform
-    line(x, y, x + w, y, 6) -- Light edge
+    rectfill(x, y, w, h, 4)
+    line(x, y, x + w, y, 6)
 end
 
 function add_coin(x, y)

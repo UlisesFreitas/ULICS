@@ -7,6 +7,7 @@
 #include <memory>
 #include "SFXSynthesizer.h"
 #include "MusicPlayer.h"
+#include "RingBuffer.h"  // Lock-free ring buffer for audio streaming
 
 /**
  * @brief AudioManager - Singleton for SDL2 raw audio management
@@ -19,6 +20,7 @@
  * - ADSR envelopes
  * - 8 SFX channels
  * - Pattern-based music player
+ * - Lock-free ring buffer to prevent audio callback from blocking main thread
  */
 class AudioManager {
 public:
@@ -59,7 +61,20 @@ public:
     int GetSampleRate() const { return sampleRate; }
 
     /**
-     * @brief Audio mixing callback (called by SDL)
+     * @brief Play a sound effect 
+     * @param channel Channel number (0-7)
+     * @param sfxId Sound effect ID
+     */
+    void PlaySFX(int channel, int sfxId);
+
+    /**
+     * @brief Generate and buffer audio samples (call from main thread)
+     * This fills the ring buffer with synthesized audio
+     */
+    void GenerateAudio(int frames);
+
+    /**
+     * @brief Audio mixing callback (called by SDL in audio thread)
      */
     static void AudioCallback(void* userdata, Uint8* stream, int len);
 
@@ -85,6 +100,11 @@ private:
     int sampleRate;
     int channels;      // Stereo: 2
     int bufferSize;    // Samples per callback
+
+    // Lock-free ring buffer for audio streaming (FIX for 1.1.3)
+    // Main thread writes, audio callback reads
+    static constexpr size_t RING_BUFFER_SIZE = 8192;  // ~185ms at 44.1kHz stereo
+    std::unique_ptr<RingBuffer<float>> audioRingBuffer;
 
     // Audio subsystems (to be implemented in Phase 5.12-5.14)
     std::unique_ptr<SFXSynthesizer> sfxSynthesizer;

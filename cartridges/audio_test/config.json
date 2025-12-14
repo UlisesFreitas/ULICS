@@ -1,0 +1,9 @@
+{
+    "name": "Audio Test",
+    "author": "ULICS Audio System",
+    "version": "1.0.0",
+    "description": "Tests lock-free audio ring buffer (Bug 1.1.3 fix)",
+    "memoryLimit": 512,
+    "codeLimit": 100000,
+    "paletteSize": 16
+}

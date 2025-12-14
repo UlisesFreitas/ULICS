@@ -15,6 +15,7 @@ class Map;
 class HotReload;
 class DebugConsole;
 class GifRecorder;
+class AudioManager;  // Audio system (Phase 5.12)
 
 class Engine {
 public:
@@ -79,6 +80,7 @@ private:
     std::unique_ptr<HotReload> hotReload;  // File watching for hot reload (v1.5.1)
     std::unique_ptr<DebugConsole> debugConsole;  // On-screen debug overlay (v1.5.2)
     std::unique_ptr<GifRecorder> gifRecorder;  // GIF recording (v1.5.4)
+    AudioManager* audioManager;  // Audio subsystem (singleton, Phase 5.12 + 1.1.3 fix)
 
     // State machine
     EngineState currentState;

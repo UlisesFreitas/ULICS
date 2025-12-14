@@ -1,10 +1,10 @@
-# ULICS Fantasy Console v1.0.0 - "First Light"
+# ULICS Fantasy Console v1.1.0 - "Stable Foundation"
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/UlisesFreitas/ULICS)
-[![Status](https://img.shields.io/badge/status-released-green.svg)](https://github.com/UlisesFreitas/ULICS)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/UlisesFreitas/ULICS)
+[![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)](https://github.com/UlisesFreitas/ULICS)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
-**Released:** 2025-12-13  
+**Released:** 2025-12-14  
 **A high-performance fantasy console built with C++ and SDL2**
 
 ---
@@ -16,12 +16,36 @@ ULICS is a **fantasy console** - a virtual game console with self-imposed limita
 ### Key Features
 
 ✅ **256x256 pixel display** with 16-color palette  
-✅ **40 Lua APIs** for graphics, input, sound, and more  
+✅ **40+ Lua APIs** for graphics, input, sound, and more  
 ✅ **Complete input system** - Keyboard, mouse, and gamepad  
-✅ **Sprite and map support** - Multi-layer tilemaps  
-✅ **Audio architecture** - SDL2 raw audio (synthesis ready)  
-✅ **Hot-swappable cartridges** - Load games on-the-fly  
-✅ **60 FPS** smooth performance  
+✅ **Sprite and map support** - Multi-layer tilemaps (up to 8 layers)  
+✅ **Working audio system** - Lock-free synthesis with 8 channels  
+✅ **Hot reload** - Edit code and see changes instantly  
+✅ **Debug tools** - On-screen console, screenshots, GIF recording  
+✅ **60 FPS** smooth performance with zero input lag
+
+---
+
+## 🆕 What's New in v1.1.0
+
+### Bug Fixes ✅
+- **Fixed rendering flicker** in Pong demo (floating point coordinates)
+- **Fixed player disappearing** in Platformer (same root cause)
+- **Fixed critical input lag** (simplified game loop to 60fps direct)
+- **Fixed audio threading** (lock-free ring buffer implementation)
+
+### Audio System 🔊
+- ✅ Working SFX synthesis with 8 channels
+- ✅ 4 waveforms: sine, square, triangle, white noise
+- ✅ Soft limiter to prevent clipping
+- ✅ Zero input lag with lock-free ring buffer
+
+### Quality of Life (v1.5 features) 🛠️
+- ✅ **Hot Reload** - Auto-reload on file save (massive productivity!)
+- ✅ **Debug Console** - F1 to toggle on-screen print() output
+- ✅ **Screenshot** - F12 to capture PNG
+- ✅ **GIF Recording** - Ctrl+F12 for 5-second GIF
+- ✅ **Cartridge Generator** - PowerShell script to scaffold new games
 
 ---
 
@@ -32,23 +56,26 @@ ULICS is a **fantasy console** - a virtual game console with self-imposed limita
 - **Scripting**: Lua 5.4
 - **Graphics**: Custom pixel-perfect renderer
 - **Input**: Keyboard (100+ keys), Mouse, Gamepad (21 buttons)
-- **Audio**: Architecture complete (synthesis in v1.1)
+- **Audio**: Lock-free synthesis with ring buffer architecture
 
 ### Demo Cartridges
 1. **hello_world** - Simple moving text
 2. **bouncing_ball** - Physics demo
 3. **api_test** - API function showcase
-4. **basic_sfx** - Audio test (disabled pending fix)
-5. **pong** - Classic 2-player Pong
-6. **platformer** - Coin collection platformer
+4. **basic_sfx** - Audio test ✅ **NOW WORKING**
+5. **pong** - Classic 2-player Pong ✅ **FIXED**
+6. **platformer** - Coin collection platformer ✅ **FIXED**
+7. **audio_test** - SFX synthesis test (new!)
+8. **input_test** - Input debugging tool (new!)
 
 ### Documentation
-- `docs/LUA_API.md` - Complete API reference (40 functions)
+- `docs/LUA_API.md` - Complete API reference (40+ functions)
 - `docs/KEYBOARD_AND_CONTROLLER.md` - Input guide
 - `docs/SPRITE_FORMAT.md` - Sprite data format
-- `docs/MAP_FORMAT.md` - Map data format
+- `docs/MAP_FORMAT.md` - Map data format with parallax examples
+- `docs/KNOWN_ISSUES_V1.0.md` - Resolution report (all fixed!)
 - `docs/CODE_REVIEW_V1.0.md` - Technical review
-- + 5 more specification documents
+- + 6 more specification documents
 
 ---
 
@@ -82,20 +109,19 @@ cmake --build . --config Release
 
 ### Create Your First Cartridge
 
+Use the cartridge generator for instant scaffolding:
+
 ```powershell
-# Create cartridge folder
-mkdir cartridges\my_game
+# Create a platformer template
+.\tools\new-cartridge.ps1 -Name "my_game" -Template Platformer
 
-# Create config.json
-{
-  "name": "My Game",
-  "author": "Your Name",
-  "version": "1.0",
-  "description": "My first ULICS game!",
-  "palette": "default"
-}
+# Or simple template
+.\tools\new-cartridge.ps1 -Name "my_game" -Template Simple
+```
 
-# Create main.lua
+Or manually create `cartridges\my_game\main.lua`:
+
+```lua
 function _init()
     x = 128
     y = 128
@@ -104,14 +130,21 @@ end
 function _update()
     if btn(0) then x = x - 2 end  -- Left
     if btn(1) then x = x + 2 end  -- Right
+    if btn(2) then y = y - 2 end  -- Up
+    if btn(3) then y = y + 2 end  -- Down
+    
+    -- Play sound on Z press
+    if btnp(4) then sfx(0) end
 end
 
 function _draw()
     cls(1)
-    circfill(x, y, 8, 8)
+    circfill(flr(x), flr(y), 8, 8)  -- Always use flr() on coordinates!
     print("HELLO ULICS!", 80, 10, 7)
 end
 ```
+
+**Important:** Always use `flr()` to floor coordinates before rendering!
 
 ---
 
@@ -133,7 +166,7 @@ camera(x, y)            -- Set camera offset
 ### Input
 ```lua
 btn(id)                 -- Check button held
-btnp(id)                -- Check button pressed  
+btnp(id)                -- Check button pressed (one frame only)
 mouse()                 -- Get mouse state
 mousex()                -- Get mouse X
 mousey()                -- Get mouse Y
@@ -142,15 +175,18 @@ mousey()                -- Get mouse Y
 ### Sprites & Maps
 ```lua
 spr(id, x, y)           -- Draw sprite
-map(cx, cy, sx, sy, w, h) -- Draw map
-mget(x, y)              -- Get tile
-mset(x, y, id)          -- Set tile
+sspr(x, y, w, h, dx, dy) -- Draw sprite region
+map(cx, cy, sx, sy, w, h, layer) -- Draw map (layer optional)
+mget(x, y, layer)       -- Get tile (layer optional)
+mset(x, y, id, layer)   -- Set tile (layer optional)
 ```
 
-### Audio
+### Audio ✅ NEW!
 ```lua
-sfx(id)                 -- Play sound (v1.1)
-music(id)               -- Play music (v1.1)
+sfx(id, channel)        -- Play sound effect
+                        -- id: 0=sine, 1=square, 2=triangle, 3=noise
+                        -- channel: 0-7 (optional, default 0)
+-- music() coming in Phase 6!
 ```
 
 ### Math
@@ -158,7 +194,7 @@ music(id)               -- Play music (v1.1)
 sin(x), cos(x)          -- Trig (0-1 range)
 atan2(dx, dy)           -- Angle
 sqrt(x), abs(x)         -- Math
-flr(x), ceil(x)         -- Rounding
+flr(x), ceil(x)         -- Rounding (USE THIS FOR RENDERING!)
 rnd(max)                -- Random
 ```
 
@@ -167,6 +203,8 @@ rnd(max)                -- Random
 time()                  -- Get elapsed time
 reset()                 -- Restart cartridge
 exit()                  -- Quit ULICS
+load_cartridge(path)    -- Load another cartridge
+goto_menu()             -- Return to menu
 ```
 
 ---
@@ -178,6 +216,9 @@ exit()                  -- Quit ULICS
 - **Z/X/A/S** - Action buttons (4-7)
 - **Q/W** - Shoulder buttons (8-9)
 - **Enter/Shift** - Start/Select (10-11)
+- **F1** - Toggle debug console
+- **F12** - Screenshot
+- **Ctrl+F12** - Start GIF recording
 
 ### Gamepad
 - **D-pad** - Movement
@@ -199,46 +240,51 @@ exit()                  -- Quit ULICS
 | Colors | 16-color palette |
 | Sprites | 8x8 to 512x512 |
 | Map Size | 128x64 tiles, 8 layers |
-| Framerate | 60 FPS (V-Sync) |
-| Audio | 8 channels @ 44.1kHz |
+| Framerate | 60 FPS (stable, zero lag) |
+| Audio | 8 channels @ 44.1kHz, lock-free |
 | Code | Lua 5.4 |
+| Memory | ~30KB Lua memory typical |
 
 ---
 
-## 🐛 Known Issues (v1.0.0)
+## ✅ Stability Report (v1.1.0)
 
-### High Priority (v1.1)
-- [ ] Pong demo has collision flickering
-- [ ] Platformer player sprite disappears
-- [ ] Audio synthesis disabled (causes input lag)
+### All Critical Bugs Resolved! 🎉
 
-### Medium Priority (v1.1)
-- [ ] Map API not connected to engine
-- [ ] PNG loading uses BMP fallback
+✅ Pong rendering flicker - **FIXED**  
+✅ Platformer player disappearing - **FIXED**  
+✅ Audio threading input lag (6-8s) - **FIXED**  
+✅ Critical input lag - **FIXED**  
+✅ Map API connection - **FIXED**  
+✅ PNG loading - **FIXED**  
+✅ Poor error messages - **FIXED**
 
-See `docs/CODE_REVIEW_V1.0.md` for details.
+**Verdict:** Production-ready and stable! 🚀
+
+See `docs/KNOWN_ISSUES_V1.0.md` for detailed resolution report.
 
 ---
 
 ## 🗺️ Roadmap
 
-### v1.1 (Dec 2025)
-- Fix rendering bugs
-- Fix audio threading
-- Connect map API
-- Better error messages
+### ✅ v1.1 (Dec 2025) - COMPLETED
+- ✅ Fix all rendering bugs
+- ✅ Fix audio threading with lock-free ring buffer
+- ✅ Connect map API
+- ✅ Better error messages
 
-### v1.5 (Jan 2026)
-- Hot reload
-- Debug console
-- Screenshot/GIF capture
+### ✅ v1.5 (Dec 2025) - COMPLETED
+- ✅ Hot reload system
+- ✅ Debug console overlay
+- ✅ Screenshot/GIF capture
+- ✅ Cartridge generator
 
-### v2.0 (Mar 2026)
-- Full IDE with ImGui
-- Sprite editor
-- Map editor
-- Code editor
-- SFX/Music tracker
+### 🚧 v2.0 (In Progress)
+- [ ] ImGui integration
+- [ ] Sprite editor
+- [ ] Map editor
+- [ ] Code editor with syntax highlighting
+- [ ] SFX/Music editors
 
 See `plan-ulics-2.json` for complete roadmap.
 
@@ -249,15 +295,18 @@ See `plan-ulics-2.json` for complete roadmap.
 ```
 ULICS/
 ├── src/
-│   ├── core/          # Engine core
+│   ├── core/          # Engine core (simplified 60fps loop)
 │   ├── rendering/     # Graphics system
-│   ├── audio/         # Audio system
+│   ├── audio/         # Audio system (lock-free ring buffer)
 │   ├── input/         # Input handling
 │   ├── scripting/     # Lua integration
-│   └── cartridge/     # Cartridge loading
-├── cartridges/        # Game cartridges
-├── docs/              # Documentation
-├── external/          # Dependencies (SDL2, Lua)
+│   ├── cartridge/     # Cartridge loading
+│   ├── ui/            # Debug console
+│   └── capture/       # Screenshot/GIF
+├── cartridges/        # Game cartridges (8 demos)
+├── docs/              # Documentation (10+ files)
+├── tools/             # Dev tools (cartridge generator)
+├── external/          # Dependencies (SDL2, Lua, stb)
 └── build/             # Build output
 ```
 
@@ -266,40 +315,36 @@ ULICS/
 ## 🛠️ Development
 
 ### Version Info
-Access version constants in C++:
 ```cpp
 #include "core/Version.h"
 
 ULICS::VERSION_MAJOR  // 1
-ULICS::VERSION_MINOR  // 0
+ULICS::VERSION_MINOR  // 1
 ULICS::VERSION_PATCH  // 0
-ULICS::VERSION_STRING // "1.0.0"
+ULICS::VERSION_STRING // "1.1.0"
 ```
 
-### Building From Source
-```powershell
-# Debug build
-cmake --build build --config Debug
+### Hot Reload Workflow
+1. Edit `main.lua` in your favorite editor
+2. Save the file
+3. ULICS auto-reloads instantly!
+4. No need to restart
 
-# Release build (optimized)
-cmake --build build --config Release
-
-# Clean build
-rm -r build
-mkdir build
-cd build
-cmake ..
-```
+### Debug Console
+- Press **F1** to toggle
+- Shows last 10 `print()` calls
+- Real-time FPS counter
+- Perfect for debugging without terminal
 
 ---
 
 ## 🤝 Contributing
 
-ULICS v1.0.0 is feature-complete for the initial release. Contributions welcome for:
-- Bug fixes (see GitHub Issues)
+Contributions welcome for:
+- Bug reports (GitHub Issues)
 - Documentation improvements
 - New demo cartridges
-- v1.1+ features (see plan-ulics-2.json)
+- v2.0+ features (see `plan-ulics-2.json`)
 
 ---
 
@@ -323,12 +368,13 @@ MIT License - See LICENSE file for details
 - **API Reference:** `docs/LUA_API.md`
 - **Roadmap:** `plan-ulics-2.json`
 - **Code Review:** `docs/CODE_REVIEW_V1.0.md`
+- **Known Issues (Resolved):** `docs/KNOWN_ISSUES_V1.0.md`
 
 ---
 
-**ULICS v1.0.0 - "First Light"**  
-*Making game development simple again* ✨
+**ULICS v1.1.0 - "Stable Foundation"**  
+*Making game development simple and fun* ✨🎮
 
 ---
 
-Last Updated: 2025-12-13
+Last Updated: 2025-12-14

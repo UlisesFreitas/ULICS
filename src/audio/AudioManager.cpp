@@ -64,6 +64,11 @@ bool AudioManager::Initialize() {
     std::cout << "  Channels: " << channels << " (stereo)" << std::endl;
     std::cout << "  Buffer size: " << bufferSize << " samples" << std::endl;
 
+    // Initialize lock-free ring buffer (FIX for 1.1.3)
+    audioRingBuffer = std::make_unique<RingBuffer<float>>(RING_BUFFER_SIZE);
+    std::cout << "  Ring buffer: " << RING_BUFFER_SIZE << " samples ("
+              << (RING_BUFFER_SIZE * 1000 / (sampleRate * channels)) << "ms)" << std::endl;
+
     // Initialize SFXSynthesizer (Phase 5.12.1)
     sfxSynthesizer = std::make_unique<SFXSynthesizer>(sampleRate);
     
@@ -113,34 +118,62 @@ float AudioManager::GetMasterVolume() const {
     return masterVolume;
 }
 
+void AudioManager::PlaySFX(int channel, int sfxId) {
+    if (sfxSynthesizer) {
+        sfxSynthesizer->PlaySFX(channel, sfxId);
+    }
+}
+
+void AudioManager::GenerateAudio(int frames) {
+    if (!initialized || !audioRingBuffer) {
+        return;
+    }
+
+    // Allocate temporary buffer for synthesis
+    std::vector<float> tempBuffer(frames * channels);
+    
+    // Clear buffer
+    std::memset(tempBuffer.data(), 0, tempBuffer.size() * sizeof(float));
+    
+    // Synthesize audio (now safe to do in main thread!)
+    if (sfxSynthesizer) {
+        sfxSynthesizer->RenderSamples(tempBuffer.data(), frames, channels);
+    }
+    
+    // TODO Phase 5.14: Mix music
+    // if (musicPlayer) {
+    //     musicPlayer->RenderSamples(tempBuffer.data(), frames, channels);
+    // }
+    
+    // Apply master volume and soft limiter
+    for (size_t i = 0; i < tempBuffer.size(); i++) {
+        float sample = tempBuffer[i] * masterVolume;
+        
+        // Soft limiter using tanh (prevents harsh clipping)
+        if (sample > 1.0f || sample < -1.0f) {
+            sample = std::tanh(sample);  // Smooth saturation
+        }
+        
+        tempBuffer[i] = sample;
+    }
+    
+    // Write to ring buffer (non-blocking, lock-free)
+    audioRingBuffer->Write(tempBuffer.data(), tempBuffer.size());
+}
+
 void AudioManager::AudioCallback(void* userdata, Uint8* stream, int len) {
     AudioManager* manager = static_cast<AudioManager*>(userdata);
     
     // Convert byte stream to float buffer
     float* buffer = reinterpret_cast<float*>(stream);
-    int frames = len / (sizeof(float) * manager->channels);
+    int samples = len / sizeof(float);
     
-    // Mix audio
-    manager->MixAudio(buffer, frames);
-}
-
-void AudioManager::MixAudio(float* buffer, int frames) {
-    // Clear buffer
-    std::memset(buffer, 0, frames * channels * sizeof(float));
-    
-    // TODO Phase 6: Fix audio threading issue causing input lag
-    // Mix SFX channels (Phase 5.12.1 - DISABLED due to 6-8s input delay)
-    // if (sfxSynthesizer) {
-    //     sfxSynthesizer->RenderSamples(buffer, frames, channels);
-    // }
-    
-    // TODO Phase 5.14: Mix music
-    // if (musicPlayer) {
-    //     musicPlayer->RenderSamples(buffer, frames, channels);
-    // }
-    
-    // Apply master volume
-    for (int i = 0; i < frames * channels; i++) {
-        buffer[i] *= masterVolume;
+    // Read from ring buffer (lock-free, no blocking!)
+    // If buffer underruns, Read() fills with silence automatically
+    if (manager->audioRingBuffer) {
+        manager->audioRingBuffer->Read(buffer, samples);
+    } else {
+        // Fallback: silence
+        std::memset(buffer, 0, len);
     }
 }

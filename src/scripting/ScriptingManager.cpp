@@ -6,6 +6,7 @@
 #include "input/InputConstants.h"
 #include "core/Engine.h"
 #include "cartridge/CartridgeLoader.h"
+#include "audio/AudioManager.h"  // For sfx() Lua binding
 #include <iostream>
 #include <string> // Required for std::string
 #include <array>
@@ -877,17 +878,12 @@ int ScriptingManager::Lua_Sfx(lua_State* L) {
     }
     
     int sfxId = static_cast<int>(lua_tointeger(L, 1));
-    int channel = (argc >= 2) ? static_cast<int>(lua_tointeger(L, 2)) : -1;
-    float offset = (argc >= 3) ? static_cast<float>(lua_tonumber(L, 3)) : 0.0f;
+    int channel = (argc >= 2) ? static_cast<int>(lua_tointeger(L, 2)) : 0;
     
-    // TODO Phase 5.12: Implement SFX playback via AudioManager
-    // AudioManager::getInstance().PlaySFX(sfxId, channel, offset);
+    // Play SFX via AudioManager (Phase 5.12 + Bug 1.1.3 fix)
+    AudioManager::getInstance().PlaySFX(channel, sfxId);
     
     (void)sm;
-    (void)sfxId;
-    (void)channel;
-    (void)offset;
-    
     return 0;
 }
 

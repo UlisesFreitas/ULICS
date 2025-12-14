@@ -3,6 +3,7 @@
 #include "ui/DebugConsole.h"  // Debug overlay (v1.5.2)
 #include "capture/Screenshot.h"  // Screenshot system (v1.5.3)
 #include "capture/GifRecorder.h"  // GIF recording system (v1.5.4)
+#include "audio/AudioManager.h"  // Audio system (Phase 5.12 + Bug 1.1.3 fix)
 #include "rendering/AestheticLayer.h"
 #include "rendering/Map.h"  // For global map instance
 #include "scripting/LuaGame.h" // Include our Lua game bridge.
@@ -22,6 +23,7 @@ Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
                    activeGame(nullptr), scriptingManager(nullptr),
                    inputManager(nullptr), cartridgeLoader(nullptr), currentMap(nullptr), hotReload(nullptr), debugConsole(nullptr), gifRecorder(nullptr),
+                   audioManager(nullptr),
                    currentState(EngineState::BOOT), previousState(EngineState::BOOT),
                    currentCartridgePath("") {
     // Constructor
@@ -106,6 +108,22 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
     catch (const std::exception& e) {
         std::cerr << "Warning: GifRecorder failed to initialize: " << e.what() << std::endl;
         // Continue without GIF recording
+    }
+
+    // Initialize Audio System (Phase 5.12 + Bug 1.1.3 fix)
+    try {
+        audioManager = &AudioManager::getInstance();
+        if (audioManager->Initialize()) {
+            std::cout << "Audio system initialized with lock-free ring buffer" << std::endl;
+        } else {
+            std::cerr << "Warning: Audio failed to initialize" << std::endl;
+            audioManager = nullptr;
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: AudioManager failed to initialize: " << e.what() << std::endl;
+        audioManager = nullptr;
+        // Continue without audio
     }
 
     // Initialize CartridgeLoader
@@ -194,15 +212,12 @@ void Engine::Run() {
     double lag = 0.0;
 
     while (isRunning) {
-        auto currentTime = clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(currentTime - previousTime).count();
-        previousTime = currentTime;
-        lag += elapsed;
-
-        // Prepare for new input.
+        auto frameStart = clock::now();
+        
+        // STEP 1: Capture previous frame's input state
         inputManager->beginNewFrame();
 
-        // Process all pending events.
+        // STEP 2: Process events (updates current input state)
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 isRunning = false;
@@ -224,7 +239,7 @@ void Engine::Run() {
                     // Ctrl+F12 - GIF Recording
                     if (gifRecorder && aestheticLayer) {
                         if (!gifRecorder->IsRecording()) {
-                            gifRecorder->StartRecording(256, 256);  // UL ICS screen size
+                            gifRecorder->StartRecording(256, 256);  // ULICS screen size
                         }
                     }
                 } else {
@@ -249,12 +264,9 @@ void Engine::Run() {
                 event.type == SDL_CONTROLLERBUTTONUP) {
                 inputManager->handleGamepadEvent(event);
             }
-            
-            // The InputManager doesn't need to handle keyboard events directly,
-            // as SDL_GetKeyboardState is updated by SDL_PollEvent/SDL_PumpEvents.
         }
 
-        // Check for file changes and reload if needed (v1.5.1 - Hot Reload)
+        // STEP 3: Check for file changes (Hot Reload)
         if (hotReload && hotReload->IsEnabled() && currentState == EngineState::RUNNING_CARTRIDGE) {
             if (hotReload->CheckForChanges()) {
                 std::cout << "\n=== Hot Reload Triggered ===\n" << std::endl;
@@ -262,19 +274,23 @@ void Engine::Run() {
             }
         }
 
-        // Fixed timestep logic update loop.
-        // It runs as many times as necessary to 'catch up' with real time.
-        while (lag >= MS_PER_UPDATE) {
-            // Do not update logic if we are in an error state.
-            if (activeGame && !inErrorState) {
-                if (!activeGame->_update()) {
-                    enterErrorState(scriptingManager->GetLastLuaError());
-                }
+        // STEP 4: Update game logic (ONCE per frame, not fixed timestep)
+        if (activeGame && !inErrorState) {
+            if (!activeGame->_update()) {
+                enterErrorState(scriptingManager->GetLastLuaError());
             }
-            lag -= MS_PER_UPDATE;
         }
 
-        // Render loop. It runs once per main loop iteration.
+        // STEP 4.5: Generate audio for this frame (Bug 1.1.3 fix)
+        // This runs in main thread and writes to ring buffer
+        // Audio callback reads from ring buffer in separate thread (lock-free!)
+        if (audioManager && audioManager->IsInitialized()) {
+            // Generate enough samples for this frame (~735 samples at 44.1kHz/60fps)
+            int samplesPerFrame = audioManager->GetSampleRate() / 60;
+            audioManager->GenerateAudio(samplesPerFrame);
+        }
+
+        // STEP 5: Render
         if (inErrorState) {
             drawErrorScreen();
         } else {
@@ -283,17 +299,29 @@ void Engine::Run() {
             }
         }
         
-        // Draw debug console on top of everything (v1.5.2)
+        // Draw debug console on top
         if (debugConsole) {
+            auto currentTime = clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(currentTime - previousTime).count();
+            previousTime = currentTime;
             debugConsole->UpdateFPS(elapsed);
             debugConsole->Draw(*aestheticLayer);
         }
         
-        aestheticLayer->Present(); // Present the result regardless.
+        aestheticLayer->Present();
         
-        // Feed frame to GIF recorder if recording (v1.5.4)
+        // Feed frame to GIF recorder if recording
         if (gifRecorder && gifRecorder->IsRecording()) {
             gifRecorder->AddFrame(aestheticLayer->GetPixelData());
+        }
+        
+        // STEP 6: Cap to ~60 FPS
+        auto frameEnd = clock::now();
+        auto frameDuration = std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart);
+        auto targetFrameTime = std::chrono::milliseconds(16); // ~60 FPS
+        
+        if (frameDuration < targetFrameTime) {
+            std::this_thread::sleep_for(targetFrameTime - frameDuration);
         }
     }
 }

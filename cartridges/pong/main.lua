@@ -129,11 +129,11 @@ function _draw()
     end
 
     -- Paddles
-    rectfill(8, p1_y, 4, 32, 7)
-    rectfill(244, p2_y, 4, 32, 7)
+    rectfill(8, flr(p1_y), 4, 32, 7)
+    rectfill(244, flr(p2_y), 4, 32, 7)
 
-    -- Ball
-    rectfill(ball_x - 2, ball_y - 2, 4, 4, 10)
+    -- Ball (floor coordinates to avoid floating point errors)
+    rectfill(flr(ball_x) - 2, flr(ball_y) - 2, 4, 4, 10)
 
     -- Scores
     print(score1, 100, 10, 7)

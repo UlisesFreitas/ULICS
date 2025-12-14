@@ -1,5 +1,6 @@
 #include "ui/CodeEditor.h"
 #include "ui/UISystem.h"
+#include "ui/LuaSyntax.h"
 #include "rendering/AestheticLayer.h"
 #include "input/InputManager.h"
 #include "input/InputConstants.h"
@@ -8,7 +9,7 @@
 #include <algorithm>
 
 CodeEditor::CodeEditor()
-    : cursorLine(0), cursorCol(0), scrollY(0), modified(false) {
+    : cursorLine(0), cursorCol(0), scrollY(0), modified(false), savedMessageTimer(0) {
     // Start with empty file
     lines.push_back("");
 }
@@ -26,8 +27,21 @@ bool CodeEditor::Initialize(const std::string& filename) {
 }
 
 void CodeEditor::Update(InputManager& input) {
-    // Handle text input
-    // TODO Phase 2.0.3: We'll add SDL_TEXTINPUT event handling
+    // Decrement saved message timer (Phase 2.0.4)
+    if (savedMessageTimer > 0) {
+        savedMessageTimer--;
+    }
+    
+    // Handle text input (characters typed)
+    if (input.hasTextInput()) {
+        const std::string& text = input.getTextInput();
+        for (char c : text) {
+            // Filter out control characters (< 32)
+            if (c >= 32 && c < 127) {  // Printable ASCII only
+                InsertChar(c);
+            }
+        }
+    }
     
     // Handle cursor movement
     if (input.isKeyPressed(SDL_SCANCODE_LEFT)) {
@@ -74,7 +88,32 @@ void CodeEditor::Update(InputManager& input) {
         NewLine();
     }
     
-    // TODO Phase 2.0.4: Ctrl+S (Save), Ctrl+R (Run), Ctrl+C/V (Copy/Paste)
+    // Tab - Insert 4 spaces (Phase 2.0.4)
+    if (input.isKeyPressed(SDL_SCANCODE_TAB)) {
+        if (input.isShiftDown()) {
+            // Shift+Tab - TODO: Unindent
+        } else {
+            // Tab - Insert 4 spaces
+            for (int i = 0; i < 4; i++) {
+                InsertChar(' ');
+            }
+        }
+    }
+    
+    // Ctrl+S - Save (Phase 2.0.4)
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_S)) {
+        if (Save()) {
+            savedMessageTimer = 120;  // Show "SAVED!" for 2 seconds (120 frames @ 60fps)
+        }
+    }
+    
+    // Ctrl+R - Run/Reload (Phase 2.0.4)
+    // Note: This will be handled by Engine to reload the cartridge
+    // For now, we just save the file
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_R)) {
+        Save();
+        // Engine will detect file change via hot reload
+    }
 }
 
 void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
@@ -103,13 +142,13 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
         sprintf(lineNum, "%3d", i + 1);
         layer.Print(lineNum, editorX + 2, y, UISystem::COLOR_LIGHT_GRAY);
         
-        // Line text (truncate if too long)
+        // Line text with syntax highlighting (Phase 2.0.3)
         std::string lineText = lines[i];
         if (lineText.length() > VISIBLE_COLS) {
             lineText = lineText.substr(0, VISIBLE_COLS);
         }
         
-        layer.Print(lineText, textX, y, UISystem::COLOR_WHITE);
+        RenderLineWithSyntax(lineText, textX, y, layer);
         
         y += lineHeight;
     }
@@ -133,9 +172,15 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
     
     // Status text
     char status[64];
-    sprintf(status, "Line %d:%d  %s", cursorLine + 1, cursorCol + 1, 
-            modified ? "MODIFIED" : "");
-    layer.Print(status, 4, statusY + 3, UISystem::COLOR_WHITE);
+    if (savedMessageTimer > 0) {
+        // Show "SAVED!" message temporarily
+        sprintf(status, "Line %d:%d  SAVED!", cursorLine + 1, cursorCol + 1);
+        layer.Print(status, 4, statusY + 3, UISystem::COLOR_GREEN);  // Green for success
+    } else {
+        sprintf(status, "Line %d:%d  %s", cursorLine + 1, cursorCol + 1, 
+                modified ? "MODIFIED" : "");
+        layer.Print(status, 4, statusY + 3, UISystem::COLOR_WHITE);
+    }
     
     // File name (right-aligned)
     if (!currentFilename.empty()) {
@@ -394,5 +439,94 @@ void CodeEditor::ClampCursor() {
     // Clamp cursor column to current line length
     if (cursorCol > static_cast<int>(lines[cursorLine].length())) {
         cursorCol = lines[cursorLine].length();
+    }
+}
+
+// ============================================
+// SYNTAX HIGHLIGHTING (Phase 2.0.3)
+// ============================================
+
+void CodeEditor::RenderLineWithSyntax(const std::string& line, int x, int y, AestheticLayer& layer) {
+    int currentX = x;
+    size_t i = 0;
+    
+    while (i < line.length()) {
+        char c = line[i];
+        
+        // Skip whitespace (render as-is)
+        if (LuaSyntax::IsWhitespace(c)) {
+            currentX += 4;  // 4 pixels per char
+            i++;
+            continue;
+        }
+        
+        // Check for comments (-- to end of line)
+        if (c == '-' && i + 1 < line.length() && line[i + 1] == '-') {
+            // Rest of line is comment
+            std::string comment = line.substr(i);
+            layer.Print(comment, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::COMMENT));
+            break;  // Done with this line
+        }
+        
+        // Check for strings
+        if (c == '"' || c == '\'') {
+            char quote = c;
+            size_t endQuote = i + 1;
+            
+            // Find matching quote (simple, no escape handling)
+            while (endQuote < line.length() && line[endQuote] != quote) {
+                endQuote++;
+            }
+            
+            if (endQuote < line.length()) {
+                endQuote++;  // Include closing quote
+            }
+            
+            std::string str = line.substr(i, endQuote - i);
+            layer.Print(str, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::STRING));
+            currentX += str.length() * 4;
+            i = endQuote;
+            continue;
+        }
+        
+        // Check for numbers
+        if (LuaSyntax::IsDigit(c) || (c == '-' && i + 1 < line.length() && LuaSyntax::IsDigit(line[i + 1]))) {
+            size_t numEnd = i;
+            if (c == '-') numEnd++;  // Skip minus sign
+            
+            while (numEnd < line.length() && 
+                   (LuaSyntax::IsDigit(line[numEnd]) || line[numEnd] == '.')) {
+                numEnd++;
+            }
+            
+            std::string num = line.substr(i, numEnd - i);
+            layer.Print(num, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::NUMBER));
+            currentX += num.length() * 4;
+            i = numEnd;
+            continue;
+        }
+        
+        // Check for identifiers/keywords
+        if (LuaSyntax::IsIdentifierStart(c)) {
+            size_t identEnd = i;
+            while (identEnd < line.length() && LuaSyntax::IsIdentifierChar(line[identEnd])) {
+                identEnd++;
+            }
+            
+            std::string ident = line.substr(i, identEnd - i);
+            LuaSyntax::TokenType tokenType = LuaSyntax::GetTokenType(ident);
+            
+            layer.Print(ident, currentX, y, LuaSyntax::GetColorForToken(tokenType));
+            currentX += ident.length() * 4;
+            i = identEnd;
+            continue;
+        }
+        
+        // Single character (operator, punctuation, etc.)
+        std::string ch(1, c);
+        int color = UISystem::COLOR_PEACH;  // Operators/punctuation in peach
+        layer.Print(ch, currentX, y, color);
+        currentX += 4;
+        i++;
     }
 }

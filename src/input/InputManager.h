@@ -3,6 +3,7 @@
 
 #include <SDL.h>
 #include <vector>
+#include <string>  // For text input (Phase 2.0.2)
 
 /// @class InputManager
 /// @brief Manages keyboard input state for the engine.
@@ -76,6 +77,30 @@ public:
     /// @return Normalized axis value
     float getGamepadAxisNormalized(int axis, bool applyDeadzone = true) const;
 
+    // === Text Input (Phase 2.0.2 - Code Editor) ===
+
+    /// @brief Handle SDL_TEXTINPUT event
+    void handleTextInput(const SDL_Event& event);
+
+    /// @brief Get text input from this frame (for text editors)
+    /// @return String containing all text typed this frame
+    const std::string& getTextInput() const { return textInput; }
+
+    /// @brief Check if text input has content this frame
+    bool hasTextInput() const { return !textInput.empty(); }
+
+    // === Modifier Keys (Phase 2.0.4) ===
+
+    /// @brief Check if Ctrl key is currently held down
+    bool isCtrlDown() const {
+        return isKeyDown(SDL_SCANCODE_LCTRL) || isKeyDown(SDL_SCANCODE_RCTRL);
+    }
+
+    /// @brief Check if Shift key is currently held down
+    bool isShiftDown() const {
+        return isKeyDown(SDL_SCANCODE_LSHIFT) || isKeyDown(SDL_SCANCODE_RSHIFT);
+    }
+
 private:
     // Keyboard state
     std::vector<Uint8> previousKeyStates;
@@ -93,6 +118,9 @@ private:
     int numGamepads;
     std::vector<Uint8> previousGamepadButtons;
     std::vector<Uint8> currentGamepadButtons;
+
+    // Text input (Phase 2.0.2 - Code Editor)
+    std::string textInput;  // Text typed this frame
 };
 
 #endif // INPUT_MANAGER_H

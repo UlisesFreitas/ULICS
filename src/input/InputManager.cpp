@@ -61,6 +61,9 @@ void InputManager::beginNewFrame() {
                 gameController, static_cast<SDL_GameControllerButton>(i));
         }
     }
+
+    // Clear text input from previous frame (Phase 2.0.2)
+    textInput.clear();
 }
 
 void InputManager::handleKeyEvent(const SDL_Event& event) {
@@ -223,5 +226,14 @@ float InputManager::getGamepadAxisNormalized(int axis, bool applyDeadzone) const
         } else {
             return rawValue / (rawValue > 0 ? 32767.0f : 32768.0f);
         }
+    }
+}
+
+// === Text Input (Phase 2.0.2 - Code Editor) ===
+
+void InputManager::handleTextInput(const SDL_Event& event) {
+    if (event.type == SDL_TEXTINPUT) {
+        // Append text (SDL_TEXTINPUT can have multiple UTF-8 chars)
+        textInput += event.text.text;
     }
 }

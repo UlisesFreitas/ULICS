@@ -173,6 +173,7 @@ private:
     // File info
     std::string currentFilename;
     bool modified;   // Has file been modified since last save?
+    int savedMessageTimer;  // Frames to show "SAVED!" message (Phase 2.0.4)
 
     // Editor dimensions (in characters)
     static constexpr int VISIBLE_LINES = 28;  // ~224 pixels / 8 pixels per line
@@ -181,6 +182,9 @@ private:
     // Helper functions
     void EnsureCursorVisible();
     void ClampCursor();
+    
+    // Syntax highlighting (Phase 2.0.3)
+    void RenderLineWithSyntax(const std::string& line, int x, int y, AestheticLayer& layer);
 };
 
 #endif // CODEEDITOR_H

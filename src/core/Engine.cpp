@@ -80,6 +80,10 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         return false;
     }
 
+    // Enable SDL text input (Phase 2.0.2 - Required for Code Editor)
+    SDL_StartTextInput();
+    std::cout << "Text input enabled for Code Editor" << std::endl;
+
     // Initialize HotReload (v1.5.1)
     try {
         hotReload = std::make_unique<HotReload>();
@@ -263,6 +267,11 @@ void Engine::Run() {
                 event.type == SDL_CONTROLLERBUTTONDOWN ||
                 event.type == SDL_CONTROLLERBUTTONUP) {
                 inputManager->handleGamepadEvent(event);
+            }
+
+            // Handle text input events (Phase 2.0.2 - Code Editor)
+            if (event.type == SDL_TEXTINPUT) {
+                inputManager->handleTextInput(event);
             }
         }
 

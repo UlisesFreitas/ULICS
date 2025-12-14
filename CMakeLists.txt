@@ -119,6 +119,8 @@ add_executable(UliCS WIN32
     src/core/Engine.cpp src/core/Engine.h
     src/core/HotReload.cpp src/core/HotReload.h
     src/ui/DebugConsole.cpp src/ui/DebugConsole.h
+    src/ui/UISystem.cpp src/ui/UISystem.h
+    src/ui/CodeEditor.cpp src/ui/CodeEditor.h
     src/capture/Screenshot.cpp src/capture/Screenshot.h
     src/capture/GifRecorder.cpp src/capture/GifRecorder.h
     src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h
@@ -127,6 +129,7 @@ add_executable(UliCS WIN32
     src/audio/AudioManager.cpp src/audio/AudioManager.h
     src/audio/SFXSynthesizer.cpp src/audio/SFXSynthesizer.h
     src/audio/MusicPlayer.cpp src/audio/MusicPlayer.h
+    src/audio/RingBuffer.h
     src/game/Game.h
     src/demos/DemoGame.cpp src/demos/DemoGame.h
     src/scripting/LuaGame.cpp src/scripting/LuaGame.h

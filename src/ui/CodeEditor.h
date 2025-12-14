@@ -3,11 +3,15 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
+#include <chrono>
+#include <memory>
 
 // Forward declarations
 class AestheticLayer;
 class InputManager;
 class UISystem;
+class FileExplorer;
 
 /**
  * @brief CodeEditor - In-engine Lua code editor
@@ -169,19 +173,50 @@ private:
 
     // Scroll position (0-indexed)
     int scrollY;     // First visible line
+    int scrollX;     // First visible column (horizontal scroll)
 
     // File info
     std::string currentFilename;
     bool modified;   // Has file been modified since last save?
     int savedMessageTimer;  // Frames to show "SAVED!" message (Phase 2.0.4)
+    int reloadedMessageTimer;  // Frames to show "RELOADED!" message (Phase 2.0.5.1)
+    
+    // External file change detection (Phase 2.0.5.1)
+    std::filesystem::file_time_type lastFileWriteTime;
+    bool fileWatchingEnabled;
+    
+    // File explorer sidebar (Phase 2.0.5.2)
+    std::unique_ptr<FileExplorer> fileExplorer;
+    std::string cartridgePath;  // Current cartridge directory
+    
+    // Scrollbar state (Phase 2.0.5.3)
+    bool scrollbarDragging;      // Is user dragging the thumb?
+    int scrollbarDragOffset;     // Offset from thumb top when drag started
 
-    // Editor dimensions (in characters)
-    static constexpr int VISIBLE_LINES = 28;  // ~224 pixels / 8 pixels per line
-    static constexpr int VISIBLE_COLS = 58;   // ~232 pixels / 4 pixels per char (with line numbers)
+    // Key repeat for cursor movement (auto-repeat when holding arrow keys)
+    int keyRepeatDelay;      // Frames before repeat starts
+    int keyRepeatInterval;   // Frames between repeats
+    int leftKeyHoldFrames;
+    int rightKeyHoldFrames;
+    int upKeyHoldFrames;
+    int downKeyHoldFrames;
+
+    // Editor dimensions
+    // Font: 8x8px monospace (EmbeddedFont.h)
+    // Line height: 11px (8px + 3px spacing - prevents overlap)
+    // Line numbers: 40px (4 digits support up to 9999 lines)
+    // Text area: 256 - 40 - 4 = 212px (212/8 = 26 chars)
+    // Editor height: 256 - 10 - 10 = 236px (236/11 = 21 lines)
+    static constexpr int VISIBLE_LINES = 22;
+    static constexpr int VISIBLE_COLS = 26;
 
     // Helper functions
-    void EnsureCursorVisible();
+    void EnsureCursorVisible();              // Vertical scroll
+    void EnsureCursorVisibleHorizontal();    // Horizontal scroll
     void ClampCursor();
+    void CheckForExternalChanges();          // File watching (Phase 2.0.5.1)
+    void HandleScrollbarInput(InputManager& input);  // Scrollbar mouse handling (Phase 2.0.5.3)
+    void RenderScrollbar(AestheticLayer& layer, int x, int y, int width, int height);  // Scrollbar (Phase 2.0.5.3)
     
     // Syntax highlighting (Phase 2.0.3)
     void RenderLineWithSyntax(const std::string& line, int x, int y, AestheticLayer& layer);

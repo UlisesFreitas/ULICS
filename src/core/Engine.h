@@ -16,6 +16,8 @@ class HotReload;
 class DebugConsole;
 class GifRecorder;
 class AudioManager;  // Audio system (Phase 5.12)
+class UISystem;      // Custom UI system (Phase 2.0.1)
+class CodeEditor;    // Code editor (Phase 2.0.2)
 
 class Engine {
 public:
@@ -36,6 +38,20 @@ public:
 
     EngineState GetState() const { return currentState; }
     void SetState(EngineState newState);
+
+    // === Engine Mode (Phase 2.0.5) ===
+    // Controls whether we're in game mode or editor mode
+    enum class EngineMode {
+        GAME,          // Playing the game (default)
+        CODE_EDITOR,   // F1 - Editing code
+        SPRITE_EDITOR, // F2 - Editing sprites (future)
+        MAP_EDITOR,    // F3 - Editing map (future)
+        SFX_EDITOR,    // F4 - Editing SFX (future)
+        MUSIC_EDITOR   // F5 - Editing music (future)
+    };
+
+    EngineMode GetMode() const { return currentMode; }
+    void SetMode(EngineMode newMode);
 
     // === Cartridge Lifecycle Management ===
     // Loads a cartridge from the specified path (directory containing main.lua).
@@ -82,9 +98,16 @@ private:
     std::unique_ptr<GifRecorder> gifRecorder;  // GIF recording (v1.5.4)
     AudioManager* audioManager;  // Audio subsystem (singleton, Phase 5.12 + 1.1.3 fix)
 
+    // UI Systems (Phase 2.0)
+    std::unique_ptr<UISystem> uiSystem;      // Custom UI rendering (2.0.1)
+    std::unique_ptr<CodeEditor> codeEditor;  // Code editor (2.0.2-2.0.4)
+
     // State machine
     EngineState currentState;
     EngineState previousState;
+
+    // Mode switching (Phase 2.0.5)
+    EngineMode currentMode;
 
     // Cartridge management
     std::string currentCartridgePath;

@@ -42,12 +42,20 @@ public:
 
     /// @brief Get mouse Y position (screen coordinates)
     int getMouseY() const { return mouseY; }
+    
+    /// @brief Set mouse coordinate scaling (for window-to-framebuffer conversion)
+    /// @param scaleX Horizontal scale factor (framebuffer_width / window_width)
+    /// @param scaleY Vertical scale factor (framebuffer_height / window_height)
+    void SetMouseScale(float scaleX, float scaleY) { mouseScaleX = scaleX; mouseScaleY = scaleY; }
 
     /// @brief Check if left mouse button is held down
     bool isMouseButtonDown(int button) const;
 
     /// @brief Check if left mouse button was just pressed this frame
     bool isMouseButtonPressed(int button) const;
+    
+    /// @brief Get mouse wheel vertical scroll delta (positive = scroll up, negative = scroll down)
+    int getMouseWheelY() const { return mouseWheelY; }
 
     // === Gamepad Input (Phase 5.18) ===
 
@@ -110,6 +118,7 @@ private:
     // Mouse state (Phase 5.16)
     int mouseX;
     int mouseY;
+    int mouseWheelY;  // Mouse wheel delta this frame (Phase 2.0.5.3)
     Uint32 currentMouseButtons;
     Uint32 previousMouseButtons;
 
@@ -121,6 +130,10 @@ private:
 
     // Text input (Phase 2.0.2 - Code Editor)
     std::string textInput;  // Text typed this frame
+    
+    // Mouse coordinate scaling (Phase 2.0.5.3)
+    float mouseScaleX;  // Scale factor for mouse X
+    float mouseScaleY;  // Scale factor for mouse Y
 };
 
 #endif // INPUT_MANAGER_H

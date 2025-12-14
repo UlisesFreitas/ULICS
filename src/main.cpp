@@ -19,8 +19,9 @@ int main(int argc, char* argv[]) {
         std::cout << "No cartridge specified. Will load embedded demo." << std::endl;
     }
     
-    // Initialize the engine with optional cartridge path
-    if (engine.Initialize("UliCS Fantasy Console", 1024, 1024, cartridgePath)) {
+    // Initialize the engine with 800x800 window (better screen fit)
+    // Internal framebuffer is still 256x256, this is just the window size
+    if (engine.Initialize("UliCS Fantasy Console", 800, 800, cartridgePath)) {
         engine.Run();
     }
 

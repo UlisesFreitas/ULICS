@@ -1,15 +1,21 @@
 #include "ui/CodeEditor.h"
 #include "ui/UISystem.h"
 #include "ui/LuaSyntax.h"
+#include "ui/FileExplorer.h"
 #include "rendering/AestheticLayer.h"
 #include "input/InputManager.h"
 #include "input/InputConstants.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <iostream>  // For debug output
 
 CodeEditor::CodeEditor()
-    : cursorLine(0), cursorCol(0), scrollY(0), modified(false), savedMessageTimer(0) {
+    : cursorLine(0), cursorCol(0), scrollY(0), scrollX(0), modified(false), savedMessageTimer(0),
+      reloadedMessageTimer(0), fileWatchingEnabled(true),
+      scrollbarDragging(false), scrollbarDragOffset(0),
+      keyRepeatDelay(20), keyRepeatInterval(3),
+      leftKeyHoldFrames(0), rightKeyHoldFrames(0), upKeyHoldFrames(0), downKeyHoldFrames(0) {
     // Start with empty file
     lines.push_back("");
 }
@@ -23,6 +29,21 @@ CodeEditor::~CodeEditor() {
 
 bool CodeEditor::Initialize(const std::string& filename) {
     currentFilename = filename;
+    
+    // Extract cartridge path from filename (Phase 2.0.5.2)
+    // e.g., "cartridges/mygame/main.lua" → "cartridges/mygame"
+    if (!filename.empty()) {
+        std::filesystem::path filepath(filename);
+        cartridgePath = filepath.parent_path().string();
+    }
+    
+    // Initialize file explorer (Phase 2.0.5.2)
+    fileExplorer = std::make_unique<FileExplorer>();
+    if (!cartridgePath.empty()) {
+        fileExplorer->ScanDirectory(cartridgePath);
+        fileExplorer->SetCurrentFile(filename);
+    }
+    
     return Load(filename);
 }
 
@@ -30,6 +51,105 @@ void CodeEditor::Update(InputManager& input) {
     // Decrement saved message timer (Phase 2.0.4)
     if (savedMessageTimer > 0) {
         savedMessageTimer--;
+    }
+    
+    // Decrement reloaded message timer (Phase 2.0.5.1)
+    if (reloadedMessageTimer > 0) {
+        reloadedMessageTimer--;
+    }
+    
+    // Check for external file changes (Phase 2.0.5.1)
+    CheckForExternalChanges();
+    
+    // === Handle scrollbar mouse input FIRST (Phase 2.0.5.3) ===
+    HandleScrollbarInput(input);
+    
+    // === Handle mouse click to position cursor (Phase 2.0.5.3) ===
+    if (input.isMouseButtonPressed(1)) {  // Left click
+        int mouseX = input.getMouseX();
+        int mouseY = input.getMouseY();
+        
+        // Layout constants (must match Render())
+        const int TITLE_H = 10;
+        const int STATUS_H = 10;
+        const int SCREEN_H = 256;
+        const int SIDEBAR_W = 180;
+        const int SIDEBAR_OFFSET = (fileExplorer && fileExplorer->IsVisible()) ? SIDEBAR_W : 0;
+        const int LINE_NUM_W = 40;
+        const int TEXT_X = SIDEBAR_OFFSET + LINE_NUM_W + 4;
+        const int EDITOR_TOP = TITLE_H;
+        const int EDITOR_BOTTOM = SCREEN_H - STATUS_H;
+        const int CHAR_W = 8;
+        const int LINE_HEIGHT = 11;
+        
+        // Check if click is in text area (not in scrollbar, line numbers, or sidebar)
+        bool inTextArea = (mouseX >= TEXT_X && mouseX < 252 &&  // Before scrollbar
+                          mouseY >= EDITOR_TOP && mouseY < EDITOR_BOTTOM);
+        
+        if (inTextArea) {
+            // Convert mouse Y to line number
+            int clickLine = scrollY + ((mouseY - EDITOR_TOP - 2) / LINE_HEIGHT);
+            if (clickLine < 0) clickLine = 0;
+            if (clickLine >= static_cast<int>(lines.size())) clickLine = lines.size() - 1;
+            
+            // Convert mouse X to column
+            int clickCol = scrollX + ((mouseX - TEXT_X) / CHAR_W);
+            if (clickCol < 0) clickCol = 0;
+            if (clickCol > static_cast<int>(lines[clickLine].length())) {
+                clickCol = lines[clickLine].length();
+            }
+            
+            // Move cursor to clicked position
+            cursorLine = clickLine;
+            cursorCol = clickCol;
+        }
+    }
+    
+    // File Explorer sidebar handling (Phase 2.0.5.2)
+    if (fileExplorer) {
+        // Toggle sidebar with Ctrl+L
+        if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_L)) {
+            fileExplorer->Toggle();
+        }
+        
+        // If sidebar is visible, handle its input
+        if (fileExplorer->IsVisible()) {
+            fileExplorer->HandleInput(input);
+            
+            // Check if user selected a file
+            std::string selectedFile = fileExplorer->GetSelectedFile();
+            if (!selectedFile.empty() && selectedFile != currentFilename) {
+                // Switch to the selected file
+                // First, save current file if modified
+                if (modified) {
+                    Save();
+                }
+                
+                // Load the new file
+                if (Load(selectedFile)) {
+                    currentFilename = selectedFile;
+                    fileExplorer->SetCurrentFile(selectedFile);
+                    fileExplorer->ClearSelection();
+                }
+            }
+            
+            // IMPORTANT: Block all other input while sidebar is visible
+            // This prevents cursor movement and text editing in the background
+            return;
+        }
+    }
+    
+    // === Handle mouse wheel scrolling (Phase 2.0.5.3) ===
+    int wheelDelta = input.getMouseWheelY();
+    if (wheelDelta != 0) {
+        // Scroll 3 lines per wheel notch
+        scrollY -= wheelDelta * 3;
+        
+        // Clamp scrollY
+        int maxScroll = static_cast<int>(lines.size()) - 20;  // Approximate visible lines
+        if (maxScroll < 0) maxScroll = 0;
+        if (scrollY < 0) scrollY = 0;
+        if (scrollY > maxScroll) scrollY = maxScroll;
     }
     
     // Handle text input (characters typed)
@@ -43,18 +163,50 @@ void CodeEditor::Update(InputManager& input) {
         }
     }
     
-    // Handle cursor movement
-    if (input.isKeyPressed(SDL_SCANCODE_LEFT)) {
-        MoveCursorLeft();
+    // === Cursor movement with auto-repeat ===
+    // Left arrow
+    if (input.isKeyDown(SDL_SCANCODE_LEFT)) {
+        leftKeyHoldFrames++;
+        // Move on first press OR after delay+interval
+        if (leftKeyHoldFrames == 1 || 
+            (leftKeyHoldFrames > keyRepeatDelay && (leftKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
+            MoveCursorLeft();
+        }
+    } else {
+        leftKeyHoldFrames = 0;
     }
-    if (input.isKeyPressed(SDL_SCANCODE_RIGHT)) {
-        MoveCursorRight();
+    
+    // Right arrow
+    if (input.isKeyDown(SDL_SCANCODE_RIGHT)) {
+        rightKeyHoldFrames++;
+        if (rightKeyHoldFrames == 1 || 
+            (rightKeyHoldFrames > keyRepeatDelay && (rightKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
+            MoveCursorRight();
+        }
+    } else {
+        rightKeyHoldFrames = 0;
     }
-    if (input.isKeyPressed(SDL_SCANCODE_UP)) {
-        MoveCursorUp();
+    
+    // Up arrow
+    if (input.isKeyDown(SDL_SCANCODE_UP)) {
+        upKeyHoldFrames++;
+        if (upKeyHoldFrames == 1 || 
+            (upKeyHoldFrames > keyRepeatDelay && (upKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
+            MoveCursorUp();
+        }
+    } else {
+        upKeyHoldFrames = 0;
     }
-    if (input.isKeyPressed(SDL_SCANCODE_DOWN)) {
-        MoveCursorDown();
+    
+    // Down arrow
+    if (input.isKeyDown(SDL_SCANCODE_DOWN)) {
+        downKeyHoldFrames++;
+        if (downKeyHoldFrames == 1 || 
+            (downKeyHoldFrames > keyRepeatDelay && (downKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
+            MoveCursorDown();
+        }
+    } else {
+        downKeyHoldFrames = 0;
     }
     
     // Home/End
@@ -117,81 +269,140 @@ void CodeEditor::Update(InputManager& input) {
 }
 
 void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
+    // === Theme colors ===
+    const int THEME_BG = UISystem::COLOR_BACKGROUND;
+    const int THEME_LINE_NUM_BG = UISystem::COLOR_DARK_GRAY;
+    const int THEME_LINE_NUM_TEXT = UISystem::COLOR_LIGHT_GRAY;
+    const int THEME_BAR = UISystem::COLOR_LIGHT_GRAY;
+    const int THEME_BAR_TEXT = UISystem::COLOR_BACKGROUND;
+    
     // Clear screen
-    layer.Clear(UISystem::COLOR_BACKGROUND);
+    layer.Clear(THEME_BG);
     
-    // Draw title bar
-    ui.RenderPanel(layer, 0, 0, 256, 256, "CODE EDITOR", true);
+    // === Font is 8x8 monospace ===
+    const int CHAR_W = 8;
+    const int CHAR_H = 8;
     
-    // Editor area starts at y=12 (after title bar)
-    int editorX = 4;
-    int editorY = 14;
-    int lineNumberWidth = 20;  // 3 digits  + space
-    int textX = editorX + lineNumberWidth;
+    // CRITICAL: Line spacing must be LARGER than font height to prevent overlap
+    const int LINE_HEIGHT = 11;  // 8px font + 3px spacing (NO overlap)
     
-    // Draw line numbers background
-    layer.RectFill(editorX, editorY, lineNumberWidth - 2, 220, UISystem::COLOR_DARK_GRAY);
+    // === Screen layout ===
+    const int SCREEN_W = 256;
+    const int SCREEN_H = 256;
     
-    // Render visible lines
-    int lineHeight = 8;  // 6px font + 2px spacing
-    int y = editorY;
+    const int TITLE_H = 10;
+    const int STATUS_H = 10;
     
-    for (int i = scrollY; i < scrollY + VISIBLE_LINES && i < static_cast<int>(lines.size()); i++) {
-        // Line number
-        char lineNum[5];
-        sprintf(lineNum, "%3d", i + 1);
-        layer.Print(lineNum, editorX + 2, y, UISystem::COLOR_LIGHT_GRAY);
+    // File explorer sidebar (Phase 2.0.5.2)
+    const int SIDEBAR_W = 180; 
+    const int SIDEBAR_OFFSET = (fileExplorer && fileExplorer->IsVisible()) ? SIDEBAR_W : 0;
+    
+    // Line numbers: 4 digits + space = "9999 " = 5 chars * 8px = 40px
+    const int LINE_NUM_W = 40;
+    const int LINE_NUM_X = SIDEBAR_OFFSET + 2;
+    
+    const int TEXT_X = SIDEBAR_OFFSET + LINE_NUM_W + 4;  // Start after sidebar + line numbers + 4px gap
+    
+    const int EDITOR_TOP = TITLE_H;
+    const int EDITOR_BOTTOM = SCREEN_H - STATUS_H;
+    const int EDITOR_H = EDITOR_BOTTOM - EDITOR_TOP;
+    
+    // === Title bar ===
+    layer.RectFill(0, 0, SCREEN_W, TITLE_H, THEME_BAR);
+    layer.Print("CODE", 4, 1, THEME_BAR_TEXT);
+    
+    // === Line number column ===
+    // Start after sidebar if it's visible
+    layer.RectFill(SIDEBAR_OFFSET, EDITOR_TOP, LINE_NUM_W, EDITOR_H, THEME_LINE_NUM_BG);
+    
+    // === Render code lines ===
+    int y = EDITOR_TOP + 2;  // Start with small top margin
+    
+    for (int i = scrollY; i < static_cast<int>(lines.size()); i++) {
+        // Check if we have room for this line
+        if (y + CHAR_H > EDITOR_BOTTOM - 1) {
+            break;
+        }
         
-        // Line text with syntax highlighting (Phase 2.0.3)
+        // Line number (4 digits, right-aligned)
+        char lineNum[8];
+        sprintf(lineNum, "%4d", i + 1);
+        layer.Print(lineNum, LINE_NUM_X, y, THEME_LINE_NUM_TEXT);
+        
+        // Code text (with horizontal scroll)
         std::string lineText = lines[i];
-        if (lineText.length() > VISIBLE_COLS) {
-            lineText = lineText.substr(0, VISIBLE_COLS);
+        
+        // Apply horizontal scroll: show only visible portion
+        if (scrollX < static_cast<int>(lineText.length())) {
+            lineText = lineText.substr(scrollX);
+            if (lineText.length() > VISIBLE_COLS) {
+                lineText = lineText.substr(0, VISIBLE_COLS);
+            }
+        } else {
+            lineText = "";  // scrollX is beyond line length
         }
         
-        RenderLineWithSyntax(lineText, textX, y, layer);
+        RenderLineWithSyntax(lineText, TEXT_X, y, layer);
         
-        y += lineHeight;
+        y += LINE_HEIGHT;
     }
     
-    // Draw cursor (blinking box)
-    if (cursorLine >= scrollY && cursorLine < scrollY + VISIBLE_LINES) {
-        int cursorX = textX + (cursorCol * 4);
-        int cursorY = editorY + ((cursorLine - scrollY) * lineHeight);
+    // === Cursor ===
+    if (cursorLine >= scrollY) {
+        // Cursor X position accounts for horizontal scroll
+        int cursorX = TEXT_X + ((cursorCol - scrollX) * CHAR_W);
+        int cursorY = EDITOR_TOP + 2 + ((cursorLine - scrollY) * LINE_HEIGHT);
         
-        // Simple blinking (TODO: use time-based blinking)
-        static int blink = 0;
-        blink = (blink + 1) % 60;
-        if (blink < 30) {
-            layer.RectFill(cursorX, cursorY, 2, 6, UISystem::COLOR_YELLOW);
+        if (cursorY + CHAR_H <= EDITOR_BOTTOM - 1) {
+            static int blink = 0;
+            blink = (blink + 1) % 60;
+            if (blink < 30) {
+                layer.RectFill(cursorX, cursorY, 2, CHAR_H, UISystem::COLOR_YELLOW);
+            }
         }
     }
     
-    // Status bar at bottom
-    int statusY = 244;
-    layer.RectFill(0, statusY, 256, 12, UISystem::COLOR_DARK_PURPLE);
+    // === Status bar ===
+    int statusY = EDITOR_BOTTOM;
+    layer.RectFill(0, statusY, SCREEN_W, STATUS_H, THEME_BAR);
     
-    // Status text
-    char status[64];
+    char status[32];
     if (savedMessageTimer > 0) {
-        // Show "SAVED!" message temporarily
-        sprintf(status, "Line %d:%d  SAVED!", cursorLine + 1, cursorCol + 1);
-        layer.Print(status, 4, statusY + 3, UISystem::COLOR_GREEN);  // Green for success
+        sprintf(status, "Ln%d SAVED", cursorLine + 1);
+        layer.Print(status, 2, statusY + 1, UISystem::COLOR_GREEN);
+    } else if (reloadedMessageTimer > 0) {
+        sprintf(status, "Ln%d RELOAD", cursorLine + 1);
+        layer.Print(status, 2, statusY + 1, UISystem::COLOR_YELLOW);
     } else {
-        sprintf(status, "Line %d:%d  %s", cursorLine + 1, cursorCol + 1, 
-                modified ? "MODIFIED" : "");
-        layer.Print(status, 4, statusY + 3, UISystem::COLOR_WHITE);
+        sprintf(status, "Ln%d:%d%s", cursorLine + 1, cursorCol + 1, 
+                modified ? "*" : "");
+        layer.Print(status, 2, statusY + 1, THEME_BAR_TEXT);
     }
     
-    // File name (right-aligned)
+    // Filename
     if (!currentFilename.empty()) {
-        // Get just the filename (not full path)
         size_t lastSlash = currentFilename.find_last_of("/\\");
         std::string displayName = (lastSlash != std::string::npos) 
             ? currentFilename.substr(lastSlash + 1) 
             : currentFilename;
         
-        int nameWidth = displayName.length() * 4;
-        layer.Print(displayName, 256 - nameWidth - 4, statusY + 3, UISystem::COLOR_PEACH);
+        int nameW = displayName.length() * CHAR_W;
+        if (nameW < SCREEN_W - 80) {
+            layer.Print(displayName, SCREEN_W - nameW - 2, statusY + 1, THEME_BAR_TEXT);
+        }
+    }
+    
+    // === Render scrollbar (Phase 2.0.5.3) ===
+    // Scrollbar should be at the right edge of the screen
+    // The area starts from SIDEBAR_OFFSET and goes to SCREEN_W
+    int scrollbarAreaX = SIDEBAR_OFFSET;
+    int scrollbarAreaW = SCREEN_W - SIDEBAR_OFFSET;
+    RenderScrollbar(layer, scrollbarAreaX, EDITOR_TOP, scrollbarAreaW, EDITOR_H);
+    
+    // === Render file explorer sidebar LAST (Phase 2.0.5.2) ===
+    // Draw it at the end so it appears on top of everything
+    if (fileExplorer && fileExplorer->IsVisible()) {
+        fileExplorer->Render(layer, ui, 0, EDITOR_TOP, SIDEBAR_W, EDITOR_H);
     }
 }
 
@@ -214,6 +425,12 @@ bool CodeEditor::Save() {
     
     file.close();
     modified = false;
+    
+    // Update file timestamp after save (Phase 2.0.5.1)
+    if (std::filesystem::exists(currentFilename)) {
+        lastFileWriteTime = std::filesystem::last_write_time(currentFilename);
+    }
+    
     return true;
 }
 
@@ -226,6 +443,7 @@ bool CodeEditor::Load(const std::string& filename) {
         cursorLine = 0;
         cursorCol = 0;
         scrollY = 0;
+        scrollX = 0;
         modified = false;
         return false;
     }
@@ -245,7 +463,14 @@ bool CodeEditor::Load(const std::string& filename) {
     cursorLine = 0;
     cursorCol = 0;
     scrollY = 0;
+    scrollX = 0;
     modified = false;
+    
+    // Initialize file watching (Phase 2.0.5.1)
+    if (std::filesystem::exists(currentFilename)) {
+        lastFileWriteTime = std::filesystem::last_write_time(currentFilename);
+    }
+    
     return true;
 }
 
@@ -280,6 +505,7 @@ void CodeEditor::SetText(const std::string& text) {
     cursorLine = 0;
     cursorCol = 0;
     scrollY = 0;
+    scrollX = 0;
     modified = true;
 }
 
@@ -291,6 +517,7 @@ void CodeEditor::InsertChar(char c) {
     std::string& line = lines[cursorLine];
     line.insert(cursorCol, 1, c);
     cursorCol++;
+    EnsureCursorVisibleHorizontal();
     modified = true;
 }
 
@@ -346,20 +573,24 @@ void CodeEditor::NewLine() {
 void CodeEditor::MoveCursorLeft() {
     if (cursorCol > 0) {
         cursorCol--;
+        EnsureCursorVisibleHorizontal();
     } else if (cursorLine > 0) {
         cursorLine--;
         cursorCol = lines[cursorLine].length();
         EnsureCursorVisible();
+        EnsureCursorVisibleHorizontal();
     }
 }
 
 void CodeEditor::MoveCursorRight() {
     if (cursorCol < static_cast<int>(lines[cursorLine].length())) {
         cursorCol++;
+        EnsureCursorVisibleHorizontal();
     } else if (cursorLine < static_cast<int>(lines.size()) - 1) {
         cursorLine++;
         cursorCol = 0;
         EnsureCursorVisible();
+        EnsureCursorVisibleHorizontal();
     }
 }
 
@@ -381,22 +612,26 @@ void CodeEditor::MoveCursorDown() {
 
 void CodeEditor::MoveCursorHome() {
     cursorCol = 0;
+    EnsureCursorVisibleHorizontal();
 }
 
 void CodeEditor::MoveCursorEnd() {
     cursorCol = lines[cursorLine].length();
+    EnsureCursorVisibleHorizontal();
 }
 
 void CodeEditor::MoveCursorTop() {
     cursorLine = 0;
     cursorCol = 0;
     scrollY = 0;
+    scrollX = 0;
 }
 
 void CodeEditor::MoveCursorBottom() {
     cursorLine = lines.size() - 1;
     cursorCol = lines[cursorLine].length();
     EnsureCursorVisible();
+    EnsureCursorVisibleHorizontal();
 }
 
 void CodeEditor::PageUp() {
@@ -435,6 +670,23 @@ void CodeEditor::EnsureCursorVisible() {
     }
 }
 
+void CodeEditor::EnsureCursorVisibleHorizontal() {
+    // Scroll left if cursor is before visible area
+    if (cursorCol < scrollX) {
+        scrollX = cursorCol;
+    }
+    
+    // Scroll right if cursor is after visible area
+    if (cursorCol >= scrollX + VISIBLE_COLS) {
+        scrollX = cursorCol - VISIBLE_COLS + 1;
+    }
+    
+    // Clamp scroll (can't be negative)
+    if (scrollX < 0) {
+        scrollX = 0;
+    }
+}
+
 void CodeEditor::ClampCursor() {
     // Clamp cursor column to current line length
     if (cursorCol > static_cast<int>(lines[cursorLine].length())) {
@@ -443,56 +695,264 @@ void CodeEditor::ClampCursor() {
 }
 
 // ============================================
+// EXTERNAL FILE CHANGE DETECTION (Phase 2.0.5.1)
+// ============================================
+
+void CodeEditor::CheckForExternalChanges() {
+    // Only check if we have a file and watching is enabled
+    if (currentFilename.empty() || !fileWatchingEnabled) {
+        return;
+    }
+    
+    // Check if file exists
+    if (!std::filesystem::exists(currentFilename)) {
+        return;
+    }
+    
+    try {
+        // Get current file modification time
+        auto currentFileTime = std::filesystem::last_write_time(currentFilename);
+        
+        // Check if file has been modified externally
+        if (currentFileTime != lastFileWriteTime) {
+            // Save cursor position
+            int savedCursorLine = cursorLine;
+            int savedCursorCol = cursorCol;
+            int savedScrollY = scrollY;
+            int savedScrollX = scrollX;
+            
+            // Reload file
+            if (Load(currentFilename)) {
+                // Try to restore cursor position (if still valid)
+                if (savedCursorLine < static_cast<int>(lines.size())) {
+                    cursorLine = savedCursorLine;
+                    if (savedCursorCol <= static_cast<int>(lines[cursorLine].length())) {
+                        cursorCol = savedCursorCol;
+                    } else {
+                        cursorCol = lines[cursorLine].length();
+                    }
+                    scrollY = savedScrollY;
+                    scrollX = savedScrollX;
+                    EnsureCursorVisible();
+                    EnsureCursorVisibleHorizontal();
+                }
+                
+                // Update timestamp
+                lastFileWriteTime = currentFileTime;
+                
+                // Show notification
+                reloadedMessageTimer = 120;  // Show "RELOADED!" for 2 seconds
+                
+                // Reset modified flag since we just loaded from disk
+                modified = false;
+            }
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        // Ignore filesystem errors (file might be temporarily locked)
+    }
+}
+
+// ============================================
+// SCROLLBAR INPUT HANDLING (Phase 2.0.5.3)
+// ============================================
+
+void CodeEditor::HandleScrollbarInput(InputManager& input) {
+    // Scrollbar dimensions (must match RenderScrollbar)
+    const int SCROLLBAR_W = 4;  // Simplified to 4px
+    const int MIN_THUMB_H = 20;
+    const int LINE_HEIGHT = 11;
+    
+    // Editor layout (must match Render())
+    const int TITLE_H = 10;
+    const int STATUS_H = 10;
+    const int SCREEN_W = 256;
+    const int SCREEN_H = 256;
+    const int SIDEBAR_W = 180;
+    const int SIDEBAR_OFFSET = (fileExplorer && fileExplorer->IsVisible()) ? SIDEBAR_W : 0;
+    const int EDITOR_TOP = TITLE_H;
+    const int EDITOR_BOTTOM = SCREEN_H - STATUS_H;
+    const int EDITOR_H = EDITOR_BOTTOM - EDITOR_TOP;
+    
+    int totalLines = static_cast<int>(lines.size());
+    int visibleLines = EDITOR_H / LINE_HEIGHT;
+    
+    // Don't handle scrollbar if all lines fit
+    if (totalLines <= visibleLines) {
+        scrollbarDragging = false;
+        return;
+    }
+    
+    // Calculate scrollbar area (must match RenderScrollbar)
+    int scrollbarAreaW = SCREEN_W - SIDEBAR_OFFSET;
+    int scrollbarX = SIDEBAR_OFFSET + scrollbarAreaW - SCROLLBAR_W;
+    int scrollbarY = EDITOR_TOP;
+    int scrollbarH = EDITOR_H;
+    
+    // Get mouse position and button state
+    int mouseX = input.getMouseX();
+    int mouseY = input.getMouseY();
+    bool mouseDown = input.isMouseButtonDown(1);  // SDL uses 1 for left button!
+    bool mousePressed = input.isMouseButtonPressed(1);
+    
+    // Check if mouse is over scrollbar area
+    bool overScrollbar = (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_W &&
+                          mouseY >= scrollbarY && mouseY < scrollbarY + scrollbarH);
+    
+    if (!overScrollbar && !scrollbarDragging) {
+        return;
+    }
+    
+    // Calculate thumb position  
+    int trackY = scrollbarY;
+    int trackH = scrollbarH;
+    
+    float visibleRatio = static_cast<float>(visibleLines) / static_cast<float>(totalLines);
+    int thumbH = static_cast<int>(trackH * visibleRatio);
+    if (thumbH < MIN_THUMB_H) thumbH = MIN_THUMB_H;
+    if (thumbH > trackH) thumbH = trackH;
+    
+    int maxScroll = totalLines - visibleLines;
+    if (maxScroll <= 0) maxScroll = 1;
+    
+    float scrollRatio = static_cast<float>(scrollY) / static_cast<float>(maxScroll);
+    int thumbTravelDistance = trackH - thumbH;
+    int thumbY = trackY + static_cast<int>(thumbTravelDistance * scrollRatio);
+    
+    // === Handle thumb dragging ===
+    if (scrollbarDragging) {
+        if (mouseDown) {
+            // Calculate new scroll position from mouse Y
+            int dragY = mouseY - scrollbarDragOffset;
+            int relativeY = dragY - trackY;
+            
+            if (thumbTravelDistance > 0) {
+                float newScrollRatio = static_cast<float>(relativeY) / static_cast<float>(thumbTravelDistance);
+                scrollY = static_cast<int>(newScrollRatio * maxScroll);
+                
+                // Clamp
+                if (scrollY < 0) scrollY = 0;
+                if (scrollY > maxScroll) scrollY = maxScroll;
+            }
+        } else {
+            scrollbarDragging = false;
+        }
+        return;
+    }
+    
+    // === Start dragging on click ===
+    if (mousePressed && overScrollbar) {
+        // Check if clicked on thumb
+        if (mouseY >= thumbY && mouseY < thumbY + thumbH) {
+            scrollbarDragging = true;
+            scrollbarDragOffset = mouseY - thumbY;
+        }
+    }
+}
+
+// ============================================
+// SCROLLBAR RENDERING (Phase 2.0.5.3)
+// ============================================
+
+void CodeEditor::RenderScrollbar(AestheticLayer& layer, int x, int y, int width, int height) {
+    const int SCROLLBAR_W = 4;  // Simplified to 4px
+    const int MIN_THUMB_H = 20;
+    
+    // Don't show scrollbar if all lines fit on screen
+    int totalLines = static_cast<int>(lines.size());
+    int visibleLines = height / 11;  // LINE_HEIGHT from Render()
+    
+    if (totalLines <= visibleLines) {
+        return;  // No need for scrollbar
+    }
+    
+    // Colors
+    const int COLOR_TRACK = UISystem::COLOR_DARK_GRAY;
+    const int COLOR_THUMB = UISystem::COLOR_WHITE;  // White for visibility
+    
+    // Scrollbar position (right edge of area)
+    int scrollbarX = x + width - SCROLLBAR_W;
+    int scrollbarY = y;
+    int scrollbarH = height;
+    
+    // === Draw track (background) ===
+    layer.RectFill(scrollbarX, scrollbarY, SCROLLBAR_W, scrollbarH, COLOR_TRACK);
+    
+    // === Calculate thumb position and size ===
+    int trackY = scrollbarY;
+    int trackH = scrollbarH;
+    
+    // Thumb size proportional to visible/total ratio
+    float visibleRatio = static_cast<float>(visibleLines) / static_cast<float>(totalLines);
+    int thumbH = static_cast<int>(trackH * visibleRatio);
+    if (thumbH < MIN_THUMB_H) {
+        thumbH = MIN_THUMB_H;
+    }
+    if (thumbH > trackH) {
+        thumbH = trackH;
+    }
+    
+    // Thumb position based on scrollY
+    int maxScroll = totalLines - visibleLines;
+    if (maxScroll <= 0) maxScroll = 1;
+    
+    float scrollRatio = static_cast<float>(scrollY) / static_cast<float>(maxScroll);
+    int thumbTravelDistance = trackH - thumbH;
+    int thumbY = trackY + static_cast<int>(thumbTravelDistance * scrollRatio);
+    
+    // === Draw thumb ===
+    layer.RectFill(scrollbarX, thumbY, SCROLLBAR_W, thumbH, COLOR_THUMB);
+}
+
+// ============================================
 // SYNTAX HIGHLIGHTING (Phase 2.0.3)
 // ============================================
 
 void CodeEditor::RenderLineWithSyntax(const std::string& line, int x, int y, AestheticLayer& layer) {
+    const int CHAR_W = 8;  // CRITICAL: Font is 8 pixels wide
     int currentX = x;
     size_t i = 0;
     
     while (i < line.length()) {
         char c = line[i];
         
-        // Skip whitespace (render as-is)
+        // Whitespace
         if (LuaSyntax::IsWhitespace(c)) {
-            currentX += 4;  // 4 pixels per char
+            currentX += CHAR_W;
             i++;
             continue;
         }
         
-        // Check for comments (-- to end of line)
+        // Comments (-- to end of line)
         if (c == '-' && i + 1 < line.length() && line[i + 1] == '-') {
-            // Rest of line is comment
             std::string comment = line.substr(i);
             layer.Print(comment, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::COMMENT));
-            break;  // Done with this line
+            break;
         }
         
-        // Check for strings
+        // Strings
         if (c == '"' || c == '\'') {
             char quote = c;
             size_t endQuote = i + 1;
             
-            // Find matching quote (simple, no escape handling)
             while (endQuote < line.length() && line[endQuote] != quote) {
                 endQuote++;
             }
             
             if (endQuote < line.length()) {
-                endQuote++;  // Include closing quote
+                endQuote++;
             }
             
             std::string str = line.substr(i, endQuote - i);
             layer.Print(str, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::STRING));
-            currentX += str.length() * 4;
+            currentX += str.length() * CHAR_W;
             i = endQuote;
             continue;
         }
         
-        // Check for numbers
+        // Numbers
         if (LuaSyntax::IsDigit(c) || (c == '-' && i + 1 < line.length() && LuaSyntax::IsDigit(line[i + 1]))) {
             size_t numEnd = i;
-            if (c == '-') numEnd++;  // Skip minus sign
+            if (c == '-') numEnd++;
             
             while (numEnd < line.length() && 
                    (LuaSyntax::IsDigit(line[numEnd]) || line[numEnd] == '.')) {
@@ -501,12 +961,12 @@ void CodeEditor::RenderLineWithSyntax(const std::string& line, int x, int y, Aes
             
             std::string num = line.substr(i, numEnd - i);
             layer.Print(num, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::NUMBER));
-            currentX += num.length() * 4;
+            currentX += num.length() * CHAR_W;
             i = numEnd;
             continue;
         }
         
-        // Check for identifiers/keywords
+        // Identifiers/Keywords
         if (LuaSyntax::IsIdentifierStart(c)) {
             size_t identEnd = i;
             while (identEnd < line.length() && LuaSyntax::IsIdentifierChar(line[identEnd])) {
@@ -514,19 +974,18 @@ void CodeEditor::RenderLineWithSyntax(const std::string& line, int x, int y, Aes
             }
             
             std::string ident = line.substr(i, identEnd - i);
-            LuaSyntax::TokenType tokenType = LuaSyntax::GetTokenType(ident);
+            LuaSyntax::TokenType tokenType = LuaSyntax:: GetTokenType(ident);
             
             layer.Print(ident, currentX, y, LuaSyntax::GetColorForToken(tokenType));
-            currentX += ident.length() * 4;
+            currentX += ident.length() * CHAR_W;
             i = identEnd;
             continue;
         }
         
-        // Single character (operator, punctuation, etc.)
+        // Single character (operators, punctuation)
         std::string ch(1, c);
-        int color = UISystem::COLOR_PEACH;  // Operators/punctuation in peach
-        layer.Print(ch, currentX, y, color);
-        currentX += 4;
+        layer.Print(ch, currentX, y, UISystem::COLOR_PEACH);
+        currentX += CHAR_W;
         i++;
     }
 }

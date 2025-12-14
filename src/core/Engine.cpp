@@ -1,6 +1,8 @@
 #include "core/Engine.h"
 #include "core/HotReload.h"  // Hot reload system (v1.5.1)
 #include "ui/DebugConsole.h"  // Debug overlay (v1.5.2)
+#include "ui/UISystem.h"      // Custom UI system (Phase 2.0.1)
+#include "ui/CodeEditor.h"    // Code editor (Phase 2.0.2-2.0.4)
 #include "capture/Screenshot.h"  // Screenshot system (v1.5.3)
 #include "capture/GifRecorder.h"  // GIF recording system (v1.5.4)
 #include "audio/AudioManager.h"  // Audio system (Phase 5.12 + Bug 1.1.3 fix)
@@ -24,7 +26,9 @@ Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    activeGame(nullptr), scriptingManager(nullptr),
                    inputManager(nullptr), cartridgeLoader(nullptr), currentMap(nullptr), hotReload(nullptr), debugConsole(nullptr), gifRecorder(nullptr),
                    audioManager(nullptr),
+                   uiSystem(nullptr), codeEditor(nullptr),
                    currentState(EngineState::BOOT), previousState(EngineState::BOOT),
+                   currentMode(EngineMode::GAME),
                    currentCartridgePath("") {
     // Constructor
 }
@@ -74,6 +78,9 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
 
     try {
         inputManager = std::make_unique<InputManager>();
+        // NOTE: No need to configure mouse scaling!
+        // SDL_RenderSetLogicalSize already converts mouse coordinates
+        // from window size (800x800) to logical size (256x256) automatically
     }
     catch (const std::exception& e) {
         std::cerr << "Error initializing InputManager: " << e.what() << std::endl;
@@ -128,6 +135,26 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         std::cerr << "Warning: AudioManager failed to initialize: " << e.what() << std::endl;
         audioManager = nullptr;
         // Continue without audio
+    }
+
+    // Initialize UI System (Phase 2.0.1)
+    try {
+        uiSystem = std::make_unique<UISystem>();
+        std::cout << "UI System initialized" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: UISystem failed to initialize: " << e.what() << std::endl;
+        // Continue without UI System
+    }
+
+    // Initialize Code Editor (Phase 2.0.2-2.0.4)
+    try {
+        codeEditor = std::make_unique<CodeEditor>();
+        std::cout << "Code Editor ready - press F1 to toggle" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: CodeEditor failed to initialize: " << e.what() << std::endl;
+        // Continue without Code Editor
     }
 
     // Initialize CartridgeLoader
@@ -241,6 +268,23 @@ void Engine::Run() {
                 }
             }
             
+            // Mode Switching (Phase 2.0.5)
+            // F1 - Toggle Code Editor
+            if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F1) {
+                if (currentMode == EngineMode::CODE_EDITOR) {
+                    SetMode(EngineMode::GAME);
+                } else {
+                    SetMode(EngineMode::CODE_EDITOR);
+                }
+            }
+            
+            // ESC - Return to game
+            if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                if (currentMode != EngineMode::GAME) {
+                    SetMode(EngineMode::GAME);
+                }
+            }
+            
             // Take Screenshot with F12 (v1.5.3)
             // Start GIF Recording with Ctrl+F12 (v1.5.4)
             if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F12) {
@@ -261,10 +305,11 @@ void Engine::Run() {
                 }
             }
             
-            // Handle mouse events (Phase 5.16)
+            // Handle mouse events (Phase 5.16 + 2.0.5.3)
             if (event.type == SDL_MOUSEMOTION || 
                 event.type == SDL_MOUSEBUTTONDOWN || 
-                event.type == SDL_MOUSEBUTTONUP) {
+                event.type == SDL_MOUSEBUTTONUP ||
+                event.type == SDL_MOUSEWHEEL) {
                 inputManager->handleMouseEvent(event);
             }
             
@@ -290,12 +335,21 @@ void Engine::Run() {
             }
         }
 
-        // STEP 4: Update game logic (ONCE per frame, not fixed timestep)
-        if (activeGame && !inErrorState) {
-            if (!activeGame->_update()) {
-                enterErrorState(scriptingManager->GetLastLuaError());
+        // STEP 4: Update game logic OR editor (Phase 2.0.5)
+        if (currentMode == EngineMode::GAME) {
+            // Game mode - run normal update
+            if (activeGame && !inErrorState) {
+                if (!activeGame->_update()) {
+                    enterErrorState(scriptingManager->GetLastLuaError());
+                }
+            }
+        } else if (currentMode == EngineMode::CODE_EDITOR) {
+            // Code Editor mode - update editor
+            if (codeEditor && inputManager) {
+                codeEditor->Update(*inputManager);
             }
         }
+        // TODO: Add handlers for other editor modes (SPRITE, MAP, SFX, MUSIC)
 
         // STEP 4.5: Generate audio for this frame (Bug 1.1.3 fix)
         // This runs in main thread and writes to ring buffer
@@ -306,16 +360,23 @@ void Engine::Run() {
             audioManager->GenerateAudio(samplesPerFrame);
         }
 
-        // STEP 5: Render
+        // STEP 5: Render (Phase 2.0.5)
         if (inErrorState) {
             drawErrorScreen();
-        } else {
+        } else if (currentMode == EngineMode::GAME) {
+            // Game mode - render game
             if (activeGame) {
                 activeGame->_draw(*aestheticLayer);
             }
+        } else if (currentMode == EngineMode::CODE_EDITOR) {
+            // Code Editor mode - render editor
+            if (codeEditor && uiSystem) {
+                codeEditor->Render(*aestheticLayer, *uiSystem);
+            }
         }
+        // TODO: Add render handlers for other editor modes
         
-        // Draw debug console on top
+        // Draw debug console on top (works in any mode)
         if (debugConsole) {
             auto currentTime = clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(currentTime - previousTime).count();
@@ -589,6 +650,29 @@ void Engine::drawErrorScreen() {
             }
         }
     }
+}
+
+// === Mode Switching (Phase 2.0.5) ===
+
+void Engine::SetMode(EngineMode newMode) {
+    currentMode = newMode;
+    
+    // Initialize Code Editor with current cartridge when entering CODE_EDITOR mode
+    if (currentMode == EngineMode::CODE_EDITOR && codeEditor && !currentCartridgePath.empty()) {
+        std::string mainLuaPath = currentCartridgePath + "/main.lua";
+        codeEditor->Initialize(mainLuaPath);
+    }
+    
+    std::cout << "Mode switched to: ";
+    switch (currentMode) {
+        case EngineMode::GAME: std::cout << "GAME"; break;
+        case EngineMode::CODE_EDITOR: std::cout << "CODE_EDITOR"; break;
+        case EngineMode::SPRITE_EDITOR: std::cout << "SPRITE_EDITOR (not implemented)"; break;
+        case EngineMode::MAP_EDITOR: std::cout << "MAP_EDITOR (not implemented)"; break;
+        case EngineMode::SFX_EDITOR: std::cout << "SFX_EDITOR (not implemented)"; break;
+        case EngineMode::MUSIC_EDITOR: std::cout << "MUSIC_EDITOR (not implemented)"; break;
+    }
+    std::cout << std::endl;
 }
 
 void Engine::Shutdown() {

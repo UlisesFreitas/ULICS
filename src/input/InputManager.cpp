@@ -6,8 +6,11 @@
 InputManager::InputManager() 
     : mouseX(0)
     , mouseY(0)
+    , mouseWheelY(0)
     , currentMouseButtons(0)
     , previousMouseButtons(0)
+    , mouseScaleX(1.0f)
+    , mouseScaleY(1.0f)
     , gameController(nullptr)
     , numGamepads(0) {
     // Get a pointer to SDL's internal keyboard state array.
@@ -50,6 +53,9 @@ void InputManager::beginNewFrame() {
     
     // Copy current mouse button state to previous
     previousMouseButtons = currentMouseButtons;
+    
+    // Reset mouse wheel delta each frame
+    mouseWheelY = 0;
 
     // Copy current gamepad button state to previous
     previousGamepadButtons = currentGamepadButtons;
@@ -76,15 +82,21 @@ void InputManager::handleKeyEvent(const SDL_Event& event) {
 void InputManager::handleMouseEvent(const SDL_Event& event) {
     switch (event.type) {
         case SDL_MOUSEMOTION:
+            // SDL_RenderSetLogicalSize handles coordinate conversion automatically
             mouseX = event.motion.x;
             mouseY = event.motion.y;
             break;
             
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
-            // SDL_GetMouseState updates automatically, we just track position
+            // SDL_RenderSetLogicalSize handles coordinate conversion automatically
             mouseX = event.button.x;
             mouseY = event.button.y;
+            break;
+            
+        case SDL_MOUSEWHEEL:
+            // Positive = scroll up, negative = scroll down
+            mouseWheelY = event.wheel.y;
             break;
             
         default:

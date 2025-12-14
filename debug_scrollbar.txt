@@ -1,0 +1,46 @@
+FRAME 60: Mouse(114,155) Button1=0
+FRAME 120: Mouse(251,37) Button1=0
+MOUSE CLICK: x=254 y=20 | Scrollbar: x=252-256 y=10-246
+DRAG STARTED: offset=10
+FRAME 180: Mouse(254,77) Button1=1
+FRAME 240: Mouse(252,237) Button1=1
+FRAME 300: Mouse(261,24) Button1=1
+DRAG ENDED
+FRAME 360: Mouse(177,78) Button1=0
+FRAME 420: Mouse(149,69) Button1=0
+MOUSE CLICK: x=64 y=68 | Scrollbar: x=252-256 y=10-246
+FRAME 480: Mouse(60,75) Button1=0
+MOUSE CLICK: x=50 y=84 | Scrollbar: x=252-256 y=10-246
+FRAME 540: Mouse(56,126) Button1=0
+MOUSE CLICK: x=56 y=126 | Scrollbar: x=252-256 y=10-246
+FRAME 600: Mouse(255,28) Button1=0
+MOUSE CLICK: x=253 y=23 | Scrollbar: x=252-256 y=10-246
+DRAG STARTED: offset=13
+FRAME 660: Mouse(249,156) Button1=1
+FRAME 720: Mouse(258,144) Button1=1
+DRAG ENDED
+FRAME 780: Mouse(65,89) Button1=0
+FRAME 840: Mouse(240,48) Button1=0
+MOUSE CLICK: x=253 y=25 | Scrollbar: x=252-256 y=10-246
+DRAG STARTED: offset=15
+FRAME 900: Mouse(250,76) Button1=1
+DRAG ENDED
+FRAME 960: Mouse(250,77) Button1=0
+FRAME 1020: Mouse(250,77) Button1=0
+FRAME 1080: Mouse(250,77) Button1=0
+FRAME 1140: Mouse(250,77) Button1=0
+FRAME 1200: Mouse(250,77) Button1=0
+FRAME 1260: Mouse(250,77) Button1=0
+FRAME 1320: Mouse(250,77) Button1=0
+FRAME 1380: Mouse(250,77) Button1=0
+FRAME 1440: Mouse(250,77) Button1=0
+FRAME 1500: Mouse(250,77) Button1=0
+FRAME 1560: Mouse(250,77) Button1=0
+FRAME 1620: Mouse(250,77) Button1=0
+FRAME 1680: Mouse(250,77) Button1=0
+FRAME 1740: Mouse(249,24) Button1=0
+MOUSE CLICK: x=255 y=21 | Scrollbar: x=252-256 y=10-246
+DRAG STARTED: offset=11
+DRAG ENDED
+FRAME 1800: Mouse(256,95) Button1=0
+FRAME 1860: Mouse(246,0) Button1=0

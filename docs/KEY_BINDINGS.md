@@ -1,6 +1,6 @@
 # ULICS Key Bindings Reference
 
-**Version:** 1.1.0  
+**Version:** 2.0.5.2  
 **Last Updated:** 2025-12-14  
 
 This document tracks all keyboard shortcuts and bindings currently in use by ULICS to avoid conflicts.
@@ -68,6 +68,7 @@ This document tracks all keyboard shortcuts and bindings currently in use by ULI
 |-----------|----------|--------|---------------|
 | **Ctrl+S** | Save file | ✅ Active | v2.0.4 |
 | **Ctrl+R** | Run/Reload cartridge | ✅ Active | v2.0.4 |
+| **Ctrl+L** | Toggle file explorer sidebar | ✅ Active | v2.0.5.2 |
 | **Ctrl+O** | _Reserved: Open file_ | ⏳ Planned | Future |
 | **Ctrl+N** | _Reserved: New file_ | ⏳ Planned | Future |
 
@@ -92,6 +93,13 @@ This document tracks all keyboard shortcuts and bindings currently in use by ULI
 | Page Down | Scroll down one screen | ✅ Active | v2.0.2 |
 | **Ctrl+Home** | _Reserved: Start of file_ | ⏳ Planned | Future |
 | **Ctrl+End** | _Reserved: End of file_ | ⏳ Planned | Future |
+
+### File Explorer (Sidebar - Phase 2.0.5.2)
+| Key | Function | Status | Since Version |
+|-----|----------|--------|---------------|
+| **Ctrl+L** | Toggle file explorer sidebar | ✅ Active | v2.0.5.2 |
+| **↑/↓** arrows | Navigate files (when sidebar visible) | ✅ Active | v2.0.5.2 |
+| **Enter** | Open selected file | ✅ Active | v2.0.5.2 |
 
 ### Search & Replace
 | Key Combo | Function | Status | Since Version |
@@ -187,40 +195,15 @@ This document tracks all keyboard shortcuts and bindings currently in use by ULI
 - **F1** - Already Debug Console toggle
 - **F12** - Already Screenshot
 - **Ctrl+F12** - Already GIF recording
-
----
-
-## 🎯 **Recommended Mode Switching Scheme (Phase 2.0.5)**
-
-After analyzing conflicts, here's the **recommended approach**:
-
-```
-┌─────────────────────────────────────────┐
-│         ULICS MODE SWITCHING            │
-├─────────────────────────────────────────┤
-│ ESC         → Toggle Game / Last Editor │
-│ Alt+1       → Code Editor               │
-│ Alt+2       → Sprite Editor             │
-│ Alt+3       → Map Editor                │
-│ Alt+4       → SFX Editor                │
-│ Alt+5       → Music Tracker             │
-│ F1          → Debug Console (overlay)   │
-└─────────────────────────────────────────┘
-```
-
-**Rationale:**
-- ✅ ESC is intuitive for "return to game"
-- ✅ Alt+Number doesn't conflict with anything
-- ✅ F1 stays as debug console (can overlay any mode)
-- ✅ Easy to remember (Alt+1=Code, Alt+2=Sprites, etc.)
-- ✅ Leaves F2-F5 available for quick toggles
+- **Ctrl+L** - Already File Explorer toggle
 
 ---
 
 ## 📋 **Change Log**
 
 | Date | Version | Changes |
-|------|---------|---------|
+|------|---------|---------||
+| 2025-12-14 | 2.0.5.2 | Added Ctrl+L for file explorer sidebar toggle |
 | 2025-12-14 | 2.0.4 | Added Ctrl+S, Ctrl+R, Tab for Code Editor |
 | 2025-12-14 | 2.0.2 | Added Code Editor navigation keys |
 | 2025-12-13 | 1.5.4 | Added Ctrl+F12 for GIF recording |
@@ -229,6 +212,6 @@ After analyzing conflicts, here's the **recommended approach**:
 
 ---
 
-**Last Updated:** 2025-12-14 03:45 AM  
+**Last Updated:** 2025-12-14  
 **Maintained By:** Development Team  
 **Review Before:** Any new hotkey implementation!

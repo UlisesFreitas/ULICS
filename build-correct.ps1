@@ -10,7 +10,7 @@ Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
 
 # Step 2: Configure with CMake
 Write-Host "Configuring project..." -ForegroundColor Yellow
-cmake -S . -B build
+
 
 # Step 3: Build Release
 Write-Host ""

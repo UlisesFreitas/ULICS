@@ -181,6 +181,78 @@
                     "notes": "F1=Code, F2=Sprites, F3=Map, F4=SFX, Escape=Game. Like PICO-8 function keys. Engine modes: CODE_EDITOR, SPRITE_EDITOR, MAP_EDITOR, GAME_RUNNING."
                 },
                 {
+                    "id": "2.0.5.1",
+                    "description": "CodeEditor External File Change Detection - Auto-reload when files are modified externally.",
+                    "status": "completed",
+                    "priority": "MEDIUM",
+                    "files": "src/ui/CodeEditor.h, src/ui/CodeEditor.cpp, docs/CODE_EDITOR_EXTERNAL_RELOAD.md",
+                    "estimatedTime": "45-60 minutes",
+                    "actualTime": "25 minutes",
+                    "notes": "COMPLETED 2025-12-14. Monitor filesystem changes to main.lua/config.json using std::filesystem::last_write_time. When editor is viewing a file and external editor modifies it, detect the change and reload the content automatically. Check every frame. Preserves cursor position and scroll. Shows 'RELOAD' notification for 2 seconds in yellow. Works seamlessly with external editors like VS Code. Performance: ~0.01ms per frame. Error handling for locked/deleted files."
+                },
+                {
+                    "id": "2.0.5.2",
+                    "description": "CodeEditor File Explorer Sidebar - Browse and switch between files in current cartridge.",
+                    "status": "completed",
+                    "priority": "HIGH",
+                    "files": "src/ui/CodeEditor.h, src/ui/CodeEditor.cpp, src/ui/FileExplorer.h, src/ui/FileExplorer.cpp, docs/KEY_BINDINGS.md",
+                    "estimatedTime": "2-3 hours",
+                    "actualTime": "3 hours",
+                    "notes": "COMPLETED 2025-12-14. Added sidebar file explorer to Code Editor with Ctrl+L toggle. Scans current cartridge directory, displays tree view of .lua and .json files. Shows file icons (L/J/D). Arrow keys navigate, Enter opens file. Sidebar width: 180px. Input blocking when sidebar visible prevents cursor movement in editor. Auto-saves current file before switching. Fixed rendering order and layout calculations.",
+                    "implementation": {
+                        "components": [
+                            "FileExplorer class - manages file tree and selection",
+                            "Integration in CodeEditor - sidebar rendering and input",
+                            "File switching - save current, load new, update tracking",
+                            "Keyboard shortcuts - Ctrl+L toggle, arrows, Enter"
+                        ],
+                        "ui_layout": {
+                            "sidebar_width": 180,
+                            "file_item_height": 10,
+                            "indent_per_level": 6,
+                            "colors": {
+                                "bg": "COLOR_DARK_GRAY",
+                                "selected": "COLOR_INDIGO",
+                                "text": "COLOR_WHITE",
+                                "icon": "COLOR_YELLOW"
+                            }
+                        }
+                    }
+                },
+                {
+                    "id": "2.0.5.3",
+                    "description": "CodeEditor Vertical Scrollbar - Add visual scrollbar with arrows for better navigation.",
+                    "status": "completed",
+                    "priority": "MEDIUM",
+                    "files": "src/ui/CodeEditor.h, src/ui/CodeEditor.cpp, src/input/InputManager.h, src/input/InputManager.cpp, src/core/Engine.cpp",
+                    "estimatedTime": "1-2 hours",
+                    "actualTime": "3 hours",
+                    "notes": "COMPLETED 2025-12-14. Implemented vertical scrollbar with mouse support. Simplified design: 4px width track + white thumb (no arrow buttons). Mouse interactions: (1) Drag thumb for proportional scroll, (2) Mouse wheel scrolls 3 lines per tick, (3) Click on code positions cursor. Fixed SDL mouse coordinate handling - SDL_RenderSetLogicalSize handles scaling automatically (800x800→256x256). Added mouseWheelY to InputManager. Scrollbar renders on right edge, only when content exceeds visible area. Thumb size proportional to visible/total lines ratio.",
+                    "implementation": {
+                        "components": [
+                            "Simplified scrollbar - track + draggable thumb (no arrow buttons)",
+                            "Mouse wheel support - scroll 3 lines per tick",
+                            "Click to position cursor - converts mouse coords to line/column",
+                            "SDL coordinate handling - removed duplicate scaling"
+                        ],
+                        "ui_layout": {
+                            "scrollbar_width": 4,
+                            "min_thumb_height": 20,
+                            "position": "right edge (x=252-256)",
+                            "colors": {
+                                "track": "COLOR_DARK_GRAY",
+                                "thumb": "COLOR_WHITE"
+                            }
+                        },
+                        "interactions": [
+                            "Mouse wheel up/down: scrollY += wheelDelta * 3",
+                            "Mouse drag on thumb: calculate scrollY from thumb position",
+                            "Mouse click on code: position cursor at clicked line/column",
+                            "PageUp/PageDown: still work as before"
+                        ]
+                    }
+                },
+                {
                     "id": "2.0.6",
                     "description": "Sprite Editor - Pixel art editor with custom UI.",
                     "status": "pending",
@@ -251,115 +323,118 @@
                     "files": "src/ui/Profiler.h, src/ui/Profiler.cpp",
                     "notes": "CPU time graphs, _update()/_draw() execution time, memory usage. Custom UI rendering."
                 },
-                "status": "pending",
-                "priority": "MEDIUM",
-                "files": "src/core/SaveState.h, src/core/SaveState.cpp",
-                "notes": "Serialize Lua globals to file. Useful for testing specific scenarios."
-            },
-            {
-                "id": "2.0.12",
-                "description": "Create Keybinding Editor - remap controls UI.",
-                "status": "pending",
-                "priority": "LOW",
-                "files": "src/ui/KeybindingEditor.h, src/ui/KeybindingEditor.cpp",
-                "notes": "Visual button mapper, remap any button to any key/gamepad button, save to user prefs."
-            },
-            {
-                "id": "2.0.13",
-                "description": "Add In-Game Help Overlay - API quick reference with search.",
-                "status": "pending",
-                "priority": "LOW",
-                "files": "src/ui/HelpOverlay.h, src/ui/HelpOverlay.cpp",
-                "notes": "List all 40 API functions, search by name, quick examples, copy to clipboard."
-            },
-            {
-                "id": "2.0.14",
-                "description": "Implement Export/Publish System - bundle as standalone .exe or WASM.",
-                "status": "pending",
-                "priority": "LOW",
-                "files": "src/export/Exporter.h, src/export/Exporter.cpp",
-                "notes": "Windows .exe export, optional WASM for web, embed all assets, remove dev tools."
-            }
-        ]
+                {
+                    "id": "3.0.2",
+                    "description": "Add Save State System - F5/F9 for quick save/load game state.",
+                    "status": "pending",
+                    "priority": "MEDIUM",
+                    "files": "src/core/SaveState.h, src/core/SaveState.cpp",
+                    "notes": "Serialize Lua globals to file. Useful for testing specific scenarios."
+                },
+                {
+                    "id": "3.0.3",
+                    "description": "Create Keybinding Editor - remap controls UI.",
+                    "status": "pending",
+                    "priority": "LOW",
+                    "files": "src/ui/KeybindingEditor.h, src/ui/KeybindingEditor.cpp",
+                    "notes": "Visual button mapper, remap any button to any key/gamepad button, save to user prefs."
+                },
+                {
+                    "id": "3.0.4",
+                    "description": "Add In-Game Help Overlay - API quick reference with search.",
+                    "status": "pending",
+                    "priority": "LOW",
+                    "files": "src/ui/HelpOverlay.h, src/ui/HelpOverlay.cpp",
+                    "notes": "List all 40 API functions, search by name, quick examples, copy to clipboard."
+                },
+                {
+                    "id": "3.0.5",
+                    "description": "Implement Export/Publish System - bundle as standalone .exe or WASM.",
+                    "status": "pending",
+                    "priority": "LOW",
+                    "files": "src/export/Exporter.h, src/export/Exporter.cpp",
+                    "notes": "Windows .exe export, optional WASM for web, embed all assets, remove dev tools."
+                }
+            ]
+        },
+        {
+            "phase": 4.0,
+            "title": "Advanced Features",
+            "description": "Advanced fantasy console features beyond PICO-8/TIC-80.",
+            "priority": "FUTURE",
+            "tasks": [
+                {
+                    "id": "4.0.1",
+                    "description": "Add sprite animation helpers - automatic frame cycling.",
+                    "status": "pending",
+                    "priority": "MEDIUM",
+                    "files": "src/rendering/SpriteAnimator.h"
+                },
+                {
+                    "id": "4.0.2",
+                    "description": "Implement particle system - simple but powerful particle effects.",
+                    "status": "pending",
+                    "priority": "MEDIUM",
+                    "files": "src/rendering/ParticleSystem.h"
+                },
+                {
+                    "id": "4.0.3",
+                    "description": "Add tweening library - smooth interpolation for animations.",
+                    "status": "pending",
+                    "priority": "LOW",
+                    "files": "src/utils/Tween.h"
+                },
+                {
+                    "id": "4.0.4",
+                    "description": "Implement coroutines for Lua - easier async game logic.",
+                    "status": "pending",
+                    "priority": "LOW",
+                    "files": "src/scripting/Coroutines.cpp"
+                },
+                {
+                    "id": "4.0.5",
+                    "description": "Add basic physics engine - box2d integration for physics games.",
+                    "status": "pending",
+                    "priority": "LOW",
+                    "files": "src/physics/"
+                },
+                {
+                    "id": "4.0.6",
+                    "description": "Implement networking - local multiplayer and simple online.",
+                    "status": "pending",
+                    "priority": "FUTURE",
+                    "files": "src/network/"
+                }
+            ]
+        }
+    ],
+    "roadmap": {
+        "v1.1": {
+            "release": "2025-12-20",
+            "focus": "Bug Fixes",
+            "tasks": "1.1.1 - 1.1.7"
+        },
+        "v1.5": {
+            "release": "2026-01",
+            "focus": "Developer Tools (Lite)",
+            "tasks": "1.5.1 - 1.5.5"
+        },
+        "v2.0": {
+            "release": "2026-03",
+            "focus": "Full IDE",
+            "tasks": "2.0.1 - 2.0.14"
+        },
+        "v3.0": {
+            "release": "TBD",
+            "focus": "Advanced Features",
+            "tasks": "3.0.1+"
+        }
     },
-    {
-        "phase": 3.0,
-        "title": "Advanced Features",
-        "description": "Advanced fantasy console features beyond PICO-8/TIC-80.",
-        "priority": "FUTURE",
-        "tasks": [
-            {
-                "id": "3.0.1",
-                "description": "Add sprite animation helpers - automatic frame cycling.",
-                "status": "pending",
-                "priority": "MEDIUM",
-                "files": "src/rendering/SpriteAnimator.h"
-            },
-            {
-                "id": "3.0.2",
-                "description": "Implement particle system - simple but powerful particle effects.",
-                "status": "pending",
-                "priority": "MEDIUM",
-                "files": "src/rendering/ParticleSystem.h"
-            },
-            {
-                "id": "3.0.3",
-                "description": "Add tweening library - smooth interpolation for animations.",
-                "status": "pending",
-                "priority": "LOW",
-                "files": "src/utils/Tween.h"
-            },
-            {
-                "id": "3.0.4",
-                "description": "Implement coroutines for Lua - easier async game logic.",
-                "status": "pending",
-                "priority": "LOW",
-                "files": "src/scripting/Coroutines.cpp"
-            },
-            {
-                "id": "3.0.5",
-                "description": "Add basic physics engine - box2d integration for physics games.",
-                "status": "pending",
-                "priority": "LOW",
-                "files": "src/physics/"
-            },
-            {
-                "id": "3.0.6",
-                "description": "Implement networking - local multiplayer and simple online.",
-                "status": "pending",
-                "priority": "FUTURE",
-                "files": "src/network/"
-            }
-        ]
-    }
-],
-"roadmap": {
-    "v1.1": {
-        "release": "2025-12-20",
-        "focus": "Bug Fixes",
-        "tasks": "1.1.1 - 1.1.7"
-    },
-    "v1.5": {
-        "release": "2026-01",
-        "focus": "Developer Tools (Lite)",
-        "tasks": "1.5.1 - 1.5.5"
-    },
-    "v2.0": {
-        "release": "2026-03",
-        "focus": "Full IDE",
-        "tasks": "2.0.1 - 2.0.14"
-    },
-    "v3.0": {
-        "release": "TBD",
-        "focus": "Advanced Features",
-        "tasks": "3.0.1+"
-    }
-},
-"notes": [
-    "v1.0.0 completed on 2025-12-13 with 68/88 tasks",
-    "Core runtime is 100% functional",
-    "Focus on fixing rendering bugs for v1.1",
-    "IDE tools are optional - v1.x is usable without them",
-    "Follow semantic versioning: MAJOR.MINOR.PATCH"
-]
+    "notes": [
+        "v1.0.0 completed on 2025-12-13 with 68/88 tasks",
+        "Core runtime is 100% functional",
+        "Focus on fixing rendering bugs for v1.1",
+        "IDE tools are optional - v1.x is usable without them",
+        "Follow semantic versioning: MAJOR.MINOR.PATCH"
+    ]
 }

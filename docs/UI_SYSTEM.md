@@ -162,8 +162,80 @@ int width = ui.GetTextWidth("Some text");
 In-engine Lua code editor. **THE CORE FANTASY CONSOLE FEATURE!**
 
 ### **Phase 2.0.2: Basic Text Editing - COMPLETED ✅**
+### **Phase 2.0.3: Syntax Highlighting - COMPLETED ✅**
+### **Phase 2.0.4: Save/Run Integration - COMPLETED ✅**
 
 #### **Implemented Features**
+
+**Text Buffer:**
+- ✅ Multi-line text storage (`std::vector<std::string>`)
+- ✅ Load from file (`Load()`)
+- ✅ Save to file (`Save()`)
+- ✅ Get/Set full text content
+- ✅ Modified flag tracking
+
+**Cursor Movement:**
+- ✅ Arrow keys (left, right, up, down)
+- ✅ Home/End (start/end of line)
+- ✅ Page Up/Down (scroll by screen)
+- ✅ Auto-scroll to keep cursor visible
+- ✅ Cursor clamping to line length
+
+**Text Editing:**
+- ✅ Character insertion (SDL_TEXTINPUT working!)
+- ✅ Backspace (delete char before cursor)
+- ✅ Delete (delete char at cursor)
+- ✅ Enter (create new line)
+- ✅ Tab (insert 4 spaces for indentation)
+- ✅ Line merging on backspace/delete
+
+**Syntax Highlighting:**
+- ✅ Keywords (if, function, for, etc.) - Blue
+- ✅ Built-in functions (cls, print, btn, etc.) - Green
+- ✅ Strings ("text", 'text') - Pink
+- ✅ Numbers (123, 0.5, -10) - Orange
+- ✅ Comments (-- ...) - Gray
+- ✅ Operators (+, -, *, =, etc.) - Peach
+- ✅ Token-based parsing (simple but effective)
+
+**Hotkeys:**
+- ✅ **Ctrl+S** - Save file (shows "SAVED!" message)
+- ✅ **Ctrl+R** - Run/Reload (saves & triggers hot reload)
+- ✅ **Tab** - Insert 4 spaces
+- ✅ Modifier key detection (Ctrl, Shift)
+
+**Rendering:**
+- ✅ Title bar ("CODE EDITOR")
+- ✅ Line numbers (3 digits, gray background)
+- ✅ Syntax-highlighted text
+- ✅ Cursor rendering (yellow blinking box)
+- ✅ Status bar (line:col, filename, SAVED!/MODIFIED)
+- ✅ Visible area: 28 lines × 58 columns
+
+**Display Constants:**
+```cpp
+static constexpr int VISIBLE_LINES = 28;  // ~224 pixels / 8 pixels per line
+static constexpr int VISIBLE_COLS = 58;   // ~232 pixels / 4 pixels per char
+```
+
+#### **Controls (Implemented)**
+
+| Key | Action |
+|-----|--------|
+| ⬅️➡️⬆️⬇️ | Move cursor |
+| Home | Start of line |
+| End | End of line |
+| Page Up | Scroll up one page |
+| Page Down | Scroll down one page |
+| Backspace | Delete char before cursor |
+| Delete | Delete char at cursor |
+| Enter | New line |
+| Tab | Insert 4 spaces |
+| **Ctrl+S** | Save file |
+| **Ctrl+R** | Run/Reload |
+| A-Z, 0-9, symbols | Type characters |
+
+### **Phase 2.0.5: Mode Switcher - PENDING ⏳**
 
 **Text Buffer:**
 - ✅ Multi-line text storage (`std::vector<std::string>`)

@@ -227,10 +227,17 @@ void Engine::Run() {
                 isRunning = false;
             }
             
-            // Toggle Debug Console with F1 (v1.5.2)
-            if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F1) {
-                if (debugConsole) {
-                    debugConsole->Toggle();
+            // Toggle Debug Console with Ctrl+Alt+1 (v1.5.2 - Updated 2025-12-14)
+            // Changed from F1 to free up F-keys for editors
+            if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_1) {
+                const Uint8* keystate = SDL_GetKeyboardState(NULL);
+                bool ctrlPressed = keystate[SDL_SCANCODE_LCTRL] || keystate[SDL_SCANCODE_RCTRL];
+                bool altPressed = keystate[SDL_SCANCODE_LALT] || keystate[SDL_SCANCODE_RALT];
+                
+                if (ctrlPressed && altPressed) {
+                    if (debugConsole) {
+                        debugConsole->Toggle();
+                    }
                 }
             }
             

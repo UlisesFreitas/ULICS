@@ -1,7 +1,7 @@
 # ULICS Key Bindings Reference
 
-**Version:** 2.0.5.2  
-**Last Updated:** 2025-12-14  
+**Version:** 2.0.5.4  
+**Last Updated:** 2025-12-15  
 
 This document tracks all keyboard shortcuts and bindings currently in use by ULICS to avoid conflicts.
 
@@ -44,7 +44,7 @@ This document tracks all keyboard shortcuts and bindings currently in use by ULI
 ### Function Keys (Editors)
 | Key | Function | Status | Since Version |
 |-----|----------|--------|---------------|
-| **F1** | Toggle Code Editor | ⏳ Planned | v2.0.5 |
+| **F1** | Toggle Code Editor | ✅ Active | v2.0.5 |
 | **F2** | Toggle Sprite Editor | ⏳ Planned | v2.0.6 |
 | **F3** | Toggle Map Editor | ⏳ Planned | v2.0.7 |
 | **F4** | Toggle SFX Editor | ⏳ Planned | v2.0.8 |
@@ -75,13 +75,36 @@ This document tracks all keyboard shortcuts and bindings currently in use by ULI
 ### Editing
 | Key | Function | Status | Since Version |
 |-----|----------|--------|---------------|
-| **Tab** | Insert 4 spaces (indent) | ✅ Active | v2.0.4 |
-| **Shift+Tab** | _Reserved: Unindent_ | ⏳ Planned | Future |
-| **Ctrl+C** | _Reserved: Copy_ | ⏳ Planned | Future |
-| **Ctrl+V** | _Reserved: Paste_ | ⏳ Planned | Future |
-| **Ctrl+X** | _Reserved: Cut_ | ⏳ Planned | Future |
-| **Ctrl+Z** | _Reserved: Undo_ | ⏳ Planned | Future |
-| **Ctrl+Y** | _Reserved: Redo_ | ⏳ Planned | Future |
+| **Tab** | Insert 4 spaces (indent) | ✅ Active | v2.0.5.4 |
+| **Shift+Tab** | Remove up to 4 spaces (unindent) | ✅ Active | v2.0.5.4 |
+| **Enter** | New line (with undo) | ✅ Active | v2.0.5.4 |
+| **Backspace** | Delete selection or char before cursor (with undo) | ✅ Active | v2.0.5.4 |
+| **Delete** | Delete selection or char at cursor (with undo) | ✅ Active | v2.0.5.4 |
+
+### Clipboard Operations (Phase 2.0.5.4)
+| Key Combo | Function | Status | Since Version |
+|-----------|----------|--------|---------------|
+| **Ctrl+C** | Copy selected text to clipboard | ✅ Active | v2.0.5.4 |
+| **Ctrl+X** | Cut selected text to clipboard | ✅ Active | v2.0.5.4 |
+| **Ctrl+V** | Paste from clipboard (multi-line supported) | ✅ Active | v2.0.5.4 |
+| **Ctrl+A** | Select all text | ✅ Active | v2.0.5.4 |
+
+### Undo/Redo (Phase 2.0.5.4)
+| Key Combo | Function | Status | Since Version |
+|-----------|----------|--------|---------------|
+| **Ctrl+Z** | Undo last edit (up to 100 actions) | ✅ Active | v2.0.5.4 |
+| **Ctrl+Y** | Redo last undone edit | ✅ Active | v2.0.5.4 |
+
+### Text Selection (Phase 2.0.5.4)
+| Key/Action | Function | Status | Since Version |
+|-----------|----------|--------|---------------|
+| **Shift+←** | Extend selection left | ✅ Active | v2.0.5.4 |
+| **Shift+→** | Extend selection right | ✅ Active | v2.0.5.4 |
+| **Shift+↑** | Extend selection up | ✅ Active | v2.0.5.4 |
+| **Shift+↓** | Extend selection down | ✅ Active | v2.0.5.4 |
+| **Mouse Drag** | Select text range (visual indigo highlight) | ✅ Active | v2.0.5.4 |
+| **Mouse Click** | Position cursor / clear selection | ✅ Active | v2.0.5.3 |
+| **Mouse Wheel** | Scroll 3 lines per tick | ✅ Active | v2.0.5.3 |
 
 ### Navigation
 | Key | Function | Status | Since Version |
@@ -97,7 +120,7 @@ This document tracks all keyboard shortcuts and bindings currently in use by ULI
 ### File Explorer (Sidebar - Phase 2.0.5.2)
 | Key | Function | Status | Since Version |
 |-----|----------|--------|---------------|
-| **Ctrl+L** | Toggle file explorer sidebar | ✅ Active | v2.0.5.2 |
+| **Ctrl+L** | Toggle file explorer sidebar | ✅ Active |v2.0.5.2 |
 | **↑/↓** arrows | Navigate files (when sidebar visible) | ✅ Active | v2.0.5.2 |
 | **Enter** | Open selected file | ✅ Active | v2.0.5.2 |
 

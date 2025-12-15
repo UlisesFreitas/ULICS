@@ -16,7 +16,7 @@ CodeEditor::CodeEditor()
       reloadedMessageTimer(0), fileWatchingEnabled(true),
       scrollbarDragging(false), scrollbarDragOffset(0),
       selectionActive(false), selectionStartLine(0), selectionStartCol(0), 
-      selectionEndLine(0), selectionEndCol(0),
+      selectionEndLine(0), selectionEndCol(0), mouseDragging(false),
       keyRepeatDelay(20), keyRepeatInterval(3),
       leftKeyHoldFrames(0), rightKeyHoldFrames(0), upKeyHoldFrames(0), downKeyHoldFrames(0) {
     // Start with empty file
@@ -67,44 +67,82 @@ void CodeEditor::Update(InputManager& input) {
     // === Handle scrollbar mouse input FIRST (Phase 2.0.5.3) ===
     HandleScrollbarInput(input);
     
-    // === Handle mouse click to position cursor (Phase 2.0.5.3) ===
-    if (input.isMouseButtonPressed(1)) {  // Left click
-        int mouseX = input.getMouseX();
-        int mouseY = input.getMouseY();
+    // === Handle mouse click/drag to position cursor and select (Phase 2.0.5.4) ===
+    int mouseX = input.getMouseX();
+    int mouseY = input.getMouseY();
+    bool mouseDown = input.isMouseButtonDown(1);
+    bool mousePressed = input.isMouseButtonPressed(1);
+    
+    // Layout constants (must match Render())
+    const int TITLE_H = 10;
+    const int STATUS_H = 10;
+    const int SCREEN_H = 256;
+    const int SIDEBAR_W = 180;
+    const int SIDEBAR_OFFSET = (fileExplorer && fileExplorer->IsVisible()) ? SIDEBAR_W : 0;
+    const int LINE_NUM_W = 40;
+    const int TEXT_X = SIDEBAR_OFFSET + LINE_NUM_W + 4;
+    const int EDITOR_TOP = TITLE_H;
+    const int EDITOR_BOTTOM = SCREEN_H - STATUS_H;
+    const int CHAR_W = 8;
+    const int LINE_HEIGHT = 11;
+    
+    // Check if mouse is in text area (not in scrollbar, line numbers, or sidebar)
+    bool inTextArea = (mouseX >= TEXT_X && mouseX < 252 &&  // Before scrollbar
+                      mouseY >= EDITOR_TOP && mouseY < EDITOR_BOTTOM);
+    
+    if (mousePressed && inTextArea) {
+        // Convert mouse to line/col
+        int clickLine = scrollY + ((mouseY - EDITOR_TOP - 2) / LINE_HEIGHT);
+        if (clickLine < 0) clickLine = 0;
+        if (clickLine >= static_cast<int>(lines.size())) clickLine = lines.size() - 1;
         
-        // Layout constants (must match Render())
-        const int TITLE_H = 10;
-        const int STATUS_H = 10;
-        const int SCREEN_H = 256;
-        const int SIDEBAR_W = 180;
-        const int SIDEBAR_OFFSET = (fileExplorer && fileExplorer->IsVisible()) ? SIDEBAR_W : 0;
-        const int LINE_NUM_W = 40;
-        const int TEXT_X = SIDEBAR_OFFSET + LINE_NUM_W + 4;
-        const int EDITOR_TOP = TITLE_H;
-        const int EDITOR_BOTTOM = SCREEN_H - STATUS_H;
-        const int CHAR_W = 8;
-        const int LINE_HEIGHT = 11;
+        int clickCol = scrollX + ((mouseX - TEXT_X) / CHAR_W);
+        if (clickCol < 0) clickCol = 0;
+        if (clickCol > static_cast<int>(lines[clickLine].length())) {
+            clickCol = lines[clickLine].length();
+        }
         
-        // Check if click is in text area (not in scrollbar, line numbers, or sidebar)
-        bool inTextArea = (mouseX >= TEXT_X && mouseX < 252 &&  // Before scrollbar
-                          mouseY >= EDITOR_TOP && mouseY < EDITOR_BOTTOM);
+        // Start drag selection
+        mouseDragging = true;
+        selectionActive = true;
+        selectionStartLine = clickLine;
+        selectionStartCol = clickCol;
+        selectionEndLine = clickLine;
+        selectionEndCol = clickCol;
         
-        if (inTextArea) {
-            // Convert mouse Y to line number
-            int clickLine = scrollY + ((mouseY - EDITOR_TOP - 2) / LINE_HEIGHT);
-            if (clickLine < 0) clickLine = 0;
-            if (clickLine >= static_cast<int>(lines.size())) clickLine = lines.size() - 1;
-            
-            // Convert mouse X to column
-            int clickCol = scrollX + ((mouseX - TEXT_X) / CHAR_W);
-            if (clickCol < 0) clickCol = 0;
-            if (clickCol > static_cast<int>(lines[clickLine].length())) {
-                clickCol = lines[clickLine].length();
-            }
-            
-            // Move cursor to clicked position
-            cursorLine = clickLine;
-            cursorCol = clickCol;
+        // Move cursor
+        cursorLine = clickLine;
+        cursorCol = clickCol;
+    }
+    
+    // Continue drag selection
+    if (mouseDragging && mouseDown && inTextArea) {
+        // Convert mouse to line/col
+        int dragLine = scrollY + ((mouseY - EDITOR_TOP - 2) / LINE_HEIGHT);
+        if (dragLine < 0) dragLine = 0;
+        if (dragLine >= static_cast<int>(lines.size())) dragLine = lines.size() - 1;
+        
+        int dragCol = scrollX + ((mouseX - TEXT_X) / CHAR_W);
+        if (dragCol < 0) dragCol = 0;
+        if (dragCol > static_cast<int>(lines[dragLine].length())) {
+            dragCol = lines[dragLine].length();
+        }
+        
+        // Update selection end
+        selectionEndLine = dragLine;
+        selectionEndCol = dragCol;
+        
+        // Move cursor
+        cursorLine = dragLine;
+        cursorCol = dragCol;
+    }
+    
+    // End drag selection
+    if (mouseDragging && !mouseDown) {
+        mouseDragging = false;
+        // Keep selection active if start != end
+        if (selectionStartLine == selectionEndLine && selectionStartCol == selectionEndCol) {
+            ClearSelection();
         }
     }
     
@@ -281,13 +319,32 @@ void CodeEditor::Update(InputManager& input) {
     }
     
     // === Cursor movement with auto-repeat ===
+    // Check if Shift is being held for selection (Phase 2.0.5.4)
+    bool shiftHeld = input.isShiftDown();
+    
     // Left arrow
     if (input.isKeyDown(SDL_SCANCODE_LEFT)) {
         leftKeyHoldFrames++;
         // Move on first press OR after delay+interval
         if (leftKeyHoldFrames == 1 || 
             (leftKeyHoldFrames > keyRepeatDelay && (leftKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
+            
+            // Start selection if Shift held and no selection active
+            if (shiftHeld && !selectionActive) {
+                selectionActive = true;
+                selectionStartLine = cursorLine;
+                selectionStartCol = cursorCol;
+            }
+            
             MoveCursorLeft();
+            
+            // Update selection end if active
+            if (shiftHeld && selectionActive) {
+                selectionEndLine = cursorLine;
+                selectionEndCol = cursorCol;
+            } else if (!shiftHeld) {
+                ClearSelection();
+            }
         }
     } else {
         leftKeyHoldFrames = 0;
@@ -298,7 +355,23 @@ void CodeEditor::Update(InputManager& input) {
         rightKeyHoldFrames++;
         if (rightKeyHoldFrames == 1 || 
             (rightKeyHoldFrames > keyRepeatDelay && (rightKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
+            
+            // Start selection if Shift held and no selection active
+            if (shiftHeld && !selectionActive) {
+                selectionActive = true;
+                selectionStartLine = cursorLine;
+                selectionStartCol = cursorCol;
+            }
+            
             MoveCursorRight();
+            
+            // Update selection end if active
+            if (shiftHeld && selectionActive) {
+                selectionEndLine = cursorLine;
+                selectionEndCol = cursorCol;
+            } else if (!shiftHeld) {
+                ClearSelection();
+            }
         }
     } else {
         rightKeyHoldFrames = 0;
@@ -309,7 +382,23 @@ void CodeEditor::Update(InputManager& input) {
         upKeyHoldFrames++;
         if (upKeyHoldFrames == 1 || 
             (upKeyHoldFrames > keyRepeatDelay && (upKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
+            
+            // Start selection if Shift held and no selection active
+            if (shiftHeld && !selectionActive) {
+                selectionActive = true;
+                selectionStartLine = cursorLine;
+                selectionStartCol = cursorCol;
+            }
+            
             MoveCursorUp();
+            
+            // Update selection end if active
+            if (shiftHeld && selectionActive) {
+                selectionEndLine = cursorLine;
+                selectionEndCol = cursorCol;
+            } else if (!shiftHeld) {
+                ClearSelection();
+            }
         }
     } else {
         upKeyHoldFrames = 0;
@@ -320,7 +409,23 @@ void CodeEditor::Update(InputManager& input) {
         downKeyHoldFrames++;
         if (downKeyHoldFrames == 1 || 
             (downKeyHoldFrames > keyRepeatDelay && (downKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
+            
+            // Start selection if Shift held and no selection active
+            if (shiftHeld && !selectionActive) {
+                selectionActive = true;
+                selectionStartLine = cursorLine;
+                selectionStartCol = cursorCol;
+            }
+            
             MoveCursorDown();
+            
+            // Update selection end if active
+            if (shiftHeld && selectionActive) {
+                selectionEndLine = cursorLine;
+                selectionEndCol = cursorCol;
+            } else if (!shiftHeld) {
+                ClearSelection();
+            }
         }
     } else {
         downKeyHoldFrames = 0;
@@ -457,6 +562,41 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
             }
         } else {
             lineText = "";  // scrollX is beyond line length
+        }
+        
+        // === Render selection background (Phase 2.0.5.4) ===
+        if (selectionActive) {
+            // Normalize selection to ensure start < end
+            int startL = selectionStartLine;
+            int startC = selectionStartCol;
+            int endL = selectionEndLine;
+            int endC = selectionEndCol;
+            
+            if (startL > endL || (startL == endL && startC > endC)) {
+                std::swap(startL, endL);
+                std::swap(startC, endC);
+            }
+            
+            // Check if this line is part of the selection
+            if (i >= startL && i <= endL) {
+                int selStartCol = (i == startL) ? startC : 0;
+                int selEndCol = (i == endL) ? endC : static_cast<int>(lines[i].length());
+                
+                // Apply horizontal scroll to selection columns
+                int visSelStartCol = selStartCol - scrollX;
+                int visSelEndCol = selEndCol - scrollX;
+                
+                // Clamp to visible range
+                if (visSelStartCol < 0) visSelStartCol = 0;
+                if (visSelEndCol > VISIBLE_COLS) visSelEndCol = VISIBLE_COLS;
+                
+                // Draw selection background
+                if (visSelEndCol > visSelStartCol && visSelStartCol < VISIBLE_COLS) {
+                    int selX = TEXT_X + (visSelStartCol * CHAR_W);
+                    int selW = (visSelEndCol - visSelStartCol) * CHAR_W;
+                    layer.RectFill(selX, y, selW, CHAR_H, UISystem::COLOR_INDIGO);
+                }
+            }
         }
         
         RenderLineWithSyntax(lineText, TEXT_X, y, layer);
@@ -653,15 +793,39 @@ void CodeEditor::InsertChar(char c) {
 }
 
 void CodeEditor::Backspace() {
+    // Delete selection if active (Phase 2.0.5.4)
+    if (HasSelection()) {
+        DeleteSelection();
+        return;
+    }
+    
     if (cursorCol > 0) {
         // Delete character before cursor
         std::string& line = lines[cursorLine];
+        
+        // Push undo action (Phase 2.0.5.4)
+        EditAction action;
+        action.type = EditAction::DELETE_CHAR;
+        action.line = cursorLine;
+        action.col = cursorCol - 1;
+        action.oldText = std::string(1, line[cursorCol - 1]);
+        PushUndo(action);
+        
         line.erase(cursorCol - 1, 1);
         cursorCol--;
         modified = true;
     } else if (cursorLine > 0) {
         // Merge with previous line
         std::string currentLine = lines[cursorLine];
+        
+        // Push undo action (Phase 2.0.5.4)
+        EditAction action;
+        action.type = EditAction::DELETE_LINE;
+        action.line = cursorLine;
+        action.col = 0;
+        action.oldText = currentLine;
+        PushUndo(action);
+        
         lines.erase(lines.begin() + cursorLine);
         cursorLine--;
         cursorCol = lines[cursorLine].length();
@@ -672,14 +836,39 @@ void CodeEditor::Backspace() {
 }
 
 void CodeEditor::Delete() {
+    // Delete selection if active (Phase 2.0.5.4)
+    if (HasSelection()) {
+        DeleteSelection();
+        return;
+    }
+    
     if (cursorCol < static_cast<int>(lines[cursorLine].length())) {
         // Delete character at cursor
         std::string& line = lines[cursorLine];
+        
+        // Push undo action (Phase 2.0.5.4)
+        EditAction action;
+        action.type = EditAction::DELETE_CHAR;
+        action.line = cursorLine;
+        action.col = cursorCol;
+        action.oldText = std::string(1, line[cursorCol]);
+        PushUndo(action);
+        
         line.erase(cursorCol, 1);
         modified = true;
     } else if (cursorLine < static_cast<int>(lines.size()) - 1) {
         // Merge with next line
-        lines[cursorLine] += lines[cursorLine + 1];
+        std::string nextLine = lines[cursorLine + 1];
+        
+        // Push undo action (Phase 2.0.5.4)
+        EditAction action;
+        action.type = EditAction::DELETE_LINE;
+        action.line = cursorLine + 1;
+        action.col = 0;
+        action.oldText = nextLine;
+        PushUndo(action);
+        
+        lines[cursorLine] += nextLine;
         lines.erase(lines.begin() + cursorLine + 1);
         modified = true;
     }
@@ -1201,9 +1390,21 @@ void CodeEditor::DeleteSelection() {
     
     NormalizeSelection();
     
+    // Save selected text for undo BEFORE deleting (Phase 2.0.5.4)
+    std::string deletedText = GetSelectedText();
+    
     if (selectionStartLine == selectionEndLine) {
         // Single line deletion
         std::string& line = lines[selectionStartLine];
+        
+        // Push undo action (Phase 2.0.5.4)
+        EditAction action;
+        action.type = EditAction::DELETE_CHAR;
+        action.line = selectionStartLine;
+        action.col = selectionStartCol;
+        action.oldText = deletedText;
+        PushUndo(action);
+        
         line.erase(selectionStartCol, selectionEndCol - selectionStartCol);
         cursorLine = selectionStartLine;
         cursorCol = selectionStartCol;
@@ -1211,6 +1412,15 @@ void CodeEditor::DeleteSelection() {
         // Multi-line deletion
         std::string firstPart = lines[selectionStartLine].substr(0, selectionStartCol);
         std::string lastPart = lines[selectionEndLine].substr(selectionEndCol);
+        
+        // Push undo action (Phase 2.0.5.4)
+        EditAction action;
+        action.type = EditAction::REPLACE_TEXT;
+        action.line = selectionStartLine;
+        action.col = selectionStartCol;
+        action.oldText = deletedText;
+        action.newText = "";  // Deleting
+        PushUndo(action);
         
         // Delete lines in between
         lines.erase(lines.begin() + selectionStartLine, lines.begin() + selectionEndLine + 1);
@@ -1292,11 +1502,55 @@ void CodeEditor::Undo() {
             break;
             
         case EditAction::REPLACE_TEXT:
-            // Undo replace = restore old text
+            // Undo replace = restore old text (can be multi-line)
             if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
-                lines[action.line] = action.oldText;
+                if (action.newText.empty()) {
+                    // This was a deletion - restore the deleted text
+                    std::string& currentLine = lines[action.line];
+                    
+                    // Split oldText by newlines
+                    std::vector<std::string> restoredLines;
+                    size_t pos = 0;
+                    size_t newlinePos;
+                    std::string remaining = action.oldText;
+                    
+                    while ((newlinePos = remaining.find('\n', pos)) != std::string::npos) {
+                        restoredLines.push_back(remaining.substr(pos, newlinePos - pos));
+                        pos = newlinePos + 1;
+                    }
+                    // Add last line (or only line if no newlines)
+                    restoredLines.push_back(remaining.substr(pos));
+                    
+                    if (restoredLines.size() == 1) {
+                        // Single line - just insert
+                        currentLine.insert(action.col, restoredLines[0]);
+                        cursorCol = action.col + restoredLines[0].length();
+                    } else {
+                        // Multi-line - need to split current line and insert new lines
+                        std::string beforeCursor = currentLine.substr(0, action.col);
+                        std::string afterCursor = currentLine.substr(action.col);
+                        
+                        // First line
+                        currentLine = beforeCursor + restoredLines[0];
+                        
+                        // Middle lines
+                        for (size_t i = 1; i < restoredLines.size() - 1; i++) {
+                            lines.insert(lines.begin() + action.line + i, restoredLines[i]);
+                        }
+                        
+                        // Last line
+                        lines.insert(lines.begin() + action.line + restoredLines.size() - 1, 
+                                   restoredLines[restoredLines.size() - 1] + afterCursor);
+                        
+                        cursorLine = action.line + restoredLines.size() - 1;
+                        cursorCol = restoredLines[restoredLines.size() - 1].length();
+                    }
+                } else {
+                    // Regular replace
+                    lines[action.line] = action.oldText;
+                    cursorCol = action.col;
+                }
                 cursorLine = action.line;
-                cursorCol = action.col;
             }
             break;
     }
@@ -1351,9 +1605,40 @@ void CodeEditor::Redo() {
             
         case EditAction::REPLACE_TEXT:
             if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
-                lines[action.line] = action.newText;
-                cursorLine = action.line;
-                cursorCol = action.col;
+                if (action.newText.empty()) {
+                    // This is a redo of deletion - remove the restored text
+                    // Count how many lines were in oldText
+                    int numLines = 1;
+                    for (char c : action.oldText) {
+                        if (c == '\n') numLines++;
+                    }
+                    
+                    if (numLines == 1) {
+                        // Single line - just erase
+                        lines[action.line].erase(action.col, action.oldText.length());
+                    } else {
+                        // Multi-line - delete the lines
+                        std::string firstPart = lines[action.line].substr(0, action.col);
+                        std::string lastPart = lines[action.line + numLines - 1].substr(
+                            lines[action.line + numLines - 1].length() - 
+                            (lines[action.line].length() - action.col)
+                        );
+                        
+                        // Delete all lines involved
+                        lines.erase(lines.begin() + action.line, 
+                                  lines.begin() + action.line + numLines);
+                        
+                        // Insert combined line
+                        lines.insert(lines.begin() + action.line, firstPart + lastPart);
+                    }
+                    cursorLine = action.line;
+                    cursorCol = action.col;
+                } else {
+                    // Regular replace
+                    lines[action.line] = action.newText;
+                    cursorLine = action.line;
+                    cursorCol = action.col;
+                }
             }
             break;
     }

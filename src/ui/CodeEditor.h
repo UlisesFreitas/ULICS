@@ -199,6 +199,7 @@ private:
     int selectionStartCol;
     int selectionEndLine;
     int selectionEndCol;
+    bool mouseDragging;  // Is user dragging to select text?
     
     // Undo/Redo system (Phase 2.0.5.4)
     struct EditAction {

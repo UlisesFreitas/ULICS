@@ -253,6 +253,40 @@
                     }
                 },
                 {
+                    "id": "2.0.5.4",
+                    "description": "CodeEditor Essential Features - Text selection, Copy/Paste, Undo/Redo, Tab indentation.",
+                    "status": "pending",
+                    "priority": "HIGH",
+                    "files": "src/ui/CodeEditor.h, src/ui/CodeEditor.cpp",
+                    "estimatedTime": "3-4 hours",
+                    "notes": "Add missing essential editor features: (1) Text Selection - mouse drag or Shift+arrows to select text, visual highlight with COLOR_INDIGO background. (2) Copy/Paste - Ctrl+C copies selected text to SDL clipboard, Ctrl+V pastes at cursor, Ctrl+X cuts. (3) Undo/Redo - Ctrl+Z undo, Ctrl+Y redo, maintain history of up to 100 edit actions. (4) Tab Handling - Tab key inserts 4 spaces, Shift+Tab removes indent. (5) Ctrl+A select all. These are CRITICAL for a usable code editor.",
+                    "implementation": {
+                        "components": [
+                            "Text selection - track selectionStart/selectionEnd coordinates",
+                            "Clipboard integration - use SDL_SetClipboardText/SDL_GetClipboardText",
+                            "Undo/Redo stack - store edit history with line/col/text/action",
+                            "Tab indentation - insert/remove 4 spaces with Tab/Shift+Tab"
+                        ],
+                        "keybindings": {
+                            "Ctrl+C": "Copy selected text to clipboard",
+                            "Ctrl+X": "Cut selected text to clipboard",
+                            "Ctrl+V": "Paste from clipboard at cursor",
+                            "Ctrl+Z": "Undo last edit",
+                            "Ctrl+Y": "Redo last undone edit",
+                            "Ctrl+A": "Select all text",
+                            "Tab": "Insert 4 spaces (or indent selection)",
+                            "Shift+Tab": "Remove 4 spaces (or unindent selection)",
+                            "Shift+Arrows": "Extend selection",
+                            "Mouse drag": "Select text range"
+                        },
+                        "data_structures": {
+                            "selection": "selectionActive, selectionStartLine, selectionStartCol, selectionEndLine, selectionEndCol",
+                            "undo_stack": "vector<EditAction> with {type, line, col, oldText, newText}",
+                            "clipboard": "SDL clipboard (cross-platform)"
+                        }
+                    }
+                },
+                {
                     "id": "2.0.6",
                     "description": "Sprite Editor - Pixel art editor with custom UI.",
                     "status": "pending",

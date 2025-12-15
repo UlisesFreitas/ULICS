@@ -5,6 +5,7 @@
 #include "rendering/AestheticLayer.h"
 #include "input/InputManager.h"
 #include "input/InputConstants.h"
+#include <SDL.h>  // For clipboard support (Phase 2.0.5.4)
 #include <fstream>
 #include <sstream>
 #include <algorithm>
@@ -14,6 +15,8 @@ CodeEditor::CodeEditor()
     : cursorLine(0), cursorCol(0), scrollY(0), scrollX(0), modified(false), savedMessageTimer(0),
       reloadedMessageTimer(0), fileWatchingEnabled(true),
       scrollbarDragging(false), scrollbarDragOffset(0),
+      selectionActive(false), selectionStartLine(0), selectionStartCol(0), 
+      selectionEndLine(0), selectionEndCol(0),
       keyRepeatDelay(20), keyRepeatInterval(3),
       leftKeyHoldFrames(0), rightKeyHoldFrames(0), upKeyHoldFrames(0), downKeyHoldFrames(0) {
     // Start with empty file
@@ -150,6 +153,120 @@ void CodeEditor::Update(InputManager& input) {
         if (maxScroll < 0) maxScroll = 0;
         if (scrollY < 0) scrollY = 0;
         if (scrollY > maxScroll) scrollY = maxScroll;
+    }
+    
+    // === Handle clipboard operations and special keys (Phase 2.0.5.4) ===
+    
+    // Ctrl+C - Copy
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_C)) {
+        if (HasSelection()) {
+            std::string selectedText = GetSelectedText();
+            SDL_SetClipboardText(selectedText.c_str());
+        }
+    }
+    
+    // Ctrl+X - Cut
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_X)) {
+        if (HasSelection()) {
+            std::string selectedText = GetSelectedText();
+            SDL_SetClipboardText(selectedText.c_str());
+            DeleteSelection();
+        }
+    }
+    
+    // Ctrl+V - Paste
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_V)) {
+        if (SDL_HasClipboardText()) {
+            char* clipText = SDL_GetClipboardText();
+            if (clipText) {
+                // Delete selection if active
+                if (HasSelection()) {
+                    DeleteSelection();
+                }
+                
+                // Insert clipboard text
+                std::string text(clipText);
+                SDL_free(clipText);
+                
+                // Handle multi-line paste
+                size_t pos = 0;
+                size_t newlinePos;
+                while ((newlinePos = text.find('\n', pos)) != std::string::npos) {
+                    std::string line = text.substr(pos, newlinePos - pos);
+                    // Insert characters of this line
+                    for (char c : line) {
+                        if (c >= 32 && c < 127) {
+                            InsertChar(c);
+                        }
+                    }
+                    // Insert newline
+                    NewLine();
+                    pos = newlinePos + 1;
+                }
+                // Insert remaining characters
+                std::string remaining = text.substr(pos);
+                for (char c : remaining) {
+                    if (c >= 32 && c < 127) {
+                        InsertChar(c);
+                    }
+                }
+            }
+        }
+    }
+    
+    // Ctrl+A - Select All
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_A)) {
+        selectionActive = true;
+        selectionStartLine = 0;
+        selectionStartCol = 0;
+        selectionEndLine = lines.size() - 1;
+        selectionEndCol = lines[selectionEndLine].length();
+    }
+    
+    // Ctrl+Z - Undo
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_Z)) {
+        Undo();
+    }
+    
+    // Ctrl+Y - Redo
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_Y)) {
+        Redo();
+    }
+    
+    // Tab - Insert 4 spaces
+    if (input.isKeyPressed(SDL_SCANCODE_TAB) && !input.isShiftDown()) {
+        // Delete selection if active
+        if (HasSelection()) {
+            DeleteSelection();
+        }
+        // Insert 4 spaces
+        for (int i = 0; i < 4; i++) {
+            InsertChar(' ');
+        }
+    }
+    
+    // Shift+Tab - Remove indentation (remove up to 4 spaces before cursor)
+    if (input.isKeyPressed(SDL_SCANCODE_TAB) && input.isShiftDown()) {
+        if (cursorCol > 0 && cursorLine >= 0 && cursorLine < static_cast<int>(lines.size())) {
+            std::string& line = lines[cursorLine];
+            int spacesToRemove = 0;
+            
+            // Count spaces before cursor (up to 4)
+            for (int i = cursorCol - 1; i >= 0 && spacesToRemove < 4; i--) {
+                if (line[i] == ' ') {
+                    spacesToRemove++;
+                } else {
+                    break;
+                }
+            }
+            
+            // Remove spaces
+            if (spacesToRemove > 0) {
+                line.erase(cursorCol - spacesToRemove, spacesToRemove);
+                cursorCol -= spacesToRemove;
+                modified = true;
+            }
+        }
     }
     
     // Handle text input (characters typed)
@@ -510,11 +627,25 @@ void CodeEditor::SetText(const std::string& text) {
 }
 
 void CodeEditor::InsertChar(char c) {
+    // Delete selection if active (Phase 2.0.5.4)
+    if (HasSelection()) {
+        DeleteSelection();
+    }
+    
     if (cursorLine >= static_cast<int>(lines.size())) {
         return;
     }
     
     std::string& line = lines[cursorLine];
+    
+    // Push undo action (Phase 2.0.5.4)
+    EditAction action;
+    action.type = EditAction::INSERT_CHAR;
+    action.line = cursorLine;
+    action.col = cursorCol;
+    action.newText = std::string(1, c);
+    PushUndo(action);
+    
     line.insert(cursorCol, 1, c);
     cursorCol++;
     EnsureCursorVisibleHorizontal();
@@ -555,9 +686,22 @@ void CodeEditor::Delete() {
 }
 
 void CodeEditor::NewLine() {
+    // Delete selection if active (Phase 2.0.5.4)
+    if (HasSelection()) {
+        DeleteSelection();
+    }
+    
     std::string& currentLine = lines[cursorLine];
     std::string restOfLine = currentLine.substr(cursorCol);
     currentLine = currentLine.substr(0, cursorCol);
+    
+    // Push undo action (Phase 2.0.5.4)
+    EditAction action;
+    action.type = EditAction::INSERT_LINE;
+    action.line = cursorLine + 1;
+    action.col = 0;
+    action.newText = restOfLine;
+    PushUndo(action);
     
     cursorLine++;
     cursorCol = 0;
@@ -988,4 +1132,233 @@ void CodeEditor::RenderLineWithSyntax(const std::string& line, int x, int y, Aes
         currentX += CHAR_W;
         i++;
     }
+}
+
+// ============================================
+// SELECTION HELPERS (Phase 2.0.5.4)
+// ============================================
+
+void CodeEditor::ClearSelection() {
+    selectionActive = false;
+}
+
+bool CodeEditor::HasSelection() const {
+    return selectionActive;
+}
+
+void CodeEditor::NormalizeSelection() {
+    // Ensure start comes before end
+    if (selectionStartLine > selectionEndLine ||
+        (selectionStartLine == selectionEndLine && selectionStartCol > selectionEndCol)) {
+        std::swap(selectionStartLine, selectionEndLine);
+        std::swap(selectionStartCol, selectionEndCol);
+    }
+}
+
+std::string CodeEditor::GetSelectedText() const {
+    if (!selectionActive) return "";
+    
+    // Make a copy and normalize
+    int startLine = selectionStartLine;
+    int startCol = selectionStartCol;
+    int endLine = selectionEndLine;
+    int endCol = selectionEndCol;
+    
+    // Normalize
+    if (startLine > endLine || (startLine == endLine && startCol > endCol)) {
+        std::swap(startLine, endLine);
+        std::swap(startCol, endCol);
+    }
+    
+    if (startLine == endLine) {
+        // Single line selection
+        if (startLine >= 0 && startLine < static_cast<int>(lines.size())) {
+            return lines[startLine].substr(startCol, endCol - startCol);
+        }
+    } else {
+        // Multi-line selection
+        std::string result;
+        for (int i = startLine; i <= endLine && i < static_cast<int>(lines.size()); i++) {
+            if (i == startLine) {
+                // First line - from startCol to end
+                result += lines[i].substr(startCol) + "\n";
+            } else if (i == endLine) {
+                // Last line - from start to endCol
+                result += lines[i].substr(0, endCol);
+            } else {
+                // Middle lines - entire line
+                result += lines[i] + "\n";
+            }
+        }
+        return result;
+    }
+    
+    return "";
+}
+
+void CodeEditor::DeleteSelection() {
+    if (!selectionActive) return;
+    
+    NormalizeSelection();
+    
+    if (selectionStartLine == selectionEndLine) {
+        // Single line deletion
+        std::string& line = lines[selectionStartLine];
+        line.erase(selectionStartCol, selectionEndCol - selectionStartCol);
+        cursorLine = selectionStartLine;
+        cursorCol = selectionStartCol;
+    } else {
+        // Multi-line deletion
+        std::string firstPart = lines[selectionStartLine].substr(0, selectionStartCol);
+        std::string lastPart = lines[selectionEndLine].substr(selectionEndCol);
+        
+        // Delete lines in between
+        lines.erase(lines.begin() + selectionStartLine, lines.begin() + selectionEndLine + 1);
+        
+        // Insert combined line
+        lines.insert(lines.begin() + selectionStartLine, firstPart + lastPart);
+        
+        cursorLine = selectionStartLine;
+        cursorCol = selectionStartCol;
+    }
+    
+    ClearSelection();
+    modified = true;
+}
+
+// ============================================
+// UNDO/REDO HELPERS (Phase 2.0.5.4)
+// ============================================
+
+void CodeEditor::PushUndo(EditAction action) {
+    undoStack.push_back(action);
+    
+    // Limit stack size
+    if (undoStack.size() > MAX_UNDO_STACK) {
+        undoStack.erase(undoStack.begin());
+    }
+    
+    // Clear redo stack when new action is performed
+    ClearRedoStack();
+}
+
+void CodeEditor::ClearRedoStack() {
+    redoStack.clear();
+}
+
+void CodeEditor::Undo() {
+    if (undoStack.empty()) return;
+    
+    EditAction action = undoStack.back();
+    undoStack.pop_back();
+    
+    // Perform reverse action
+    switch (action.type) {
+        case EditAction::INSERT_CHAR:
+            // Undo insert = delete
+            if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
+                lines[action.line].erase(action.col, action.newText.length());
+                cursorLine = action.line;
+                cursorCol = action.col;
+            }
+            break;
+            
+        case EditAction::DELETE_CHAR:
+            // Undo delete = insert
+            if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
+                lines[action.line].insert(action.col, action.oldText);
+                cursorLine = action.line;
+                cursorCol = action.col + action.oldText.length();
+            }
+            break;
+            
+        case EditAction::INSERT_LINE:
+            // Undo insert line = delete line
+            if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
+                lines.erase(lines.begin() + action.line);
+                cursorLine = action.line - 1;
+                if (cursorLine < 0) cursorLine = 0;
+                cursorCol = lines[cursorLine].length();
+            }
+            break;
+            
+        case EditAction::DELETE_LINE:
+            // Undo delete line = insert line
+            if (action.line >= 0 && action.line <= static_cast<int>(lines.size())) {
+                lines.insert(lines.begin() + action.line, action.oldText);
+                cursorLine = action.line;
+                cursorCol = 0;
+            }
+            break;
+            
+        case EditAction::REPLACE_TEXT:
+            // Undo replace = restore old text
+            if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
+                lines[action.line] = action.oldText;
+                cursorLine = action.line;
+                cursorCol = action.col;
+            }
+            break;
+    }
+    
+    // Push to redo stack
+    redoStack.push_back(action);
+    modified = true;
+}
+
+void CodeEditor::Redo() {
+    if (redoStack.empty()) return;
+    
+    EditAction action = redoStack.back();
+    redoStack.pop_back();
+    
+    // Perform original action
+    switch (action.type) {
+        case EditAction::INSERT_CHAR:
+            if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
+                lines[action.line].insert(action.col, action.newText);
+                cursorLine = action.line;
+                cursorCol = action.col + action.newText.length();
+            }
+            break;
+            
+        case EditAction::DELETE_CHAR:
+            if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
+                lines[action.line].erase(action.col, action.oldText.length());
+                cursorLine = action.line;
+                cursorCol = action.col;
+            }
+            break;
+            
+        case EditAction::INSERT_LINE:
+            if (action.line >= 0 && action.line <= static_cast<int>(lines.size())) {
+                lines.insert(lines.begin() + action.line, action.newText);
+                cursorLine = action.line;
+                cursorCol = 0;
+            }
+            break;
+            
+        case EditAction::DELETE_LINE:
+            if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
+                lines.erase(lines.begin() + action.line);
+                cursorLine = action.line;
+                if (cursorLine >= static_cast<int>(lines.size())) {
+                    cursorLine = lines.size() - 1;
+                }
+                cursorCol = 0;
+            }
+            break;
+            
+        case EditAction::REPLACE_TEXT:
+            if (action.line >= 0 && action.line < static_cast<int>(lines.size())) {
+                lines[action.line] = action.newText;
+                cursorLine = action.line;
+                cursorCol = action.col;
+            }
+            break;
+    }
+    
+    // Push back to undo stack
+    undoStack.push_back(action);
+    modified = true;
 }

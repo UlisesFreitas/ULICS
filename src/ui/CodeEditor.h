@@ -192,6 +192,26 @@ private:
     // Scrollbar state (Phase 2.0.5.3)
     bool scrollbarDragging;      // Is user dragging the thumb?
     int scrollbarDragOffset;     // Offset from thumb top when drag started
+    
+    // Text selection (Phase 2.0.5.4)
+    bool selectionActive;
+    int selectionStartLine;
+    int selectionStartCol;
+    int selectionEndLine;
+    int selectionEndCol;
+    
+    // Undo/Redo system (Phase 2.0.5.4)
+    struct EditAction {
+        enum Type { INSERT_CHAR, DELETE_CHAR, INSERT_LINE, DELETE_LINE, REPLACE_TEXT };
+        Type type;
+        int line;
+        int col;
+        std::string oldText;
+        std::string newText;
+    };
+    std::vector<EditAction> undoStack;
+    std::vector<EditAction> redoStack;
+    const int MAX_UNDO_STACK = 100;
 
     // Key repeat for cursor movement (auto-repeat when holding arrow keys)
     int keyRepeatDelay;      // Frames before repeat starts
@@ -217,6 +237,19 @@ private:
     void CheckForExternalChanges();          // File watching (Phase 2.0.5.1)
     void HandleScrollbarInput(InputManager& input);  // Scrollbar mouse handling (Phase 2.0.5.3)
     void RenderScrollbar(AestheticLayer& layer, int x, int y, int width, int height);  // Scrollbar (Phase 2.0.5.3)
+    
+    // Selection and clipboard helpers (Phase 2.0.5.4)
+    void ClearSelection();
+    bool HasSelection() const;
+    std::string GetSelectedText() const;
+    void DeleteSelection();
+    void NormalizeSelection();  // Ensure start comes before end
+    
+    // Undo/Redo helpers (Phase 2.0.5.4)
+    void PushUndo(EditAction action);
+    void Undo();
+    void Redo();
+    void ClearRedoStack();
     
     // Syntax highlighting (Phase 2.0.3)
     void RenderLineWithSyntax(const std::string& line, int x, int y, AestheticLayer& layer);

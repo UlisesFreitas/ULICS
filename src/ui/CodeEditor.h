@@ -7,6 +7,13 @@
 #include <chrono>
 #include <memory>
 
+// New modular components (Phase 2.0.5.5)
+#include "editor/text/TextBuffer.h"
+#include "editor/text/TextSelection.h"
+#include "editor/text/UndoRedoManager.h"
+#include "editor/ui/Scrollbar.h"
+#include "editor/rendering/SyntaxHighlighter.h"
+
 // Forward declarations
 class AestheticLayer;
 class InputManager;
@@ -164,7 +171,14 @@ public:
     void PageDown();
 
 private:
-    // Text buffer (one string per line)
+    // NEW: Modular components (Phase 2.0.5.5)
+    UliCS::TextBuffer textBuffer;
+    UliCS::TextSelection selection;
+    UliCS::UndoRedoManager undoManager;
+    UliCS::Scrollbar scrollbar;
+    UliCS::SyntaxHighlighter syntaxHighlighter;
+    
+    // TO MIGRATE: Old text buffer - gradually migrate to textBuffer module
     std::vector<std::string> lines;
 
     // Cursor position (0-indexed)
@@ -189,19 +203,12 @@ private:
     std::unique_ptr<FileExplorer> fileExplorer;
     std::string cartridgePath;  // Current cartridge directory
     
-    // Scrollbar state (Phase 2.0.5.3)
-    bool scrollbarDragging;      // Is user dragging the thumb?
-    int scrollbarDragOffset;     // Offset from thumb top when drag started
+    // REMOVED: Scrollbar vars - fully migrated to scrollbar module (Phase 2.0.5.5)
     
-    // Text selection (Phase 2.0.5.4)
-    bool selectionActive;
-    int selectionStartLine;
-    int selectionStartCol;
-    int selectionEndLine;
-    int selectionEndCol;
+    // REMOVED: Text selection vars - fully migrated to selection module (Phase 2.0.5.5)
     bool mouseDragging;  // Is user dragging to select text?
     
-    // Undo/Redo system (Phase 2.0.5.4)
+    // TO MIGRATE: Undo/Redo - EditAction struct used for local processing
     struct EditAction {
         enum Type { INSERT_CHAR, DELETE_CHAR, INSERT_LINE, DELETE_LINE, REPLACE_TEXT };
         Type type;
@@ -210,10 +217,8 @@ private:
         std::string oldText;
         std::string newText;
     };
-    std::vector<EditAction> undoStack;
-    std::vector<EditAction> redoStack;
-    const int MAX_UNDO_STACK = 100;
-
+    // REMOVED: undoStack/redoStack - migrated to undoManager module (Phase 2.0.5.5)
+    
     // Key repeat for cursor movement (auto-repeat when holding arrow keys)
     int keyRepeatDelay;      // Frames before repeat starts
     int keyRepeatInterval;   // Frames between repeats

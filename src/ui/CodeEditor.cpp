@@ -13,14 +13,13 @@
 
 CodeEditor::CodeEditor()
     : cursorLine(0), cursorCol(0), scrollY(0), scrollX(0), modified(false), savedMessageTimer(0),
-      reloadedMessageTimer(0), fileWatchingEnabled(true),
-      scrollbarDragging(false), scrollbarDragOffset(0),
-      selectionActive(false), selectionStartLine(0), selectionStartCol(0), 
-      selectionEndLine(0), selectionEndCol(0), mouseDragging(false),
+      reloadedMessageTimer(0), fileWatchingEnabled(true), mouseDragging(false),
       keyRepeatDelay(20), keyRepeatInterval(3),
       leftKeyHoldFrames(0), rightKeyHoldFrames(0), upKeyHoldFrames(0), downKeyHoldFrames(0) {
     // Start with empty file
+    // Note: textBuffer, selection, undoManager, scrollbar, syntaxHighlighter also initialized
     lines.push_back("");
+    textBuffer.SetAllText("");  // Sync with textBuffer module
 }
 
 CodeEditor::~CodeEditor() {
@@ -64,8 +63,37 @@ void CodeEditor::Update(InputManager& input) {
     // Check for external file changes (Phase 2.0.5.1)
     CheckForExternalChanges();
     
+    // === Editor dimensions (used by multiple sections) ===
+    const int TITLE_H = 10;
+    const int STATUS_H = 10;
+    const int SCREEN_W = 256;
+    const int SCREEN_H = 256;
+    const int SIDEBAR_W = 180;
+    const bool sidebarVisible = (fileExplorer && fileExplorer->IsVisible());
+    const int SIDEBAR_OFFSET = sidebarVisible ? SIDEBAR_W : 0;
+    const int LINE_NUM_W = 40;
+    const int TEXT_X = SIDEBAR_OFFSET + LINE_NUM_W + 4;
+    const int EDITOR_TOP = TITLE_H;
+    const int EDITOR_BOTTOM = SCREEN_H - STATUS_H;
+    const int EDITOR_H = EDITOR_BOTTOM - EDITOR_TOP;
+    const int SCROLLBAR_W = 4;
+    const int scrollbarAreaW = SCREEN_W - SIDEBAR_OFFSET;
+    const int SCROLLBAR_X = SIDEBAR_OFFSET + scrollbarAreaW - SCROLLBAR_W;
+    const int CHAR_W = 8;
+    const int LINE_HEIGHT = 11;
+    
+    // === Configure scrollbar module (Phase 2.0.5.5) ===
+    const int VISIBLE_LINES = EDITOR_H / LINE_HEIGHT;
+    scrollbar.SetDimensions(SCROLLBAR_X, EDITOR_TOP, SCROLLBAR_W, EDITOR_H);
+    scrollbar.SetContentSize(static_cast<int>(lines.size()));
+    scrollbar.SetVisibleSize(VISIBLE_LINES);
+    scrollbar.SetScrollPosition(scrollY);
+    
     // === Handle scrollbar mouse input FIRST (Phase 2.0.5.3) ===
-    HandleScrollbarInput(input);
+    if (scrollbar.HandleInput(input)) {
+        // Scrollbar consumed input - update scrollY from scrollbar
+        scrollY = scrollbar.GetScrollPosition();
+    }
     
     // === Handle mouse click/drag to position cursor and select (Phase 2.0.5.4) ===
     int mouseX = input.getMouseX();
@@ -73,18 +101,8 @@ void CodeEditor::Update(InputManager& input) {
     bool mouseDown = input.isMouseButtonDown(1);
     bool mousePressed = input.isMouseButtonPressed(1);
     
-    // Layout constants (must match Render())
-    const int TITLE_H = 10;
-    const int STATUS_H = 10;
-    const int SCREEN_H = 256;
-    const int SIDEBAR_W = 180;
-    const int SIDEBAR_OFFSET = (fileExplorer && fileExplorer->IsVisible()) ? SIDEBAR_W : 0;
-    const int LINE_NUM_W = 40;
-    const int TEXT_X = SIDEBAR_OFFSET + LINE_NUM_W + 4;
-    const int EDITOR_TOP = TITLE_H;
-    const int EDITOR_BOTTOM = SCREEN_H - STATUS_H;
-    const int CHAR_W = 8;
-    const int LINE_HEIGHT = 11;
+    // Note: TITLE_H, SIDEBAR_OFFSET, LINE_NUM_W, TEXT_X, etc. already defined above
+    const int VISIBLE_COLS = 100;  // Approximate visible columns
     
     // Check if mouse is in text area (not in scrollbar, line numbers, or sidebar)
     bool inTextArea = (mouseX >= TEXT_X && mouseX < 252 &&  // Before scrollbar
@@ -104,11 +122,7 @@ void CodeEditor::Update(InputManager& input) {
         
         // Start drag selection
         mouseDragging = true;
-        selectionActive = true;
-        selectionStartLine = clickLine;
-        selectionStartCol = clickCol;
-        selectionEndLine = clickLine;
-        selectionEndCol = clickCol;
+        selection.Start(clickLine, clickCol);
         
         // Move cursor
         cursorLine = clickLine;
@@ -128,9 +142,7 @@ void CodeEditor::Update(InputManager& input) {
             dragCol = lines[dragLine].length();
         }
         
-        // Update selection end
-        selectionEndLine = dragLine;
-        selectionEndCol = dragCol;
+        selection.Update(dragLine, dragCol);
         
         // Move cursor
         cursorLine = dragLine;
@@ -140,8 +152,8 @@ void CodeEditor::Update(InputManager& input) {
     // End drag selection
     if (mouseDragging && !mouseDown) {
         mouseDragging = false;
-        // Keep selection active if start != end
-        if (selectionStartLine == selectionEndLine && selectionStartCol == selectionEndCol) {
+        // Clear selection if it's empty (click without drag)
+        if (selection.IsEmpty()) {
             ClearSelection();
         }
     }
@@ -254,11 +266,10 @@ void CodeEditor::Update(InputManager& input) {
     
     // Ctrl+A - Select All
     if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_A)) {
-        selectionActive = true;
-        selectionStartLine = 0;
-        selectionStartCol = 0;
-        selectionEndLine = lines.size() - 1;
-        selectionEndCol = lines[selectionEndLine].length();
+        int lastLine = lines.size() - 1;
+        int lastCol = lines[lastLine].length();
+        selection.Start(0, 0);
+        selection.Update(lastLine, lastCol);
     }
     
     // Ctrl+Z - Undo
@@ -329,19 +340,14 @@ void CodeEditor::Update(InputManager& input) {
         if (leftKeyHoldFrames == 1 || 
             (leftKeyHoldFrames > keyRepeatDelay && (leftKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
             
-            // Start selection if Shift held and no selection active
-            if (shiftHeld && !selectionActive) {
-                selectionActive = true;
-                selectionStartLine = cursorLine;
-                selectionStartCol = cursorCol;
+            if (shiftHeld && !selection.IsActive()) {
+                selection.Start(cursorLine, cursorCol);
             }
             
             MoveCursorLeft();
             
-            // Update selection end if active
-            if (shiftHeld && selectionActive) {
-                selectionEndLine = cursorLine;
-                selectionEndCol = cursorCol;
+            if (shiftHeld && selection.IsActive()) {
+                selection.Update(cursorLine, cursorCol);
             } else if (!shiftHeld) {
                 ClearSelection();
             }
@@ -356,19 +362,14 @@ void CodeEditor::Update(InputManager& input) {
         if (rightKeyHoldFrames == 1 || 
             (rightKeyHoldFrames > keyRepeatDelay && (rightKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
             
-            // Start selection if Shift held and no selection active
-            if (shiftHeld && !selectionActive) {
-                selectionActive = true;
-                selectionStartLine = cursorLine;
-                selectionStartCol = cursorCol;
+            if (shiftHeld && !selection.IsActive()) {
+                selection.Start(cursorLine, cursorCol);
             }
             
             MoveCursorRight();
             
-            // Update selection end if active
-            if (shiftHeld && selectionActive) {
-                selectionEndLine = cursorLine;
-                selectionEndCol = cursorCol;
+            if (shiftHeld && selection.IsActive()) {
+                selection.Update(cursorLine, cursorCol);
             } else if (!shiftHeld) {
                 ClearSelection();
             }
@@ -383,19 +384,14 @@ void CodeEditor::Update(InputManager& input) {
         if (upKeyHoldFrames == 1 || 
             (upKeyHoldFrames > keyRepeatDelay && (upKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
             
-            // Start selection if Shift held and no selection active
-            if (shiftHeld && !selectionActive) {
-                selectionActive = true;
-                selectionStartLine = cursorLine;
-                selectionStartCol = cursorCol;
+            if (shiftHeld && !selection.IsActive()) {
+                selection.Start(cursorLine, cursorCol);
             }
             
             MoveCursorUp();
             
-            // Update selection end if active
-            if (shiftHeld && selectionActive) {
-                selectionEndLine = cursorLine;
-                selectionEndCol = cursorCol;
+            if (shiftHeld && selection.IsActive()) {
+                selection.Update(cursorLine, cursorCol);
             } else if (!shiftHeld) {
                 ClearSelection();
             }
@@ -410,19 +406,14 @@ void CodeEditor::Update(InputManager& input) {
         if (downKeyHoldFrames == 1 || 
             (downKeyHoldFrames > keyRepeatDelay && (downKeyHoldFrames - keyRepeatDelay) % keyRepeatInterval == 0)) {
             
-            // Start selection if Shift held and no selection active
-            if (shiftHeld && !selectionActive) {
-                selectionActive = true;
-                selectionStartLine = cursorLine;
-                selectionStartCol = cursorCol;
+            if (shiftHeld && !selection.IsActive()) {
+                selection.Start(cursorLine, cursorCol);
             }
             
             MoveCursorDown();
             
-            // Update selection end if active
-            if (shiftHeld && selectionActive) {
-                selectionEndLine = cursorLine;
-                selectionEndCol = cursorCol;
+            if (shiftHeld && selection.IsActive()) {
+                selection.Update(cursorLine, cursorCol);
             } else if (!shiftHeld) {
                 ClearSelection();
             }
@@ -564,18 +555,12 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
             lineText = "";  // scrollX is beyond line length
         }
         
-        // === Render selection background (Phase 2.0.5.4) ===
-        if (selectionActive) {
-            // Normalize selection to ensure start < end
-            int startL = selectionStartLine;
-            int startC = selectionStartCol;
-            int endL = selectionEndLine;
-            int endC = selectionEndCol;
-            
-            if (startL > endL || (startL == endL && startC > endC)) {
-                std::swap(startL, endL);
-                std::swap(startC, endC);
-            }
+        
+        // === Render selection background - MIGRATED (Phase 2.0.5.5) ===
+        if (selection.IsActive()) {
+            // Get normalized bounds from module
+            int startL, startC, endL, endC;
+            selection.GetNormalizedBounds(startL, startC, endL, endC);
             
             // Check if this line is part of the selection
             if (i >= startL && i <= endL) {
@@ -599,7 +584,8 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
             }
         }
         
-        RenderLineWithSyntax(lineText, TEXT_X, y, layer);
+        // MIGRATED: Now using syntaxHighlighter module (Phase 2.0.5.5)
+        syntaxHighlighter.RenderLine(lineText, TEXT_X, y, layer);
         
         y += LINE_HEIGHT;
     }
@@ -650,11 +636,9 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
     }
     
     // === Render scrollbar (Phase 2.0.5.3) ===
-    // Scrollbar should be at the right edge of the screen
-    // The area starts from SIDEBAR_OFFSET and goes to SCREEN_W
-    int scrollbarAreaX = SIDEBAR_OFFSET;
-    int scrollbarAreaW = SCREEN_W - SIDEBAR_OFFSET;
-    RenderScrollbar(layer, scrollbarAreaX, EDITOR_TOP, scrollbarAreaW, EDITOR_H);
+    
+    // === Scrollbar - MIGRATED TO MODULE (Phase 2.0.5.5) ===
+    scrollbar.Render(layer);
     
     // === Render file explorer sidebar LAST (Phase 2.0.5.2) ===
     // Draw it at the end so it appears on top of everything
@@ -747,14 +731,16 @@ std::string CodeEditor::GetText() const {
 }
 
 void CodeEditor::SetText(const std::string& text) {
-    lines.clear();
+    // Use textBuffer module
+    textBuffer.SetAllText(text);
     
+    // Sync with old lines vector for compatibility
+    lines.clear();
     std::istringstream stream(text);
     std::string line;
     while (std::getline(stream, line)) {
         lines.push_back(line);
     }
-    
     if (lines.empty()) {
         lines.push_back("");
     }
@@ -767,7 +753,7 @@ void CodeEditor::SetText(const std::string& text) {
 }
 
 void CodeEditor::InsertChar(char c) {
-    // Delete selection if active (Phase 2.0.5.4)
+    // Delete selection if active
     if (HasSelection()) {
         DeleteSelection();
     }
@@ -776,9 +762,7 @@ void CodeEditor::InsertChar(char c) {
         return;
     }
     
-    std::string& line = lines[cursorLine];
-    
-    // Push undo action (Phase 2.0.5.4)
+    // Push undo action
     EditAction action;
     action.type = EditAction::INSERT_CHAR;
     action.line = cursorLine;
@@ -786,14 +770,18 @@ void CodeEditor::InsertChar(char c) {
     action.newText = std::string(1, c);
     PushUndo(action);
     
-    line.insert(cursorCol, 1, c);
+    // Use textBuffer module
+    textBuffer.InsertChar(cursorLine, cursorCol, c);
+    
+    // Sync with old lines
+    lines[cursorLine].insert(cursorCol, 1, c);
+    
     cursorCol++;
     EnsureCursorVisibleHorizontal();
     modified = true;
 }
 
 void CodeEditor::Backspace() {
-    // Delete selection if active (Phase 2.0.5.4)
     if (HasSelection()) {
         DeleteSelection();
         return;
@@ -801,24 +789,25 @@ void CodeEditor::Backspace() {
     
     if (cursorCol > 0) {
         // Delete character before cursor
-        std::string& line = lines[cursorLine];
-        
-        // Push undo action (Phase 2.0.5.4)
         EditAction action;
         action.type = EditAction::DELETE_CHAR;
         action.line = cursorLine;
         action.col = cursorCol - 1;
-        action.oldText = std::string(1, line[cursorCol - 1]);
+        action.oldText = std::string(1, lines[cursorLine][cursorCol - 1]);
         PushUndo(action);
         
-        line.erase(cursorCol - 1, 1);
+        // Use textBuffer module
+        textBuffer.DeleteChar(cursorLine, cursorCol - 1);
+        
+        // Sync with old lines
+        lines[cursorLine].erase(cursorCol - 1, 1);
+        
         cursorCol--;
         modified = true;
     } else if (cursorLine > 0) {
         // Merge with previous line
         std::string currentLine = lines[cursorLine];
         
-        // Push undo action (Phase 2.0.5.4)
         EditAction action;
         action.type = EditAction::DELETE_LINE;
         action.line = cursorLine;
@@ -826,17 +815,21 @@ void CodeEditor::Backspace() {
         action.oldText = currentLine;
         PushUndo(action);
         
+        // Use textBuffer module
+        textBuffer.DeleteLine(cursorLine);
+        
+        // Sync with old lines
         lines.erase(lines.begin() + cursorLine);
         cursorLine--;
         cursorCol = lines[cursorLine].length();
         lines[cursorLine] += currentLine;
+        
         modified = true;
         EnsureCursorVisible();
     }
 }
 
 void CodeEditor::Delete() {
-    // Delete selection if active (Phase 2.0.5.4)
     if (HasSelection()) {
         DeleteSelection();
         return;
@@ -844,23 +837,24 @@ void CodeEditor::Delete() {
     
     if (cursorCol < static_cast<int>(lines[cursorLine].length())) {
         // Delete character at cursor
-        std::string& line = lines[cursorLine];
-        
-        // Push undo action (Phase 2.0.5.4)
         EditAction action;
         action.type = EditAction::DELETE_CHAR;
         action.line = cursorLine;
         action.col = cursorCol;
-        action.oldText = std::string(1, line[cursorCol]);
+        action.oldText = std::string(1, lines[cursorLine][cursorCol]);
         PushUndo(action);
         
-        line.erase(cursorCol, 1);
+        // Use textBuffer module
+        textBuffer.DeleteChar(cursorLine, cursorCol);
+        
+        // Sync with old lines
+        lines[cursorLine].erase(cursorCol, 1);
+        
         modified = true;
     } else if (cursorLine < static_cast<int>(lines.size()) - 1) {
         // Merge with next line
         std::string nextLine = lines[cursorLine + 1];
         
-        // Push undo action (Phase 2.0.5.4)
         EditAction action;
         action.type = EditAction::DELETE_LINE;
         action.line = cursorLine + 1;
@@ -868,14 +862,18 @@ void CodeEditor::Delete() {
         action.oldText = nextLine;
         PushUndo(action);
         
+        // Use textBuffer module
+        textBuffer.DeleteLine(cursorLine + 1);
+        
+        // Sync with old lines
         lines[cursorLine] += nextLine;
         lines.erase(lines.begin() + cursorLine + 1);
+        
         modified = true;
     }
 }
 
 void CodeEditor::NewLine() {
-    // Delete selection if active (Phase 2.0.5.4)
     if (HasSelection()) {
         DeleteSelection();
     }
@@ -884,7 +882,6 @@ void CodeEditor::NewLine() {
     std::string restOfLine = currentLine.substr(cursorCol);
     currentLine = currentLine.substr(0, cursorCol);
     
-    // Push undo action (Phase 2.0.5.4)
     EditAction action;
     action.type = EditAction::INSERT_LINE;
     action.line = cursorLine + 1;
@@ -895,6 +892,7 @@ void CodeEditor::NewLine() {
     cursorLine++;
     cursorCol = 0;
     lines.insert(lines.begin() + cursorLine, restOfLine);
+    
     modified = true;
     EnsureCursorVisible();
 }
@@ -1086,278 +1084,40 @@ void CodeEditor::CheckForExternalChanges() {
 }
 
 // ============================================
-// SCROLLBAR INPUT HANDLING (Phase 2.0.5.3)
+// SCROLLBAR - MIGRATED TO MODULE (Phase 2.0.5.5)
 // ============================================
-
-void CodeEditor::HandleScrollbarInput(InputManager& input) {
-    // Scrollbar dimensions (must match RenderScrollbar)
-    const int SCROLLBAR_W = 4;  // Simplified to 4px
-    const int MIN_THUMB_H = 20;
-    const int LINE_HEIGHT = 11;
-    
-    // Editor layout (must match Render())
-    const int TITLE_H = 10;
-    const int STATUS_H = 10;
-    const int SCREEN_W = 256;
-    const int SCREEN_H = 256;
-    const int SIDEBAR_W = 180;
-    const int SIDEBAR_OFFSET = (fileExplorer && fileExplorer->IsVisible()) ? SIDEBAR_W : 0;
-    const int EDITOR_TOP = TITLE_H;
-    const int EDITOR_BOTTOM = SCREEN_H - STATUS_H;
-    const int EDITOR_H = EDITOR_BOTTOM - EDITOR_TOP;
-    
-    int totalLines = static_cast<int>(lines.size());
-    int visibleLines = EDITOR_H / LINE_HEIGHT;
-    
-    // Don't handle scrollbar if all lines fit
-    if (totalLines <= visibleLines) {
-        scrollbarDragging = false;
-        return;
-    }
-    
-    // Calculate scrollbar area (must match RenderScrollbar)
-    int scrollbarAreaW = SCREEN_W - SIDEBAR_OFFSET;
-    int scrollbarX = SIDEBAR_OFFSET + scrollbarAreaW - SCROLLBAR_W;
-    int scrollbarY = EDITOR_TOP;
-    int scrollbarH = EDITOR_H;
-    
-    // Get mouse position and button state
-    int mouseX = input.getMouseX();
-    int mouseY = input.getMouseY();
-    bool mouseDown = input.isMouseButtonDown(1);  // SDL uses 1 for left button!
-    bool mousePressed = input.isMouseButtonPressed(1);
-    
-    // Check if mouse is over scrollbar area
-    bool overScrollbar = (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_W &&
-                          mouseY >= scrollbarY && mouseY < scrollbarY + scrollbarH);
-    
-    if (!overScrollbar && !scrollbarDragging) {
-        return;
-    }
-    
-    // Calculate thumb position  
-    int trackY = scrollbarY;
-    int trackH = scrollbarH;
-    
-    float visibleRatio = static_cast<float>(visibleLines) / static_cast<float>(totalLines);
-    int thumbH = static_cast<int>(trackH * visibleRatio);
-    if (thumbH < MIN_THUMB_H) thumbH = MIN_THUMB_H;
-    if (thumbH > trackH) thumbH = trackH;
-    
-    int maxScroll = totalLines - visibleLines;
-    if (maxScroll <= 0) maxScroll = 1;
-    
-    float scrollRatio = static_cast<float>(scrollY) / static_cast<float>(maxScroll);
-    int thumbTravelDistance = trackH - thumbH;
-    int thumbY = trackY + static_cast<int>(thumbTravelDistance * scrollRatio);
-    
-    // === Handle thumb dragging ===
-    if (scrollbarDragging) {
-        if (mouseDown) {
-            // Calculate new scroll position from mouse Y
-            int dragY = mouseY - scrollbarDragOffset;
-            int relativeY = dragY - trackY;
-            
-            if (thumbTravelDistance > 0) {
-                float newScrollRatio = static_cast<float>(relativeY) / static_cast<float>(thumbTravelDistance);
-                scrollY = static_cast<int>(newScrollRatio * maxScroll);
-                
-                // Clamp
-                if (scrollY < 0) scrollY = 0;
-                if (scrollY > maxScroll) scrollY = maxScroll;
-            }
-        } else {
-            scrollbarDragging = false;
-        }
-        return;
-    }
-    
-    // === Start dragging on click ===
-    if (mousePressed && overScrollbar) {
-        // Check if clicked on thumb
-        if (mouseY >= thumbY && mouseY < thumbY + thumbH) {
-            scrollbarDragging = true;
-            scrollbarDragOffset = mouseY - thumbY;
-        }
-    }
-}
+// HandleScrollbarInput() → scrollbar.HandleInput()
+// RenderScrollbar() → scrollbar.Render()
+// See: src/editor/ui/Scrollbar.{h,cpp}
 
 // ============================================
-// SCROLLBAR RENDERING (Phase 2.0.5.3)
+// SYNTAX HIGHLIGHTING - MIGRATED TO MODULE (Phase 2.0.5.5)
 // ============================================
-
-void CodeEditor::RenderScrollbar(AestheticLayer& layer, int x, int y, int width, int height) {
-    const int SCROLLBAR_W = 4;  // Simplified to 4px
-    const int MIN_THUMB_H = 20;
-    
-    // Don't show scrollbar if all lines fit on screen
-    int totalLines = static_cast<int>(lines.size());
-    int visibleLines = height / 11;  // LINE_HEIGHT from Render()
-    
-    if (totalLines <= visibleLines) {
-        return;  // No need for scrollbar
-    }
-    
-    // Colors
-    const int COLOR_TRACK = UISystem::COLOR_DARK_GRAY;
-    const int COLOR_THUMB = UISystem::COLOR_WHITE;  // White for visibility
-    
-    // Scrollbar position (right edge of area)
-    int scrollbarX = x + width - SCROLLBAR_W;
-    int scrollbarY = y;
-    int scrollbarH = height;
-    
-    // === Draw track (background) ===
-    layer.RectFill(scrollbarX, scrollbarY, SCROLLBAR_W, scrollbarH, COLOR_TRACK);
-    
-    // === Calculate thumb position and size ===
-    int trackY = scrollbarY;
-    int trackH = scrollbarH;
-    
-    // Thumb size proportional to visible/total ratio
-    float visibleRatio = static_cast<float>(visibleLines) / static_cast<float>(totalLines);
-    int thumbH = static_cast<int>(trackH * visibleRatio);
-    if (thumbH < MIN_THUMB_H) {
-        thumbH = MIN_THUMB_H;
-    }
-    if (thumbH > trackH) {
-        thumbH = trackH;
-    }
-    
-    // Thumb position based on scrollY
-    int maxScroll = totalLines - visibleLines;
-    if (maxScroll <= 0) maxScroll = 1;
-    
-    float scrollRatio = static_cast<float>(scrollY) / static_cast<float>(maxScroll);
-    int thumbTravelDistance = trackH - thumbH;
-    int thumbY = trackY + static_cast<int>(thumbTravelDistance * scrollRatio);
-    
-    // === Draw thumb ===
-    layer.RectFill(scrollbarX, thumbY, SCROLLBAR_W, thumbH, COLOR_THUMB);
-}
-
-// ============================================
-// SYNTAX HIGHLIGHTING (Phase 2.0.3)
-// ============================================
-
-void CodeEditor::RenderLineWithSyntax(const std::string& line, int x, int y, AestheticLayer& layer) {
-    const int CHAR_W = 8;  // CRITICAL: Font is 8 pixels wide
-    int currentX = x;
-    size_t i = 0;
-    
-    while (i < line.length()) {
-        char c = line[i];
-        
-        // Whitespace
-        if (LuaSyntax::IsWhitespace(c)) {
-            currentX += CHAR_W;
-            i++;
-            continue;
-        }
-        
-        // Comments (-- to end of line)
-        if (c == '-' && i + 1 < line.length() && line[i + 1] == '-') {
-            std::string comment = line.substr(i);
-            layer.Print(comment, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::COMMENT));
-            break;
-        }
-        
-        // Strings
-        if (c == '"' || c == '\'') {
-            char quote = c;
-            size_t endQuote = i + 1;
-            
-            while (endQuote < line.length() && line[endQuote] != quote) {
-                endQuote++;
-            }
-            
-            if (endQuote < line.length()) {
-                endQuote++;
-            }
-            
-            std::string str = line.substr(i, endQuote - i);
-            layer.Print(str, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::STRING));
-            currentX += str.length() * CHAR_W;
-            i = endQuote;
-            continue;
-        }
-        
-        // Numbers
-        if (LuaSyntax::IsDigit(c) || (c == '-' && i + 1 < line.length() && LuaSyntax::IsDigit(line[i + 1]))) {
-            size_t numEnd = i;
-            if (c == '-') numEnd++;
-            
-            while (numEnd < line.length() && 
-                   (LuaSyntax::IsDigit(line[numEnd]) || line[numEnd] == '.')) {
-                numEnd++;
-            }
-            
-            std::string num = line.substr(i, numEnd - i);
-            layer.Print(num, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::NUMBER));
-            currentX += num.length() * CHAR_W;
-            i = numEnd;
-            continue;
-        }
-        
-        // Identifiers/Keywords
-        if (LuaSyntax::IsIdentifierStart(c)) {
-            size_t identEnd = i;
-            while (identEnd < line.length() && LuaSyntax::IsIdentifierChar(line[identEnd])) {
-                identEnd++;
-            }
-            
-            std::string ident = line.substr(i, identEnd - i);
-            LuaSyntax::TokenType tokenType = LuaSyntax:: GetTokenType(ident);
-            
-            layer.Print(ident, currentX, y, LuaSyntax::GetColorForToken(tokenType));
-            currentX += ident.length() * CHAR_W;
-            i = identEnd;
-            continue;
-        }
-        
-        // Single character (operators, punctuation)
-        std::string ch(1, c);
-        layer.Print(ch, currentX, y, UISystem::COLOR_PEACH);
-        currentX += CHAR_W;
-        i++;
-    }
-}
+// RenderLineWithSyntax() has been moved to syntaxHighlighter.RenderLine()
+// See: src/editor/rendering/SyntaxHighlighter.{h,cpp}
 
 // ============================================
 // SELECTION HELPERS (Phase 2.0.5.4)
 // ============================================
 
 void CodeEditor::ClearSelection() {
-    selectionActive = false;
+    selection.Clear();
 }
 
 bool CodeEditor::HasSelection() const {
-    return selectionActive;
+    return selection.IsActive();  // MIGRATED to module (Phase 2.0.5.5)
 }
 
 void CodeEditor::NormalizeSelection() {
-    // Ensure start comes before end
-    if (selectionStartLine > selectionEndLine ||
-        (selectionStartLine == selectionEndLine && selectionStartCol > selectionEndCol)) {
-        std::swap(selectionStartLine, selectionEndLine);
-        std::swap(selectionStartCol, selectionEndCol);
-    }
+    selection.Normalize();
 }
 
 std::string CodeEditor::GetSelectedText() const {
-    if (!selectionActive) return "";
+    if (!selection.IsActive()) return "";
     
-    // Make a copy and normalize
-    int startLine = selectionStartLine;
-    int startCol = selectionStartCol;
-    int endLine = selectionEndLine;
-    int endCol = selectionEndCol;
-    
-    // Normalize
-    if (startLine > endLine || (startLine == endLine && startCol > endCol)) {
-        std::swap(startLine, endLine);
-        std::swap(startCol, endCol);
-    }
+    // Get normalized bounds from module
+    int startLine, startCol, endLine, endCol;
+    selection.GetNormalizedBounds(startLine, startCol, endLine, endCol);
     
     if (startLine == endLine) {
         // Single line selection
@@ -1369,13 +1129,10 @@ std::string CodeEditor::GetSelectedText() const {
         std::string result;
         for (int i = startLine; i <= endLine && i < static_cast<int>(lines.size()); i++) {
             if (i == startLine) {
-                // First line - from startCol to end
                 result += lines[i].substr(startCol) + "\n";
             } else if (i == endLine) {
-                // Last line - from start to endCol
                 result += lines[i].substr(0, endCol);
             } else {
-                // Middle lines - entire line
                 result += lines[i] + "\n";
             }
         }
@@ -1386,50 +1143,49 @@ std::string CodeEditor::GetSelectedText() const {
 }
 
 void CodeEditor::DeleteSelection() {
-    if (!selectionActive) return;
+    if (!selection.IsActive()) return;
     
     NormalizeSelection();
     
-    // Save selected text for undo BEFORE deleting (Phase 2.0.5.4)
+    // Get bounds from module
+    int startLine, startCol, endLine, endCol;
+    selection.GetNormalizedBounds(startLine, startCol, endLine, endCol);
+    
+    // Save selected text for undo BEFORE deleting
     std::string deletedText = GetSelectedText();
     
-    if (selectionStartLine == selectionEndLine) {
+    if (startLine == endLine) {
         // Single line deletion
-        std::string& line = lines[selectionStartLine];
+        std::string& line = lines[startLine];
         
-        // Push undo action (Phase 2.0.5.4)
         EditAction action;
         action.type = EditAction::DELETE_CHAR;
-        action.line = selectionStartLine;
-        action.col = selectionStartCol;
+        action.line = startLine;
+        action.col = startCol;
         action.oldText = deletedText;
         PushUndo(action);
         
-        line.erase(selectionStartCol, selectionEndCol - selectionStartCol);
-        cursorLine = selectionStartLine;
-        cursorCol = selectionStartCol;
+        line.erase(startCol, endCol - startCol);
+        cursorLine = startLine;
+        cursorCol = startCol;
     } else {
         // Multi-line deletion
-        std::string firstPart = lines[selectionStartLine].substr(0, selectionStartCol);
-        std::string lastPart = lines[selectionEndLine].substr(selectionEndCol);
+        std::string firstPart = lines[startLine].substr(0, startCol);
+        std::string lastPart = lines[endLine].substr(endCol);
         
-        // Push undo action (Phase 2.0.5.4)
         EditAction action;
         action.type = EditAction::REPLACE_TEXT;
-        action.line = selectionStartLine;
-        action.col = selectionStartCol;
+        action.line = startLine;
+        action.col = startCol;
         action.oldText = deletedText;
-        action.newText = "";  // Deleting
+        action.newText = "";
         PushUndo(action);
         
-        // Delete lines in between
-        lines.erase(lines.begin() + selectionStartLine, lines.begin() + selectionEndLine + 1);
+        lines.erase(lines.begin() + startLine, lines.begin() + endLine + 1);
+        lines.insert(lines.begin() + startLine, firstPart + lastPart);
         
-        // Insert combined line
-        lines.insert(lines.begin() + selectionStartLine, firstPart + lastPart);
-        
-        cursorLine = selectionStartLine;
-        cursorCol = selectionStartCol;
+        cursorLine = startLine;
+        cursorCol = startCol;
     }
     
     ClearSelection();
@@ -1441,26 +1197,48 @@ void CodeEditor::DeleteSelection() {
 // ============================================
 
 void CodeEditor::PushUndo(EditAction action) {
-    undoStack.push_back(action);
+    // Convert to module action type
+    UliCS::UndoRedoManager::EditAction moduleAction;
     
-    // Limit stack size
-    if (undoStack.size() > MAX_UNDO_STACK) {
-        undoStack.erase(undoStack.begin());
+    switch (action.type) {
+        case EditAction::INSERT_CHAR: moduleAction.type = UliCS::UndoRedoManager::INSERT_CHAR; break;
+        case EditAction::DELETE_CHAR: moduleAction.type = UliCS::UndoRedoManager::DELETE_CHAR; break;
+        case EditAction::INSERT_LINE: moduleAction.type = UliCS::UndoRedoManager::INSERT_LINE; break;
+        case EditAction::DELETE_LINE: moduleAction.type = UliCS::UndoRedoManager::DELETE_LINE; break;
+        case EditAction::REPLACE_TEXT: moduleAction.type = UliCS::UndoRedoManager::REPLACE_TEXT; break;
     }
     
-    // Clear redo stack when new action is performed
-    ClearRedoStack();
+    moduleAction.line = action.line;
+    moduleAction.col = action.col;
+    moduleAction.oldText = action.oldText;
+    moduleAction.newText = action.newText;
+    
+    undoManager.PushUndo(moduleAction);
 }
-
 void CodeEditor::ClearRedoStack() {
-    redoStack.clear();
+    undoManager.ClearRedoStack();
 }
 
 void CodeEditor::Undo() {
-    if (undoStack.empty()) return;
+    if (!undoManager.CanUndo()) return;
     
-    EditAction action = undoStack.back();
-    undoStack.pop_back();
+    // Get action from module
+    UliCS::UndoRedoManager::EditAction moduleAction;
+    undoManager.PopUndo(moduleAction);
+    
+    // Convert to local action for processing
+    EditAction action;
+    switch (moduleAction.type) {
+        case UliCS::UndoRedoManager::INSERT_CHAR: action.type = EditAction::INSERT_CHAR; break;
+        case UliCS::UndoRedoManager::DELETE_CHAR: action.type = EditAction::DELETE_CHAR; break;
+        case UliCS::UndoRedoManager::INSERT_LINE: action.type = EditAction::INSERT_LINE; break;
+        case UliCS::UndoRedoManager::DELETE_LINE: action.type = EditAction::DELETE_LINE; break;
+        case UliCS::UndoRedoManager::REPLACE_TEXT: action.type = EditAction::REPLACE_TEXT; break;
+    }
+    action.line = moduleAction.line;
+    action.col = moduleAction.col;
+    action.oldText = moduleAction.oldText;
+    action.newText = moduleAction.newText;
     
     // Perform reverse action
     switch (action.type) {
@@ -1555,16 +1333,29 @@ void CodeEditor::Undo() {
             break;
     }
     
-    // Push to redo stack
-    redoStack.push_back(action);
     modified = true;
 }
 
 void CodeEditor::Redo() {
-    if (redoStack.empty()) return;
+    if (!undoManager.CanRedo()) return;
     
-    EditAction action = redoStack.back();
-    redoStack.pop_back();
+    // Get action from module
+    UliCS::UndoRedoManager::EditAction moduleAction;
+    undoManager.PopRedo(moduleAction);
+    
+    // Convert to local action for processing
+    EditAction action;
+    switch (moduleAction.type) {
+        case UliCS::UndoRedoManager::INSERT_CHAR: action.type = EditAction::INSERT_CHAR; break;
+        case UliCS::UndoRedoManager::DELETE_CHAR: action.type = EditAction::DELETE_CHAR; break;
+        case UliCS::UndoRedoManager::INSERT_LINE: action.type = EditAction::INSERT_LINE; break;
+        case UliCS::UndoRedoManager::DELETE_LINE: action.type = EditAction::DELETE_LINE; break;
+        case UliCS::UndoRedoManager::REPLACE_TEXT: action.type = EditAction::REPLACE_TEXT; break;
+    }
+    action.line = moduleAction.line;
+    action.col = moduleAction.col;
+    action.oldText = moduleAction.oldText;
+    action.newText = moduleAction.newText;
     
     // Perform original action
     switch (action.type) {
@@ -1643,7 +1434,5 @@ void CodeEditor::Redo() {
             break;
     }
     
-    // Push back to undo stack
-    undoStack.push_back(action);
     modified = true;
 }

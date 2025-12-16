@@ -122,6 +122,11 @@ add_executable(UliCS WIN32
     src/ui/UISystem.cpp src/ui/UISystem.h
     src/ui/CodeEditor.cpp src/ui/CodeEditor.h
     src/ui/FileExplorer.cpp src/ui/FileExplorer.h
+    src/editor/text/UndoRedoManager.cpp src/editor/text/UndoRedoManager.h
+    src/editor/text/TextBuffer.cpp src/editor/text/TextBuffer.h
+    src/editor/text/TextSelection.cpp src/editor/text/TextSelection.h
+    src/editor/ui/Scrollbar.cpp src/editor/ui/Scrollbar.h
+    src/editor/rendering/SyntaxHighlighter.cpp src/editor/rendering/SyntaxHighlighter.h
     src/capture/Screenshot.cpp src/capture/Screenshot.h
     src/capture/GifRecorder.cpp src/capture/GifRecorder.h
     src/rendering/AestheticLayer.cpp src/rendering/AestheticLayer.h

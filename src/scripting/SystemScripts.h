@@ -99,7 +99,8 @@ function _update()
         if #cartridges > 0 then
             local cart = cartridges[selected_index]
             if cart.path and cart.path ~= "" then
-                load_cartridge(cart.path)
+                -- Phase 2.0.5.6: Open in Code Editor instead of running
+                open_code_editor(cart.path)
             end
         end
         last_input_time = current_time
@@ -160,8 +161,8 @@ function _draw()
         print(cart.name, 8, info_y + 8, COLOR_TEXT)
     end
     
-    -- Draw controls
-    print("UP/DOWN: SELECT  Z/X: LOAD", 30, 240, COLOR_INFO)
+    -- Draw controls (Phase 2.0.5.6: Updated to reflect Code Editor opening)
+    print("UP/DOWN: SELECT  Z/X: OPEN EDITOR", 22, 240, COLOR_INFO)
 end
 
 -- Initialize on load

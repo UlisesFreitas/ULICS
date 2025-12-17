@@ -1,4 +1,5 @@
 #include "scripting/ScriptingManager.h"
+#include "scripting/SystemScripts.h"  // For MENU_SCRIPT
 #include "rendering/AestheticLayer.h"
 #include "rendering/Map.h"  // For map API functions (v1.1.4)
 #include "ui/DebugConsole.h"  // For debug console integration (v1.5.2)
@@ -142,6 +143,7 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("exit", &ScriptingManager::Lua_Exit);
     RegisterFunction("reset", &ScriptingManager::Lua_Reset);
     RegisterFunction("goto_menu", &ScriptingManager::Lua_GotoMenu);
+    RegisterFunction("open_code_editor", &ScriptingManager::Lua_OpenCodeEditor); // Phase 2.0.5.6
     
     // --- Sprite Functions (Phase 5.5) ---
     RegisterFunction("spr", &ScriptingManager::Lua_Spr);
@@ -688,9 +690,50 @@ int ScriptingManager::Lua_GotoMenu(lua_State* L) {
     std::cout << "Lua: goto_menu() called - returning to system menu..." << std::endl;
     
     if (sm && sm->engineInstance) {
-        // Load the system menu by calling load_cartridge with empty path
-        // The engine will interpret empty path as "load menu"
-        bool success = sm->engineInstance->LoadCartridge("");
+        // Unload current cartridge
+        sm->engineInstance->UnloadCartridge();
+        
+        // Set state to MENU
+        sm->engineInstance->SetState(Engine::EngineState::MENU);
+        
+        // Load the menu script
+        bool success = sm->LoadAndRunScript(SystemScripts::MENU_SCRIPT.c_str());
+        
+        lua_pushboolean(L, success);
+        return 1;
+    }
+    
+    lua_pushboolean(L, false);
+    return 1;
+}
+
+/**
+ * @brief Lua function: open_code_editor(path)
+ * 
+ * Opens the Code Editor with the specified cartridge loaded.
+ * Unlike load_cartridge(), this does NOT run the game - it opens the editor.
+ * User can then press Ctrl+R to run if desired.(Phase 2.0.5.6)
+ * 
+ * @param path String - Path to cartridge
+ * @return boolean - true if loaded successfully, false otherwise
+ */
+int ScriptingManager::Lua_OpenCodeEditor(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    
+    const char* path = luaL_checkstring(L, 1);
+    
+    std::cout << "Lua: open_code_editor() called with path: " << path << std::endl;
+    
+    if (sm && sm->engineInstance) {
+        // Load the cartridge (loads files)
+        bool success = sm->engineInstance->LoadCartridge(std::string(path));
+        
+        if (success) {
+            // Switch to Code Editor mode instead of running the game
+            sm->engineInstance->SetMode(Engine::EngineMode::CODE_EDITOR);
+            std::cout << "Lua: Switched to CODE_EDITOR mode" << std::endl;
+        }
+        
         lua_pushboolean(L, success);
         return 1;
     }

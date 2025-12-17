@@ -121,6 +121,9 @@ private:
     
     // Go back to system menu
     static int Lua_GotoMenu(lua_State* L);
+    
+    // Open Code Editor with cartridge (Phase 2.0.5.6)
+    static int Lua_OpenCodeEditor(lua_State* L);
 
     // --- Sprite Functions (Phase 5.5) ---
     // Draw sprite

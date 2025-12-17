@@ -1,0 +1,150 @@
+{
+    "phase": 3,
+    "title": "Sprite Editor",
+    "description": "Pixel art editor with custom UI - Create and edit sprites with 8x8 grid, 16-color palette picker, essential drawing tools. Retro pixel-perfect interface using AestheticLayer primitives.",
+    "priority": "HIGH",
+    "estimatedTime": "4-5 hours",
+    "status": "pending",
+    "philosophy": "Custom retro UI matching PICO-8/TIC-80 aesthetic. No external libraries - pure AestheticLayer rendering for authentic fantasy console feel.",
+    "objectives": [
+        "Create intuitive pixel art editor with 8x8 sprite grid",
+        "Implement 16-color palette picker (2x8 grid layout)",
+        "Add essential drawing tools: pencil, fill, line, rectangle, color picker",
+        "Support save/load to spritesheet.png (128x128, 256 sprites)",
+        "Build custom retro UI using only rectfill/pset/print",
+        "Integrate with F2 toggle key for editor access"
+    ],
+    "tasks": [
+        {
+            "id": "3.1",
+            "description": "Create SpriteEditor class structure",
+            "status": "pending",
+            "files": [
+                "src/ui/SpriteEditor.h",
+                "src/ui/SpriteEditor.cpp"
+            ],
+            "estimatedTime": "30 min",
+            "notes": "Basic class with Update/Render, canvas state, tool selection"
+        },
+        {
+            "id": "3.2",
+            "description": "Implement 8x8 sprite canvas with zoom",
+            "status": "pending",
+            "estimatedTime": "1 hour",
+            "notes": "Display grid, handle mouse clicks, convert to pixel coordinates"
+        },
+        {
+            "id": "3.3",
+            "description": "Add 16-color palette picker UI",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "2x8 grid layout, selected color highlight, mouse selection"
+        },
+        {
+            "id": "3.4",
+            "description": "Implement pencil tool",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Draw single pixels on click/drag with selected color"
+        },
+        {
+            "id": "3.5",
+            "description": "Implement fill tool (flood fill)",
+            "status": "pending",
+            "estimatedTime": "1 hour",
+            "notes": "Recursive flood fill algorithm for contiguous areas"
+        },
+        {
+            "id": "3.6",
+            "description": "Implement line and rectangle tools",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Bresenham line, rectangle outline/filled modes"
+        },
+        {
+            "id": "3.7",
+            "description": "Implement color picker (eyedropper) tool",
+            "status": "pending",
+            "estimatedTime": "15 min",
+            "notes": "Click to sample color from canvas"
+        },
+        {
+            "id": "3.8",
+            "description": "Add sprite navigation (prev/next sprite)",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "256 sprite slots, arrow buttons or keyboard shortcuts"
+        },
+        {
+            "id": "3.9",
+            "description": "Implement save to spritesheet.png",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Export 128x128 sheet, 16x16 sprites = 256 total"
+        },
+        {
+            "id": "3.10",
+            "description": "Implement load from spritesheet.png",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Load on editor open, parse into individual sprites"
+        },
+        {
+            "id": "3.11",
+            "description": "Integrate with Engine F2 toggle",
+            "status": "pending",
+            "estimatedTime": "15 min",
+            "notes": "Wire into Engine mode switching system"
+        },
+        {
+            "id": "3.12",
+            "description": "Polish UI and add keyboard shortcuts",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Tool hotkeys (P=pencil, F=fill, L=line, R=rect, C=picker)"
+        }
+    ],
+    "technical_specs": {
+        "canvas_size": "64x64 pixels (8x8 sprite with 8x zoom)",
+        "sprite_size": "8x8 pixels",
+        "total_sprites": 256,
+        "spritesheet_size": "128x128 pixels (16x16 grid)",
+        "palette_size": 16,
+        "tools": [
+            "pencil",
+            "fill",
+            "line",
+            "rectangle",
+            "color_picker"
+        ],
+        "file_format": "PNG (spritesheet.png in cartridge folder)"
+    },
+    "ui_layout": {
+        "canvas": "Left side, 64x64 display area",
+        "palette": "Right side, 2x8 color grid",
+        "tools": "Bottom bar, 5 tool buttons",
+        "sprite_selector": "Top bar, sprite # and prev/next buttons",
+        "colors": {
+            "background": "COLOR_DARK_BLUE",
+            "grid": "COLOR_DARK_GRAY",
+            "selected_tool": "COLOR_YELLOW",
+            "selected_color": "COLOR_WHITE (border)"
+        }
+    },
+    "dependencies": [
+        "AestheticLayer (rendering primitives)",
+        "InputManager (mouse/keyboard)",
+        "Spritesheet.png (load/save target)"
+    ],
+    "testing_checklist": [
+        "Draw pixels with pencil tool",
+        "Fill areas with different colors",
+        "Draw lines and rectangles",
+        "Pick colors from canvas",
+        "Navigate between sprites (0-255)",
+        "Save spritesheet.png",
+        "Load spritesheet.png on restart",
+        "Toggle editor with F2",
+        "Keyboard shortcuts work"
+    ]
+}

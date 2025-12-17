@@ -1,0 +1,158 @@
+{
+    "phase": 4,
+    "title": "Map Editor",
+    "description": "Tile map editor with multi-layer support - 128x64 tile grid, up to 8 layers, tile picker from spritesheet, fill and pencil tools. Save to JSON or binary format.",
+    "priority": "HIGH",
+    "estimatedTime": "4-5 hours",
+    "status": "pending",
+    "philosophy": "Powerful layer system for rich 2D worlds. PICO-8 simplicity with modern multi-layer support for depth and complexity.",
+    "objectives": [
+        "Create 128x64 tile grid map editor",
+        "Support up to 8 independent layers",
+        "Implement tile picker using current spritesheet",
+        "Add pencil and fill tools for tile placement",
+        "Layer visibility toggle and active layer selection",
+        "Save/load map data to JSON format",
+        "Integrate with F3 toggle key"
+    ],
+    "tasks": [
+        {
+            "id": "4.1",
+            "description": "Create MapEditor class structure",
+            "status": "pending",
+            "files": [
+                "src/ui/MapEditor.h",
+                "src/ui/MapEditor.cpp"
+            ],
+            "estimatedTime": "30 min",
+            "notes": "Basic class, map data structure, layer management"
+        },
+        {
+            "id": "4.2",
+            "description": "Implement tile grid viewport with scroll",
+            "status": "pending",
+            "estimatedTime": "1 hour",
+            "notes": "Render visible portion, arrow keys or drag to scroll"
+        },
+        {
+            "id": "4.3",
+            "description": "Add tile picker panel from spritesheet",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Display 16x16 sprite grid, click to select tile"
+        },
+        {
+            "id": "4.4",
+            "description": "Implement pencil tool for tiles",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Place selected tile on click/drag"
+        },
+        {
+            "id": "4.5",
+            "description": "Implement fill tool for tiles",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Flood fill with selected tile"
+        },
+        {
+            "id": "4.6",
+            "description": "Add layer selector (0-7)",
+            "status": "pending",
+            "estimatedTime": "1 hour",
+            "notes": "8 layer buttons, highlight active, toggle visibility"
+        },
+        {
+            "id": "4.7",
+            "description": "Render multiple layers with transparency",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Composite all visible layers, respect layer order"
+        },
+        {
+            "id": "4.8",
+            "description": "Implement save to JSON",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Export map data with all layers to map.json"
+        },
+        {
+            "id": "4.9",
+            "description": "Implement load from JSON",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Parse map.json and populate editor"
+        },
+        {
+            "id": "4.10",
+            "description": "Integrate with Engine F3 toggle",
+            "status": "pending",
+            "estimatedTime": "15 min",
+            "notes": "Wire into Engine mode switching"
+        },
+        {
+            "id": "4.11",
+            "description": "Add keyboard shortcuts and polish",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Layer shortcuts (1-8), tool shortcuts, minimap?"
+        }
+    ],
+    "technical_specs": {
+        "map_size": "128x64 tiles",
+        "tile_size": "8x8 pixels",
+        "layer_count": 8,
+        "tiles_per_layer": "128 * 64 = 8,192",
+        "tile_range": "0-255 (from spritesheet)",
+        "file_format": "JSON",
+        "tools": [
+            "pencil",
+            "fill",
+            "eraser"
+        ]
+    },
+    "ui_layout": {
+        "viewport": "Center, scrollable 128x64 grid",
+        "tile_picker": "Right sidebar, 16x16 tile grid",
+        "layer_selector": "Top bar, 8 layer buttons with visibility toggles",
+        "current_tile": "Shows selected tile with preview",
+        "colors": {
+            "background": "COLOR_DARK_BLUE",
+            "grid": "COLOR_DARK_GRAY",
+            "active_layer": "COLOR_YELLOW",
+            "inactive_layer": "COLOR_LIGHT_GRAY"
+        }
+    },
+    "map_data_format": {
+        "format": "JSON",
+        "structure": {
+            "width": 128,
+            "height": 64,
+            "layers": [
+                {
+                    "id": 0,
+                    "name": "Layer 0",
+                    "visible": true,
+                    "data": "array[8192] of tile IDs"
+                }
+            ]
+        }
+    },
+    "dependencies": [
+        "AestheticLayer (rendering)",
+        "InputManager (mouse/keyboard)",
+        "Spritesheet (tile source)",
+        "Map class (src/rendering/Map.h) - may need updates"
+    ],
+    "testing_checklist": [
+        "Place tiles with pencil",
+        "Fill areas with tile",
+        "Switch between layers (1-8 keys)",
+        "Toggle layer visibility",
+        "Scroll viewport to see entire map",
+        "Save map.json",
+        "Load map.json",
+        "Toggle editor with F3",
+        "Verify layer compositing order"
+    ]
+}

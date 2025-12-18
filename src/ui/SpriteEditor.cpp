@@ -23,7 +23,6 @@ SpriteEditor::SpriteEditor()
     , dragStartX(0)
     , dragStartY(0)
     , systemSprites(nullptr)
-    , historyIndex(-1)  // No history initially
 {
     // Open log file
     logFile.open("sprite_editor_log.txt", std::ios::out | std::ios::trunc);
@@ -279,8 +278,32 @@ void SpriteEditor::HandleCanvasClick(int mouseX, int mouseY) {
     Log("[HandleCanvasClick] Current tool: " + std::to_string(static_cast<int>(currentTool)) + 
         ", Selected color: " + std::to_string(selectedColor));
     
-    // Save history before any modification
-    SaveHistoryState();
+    // Only save history if we're actually going to change something
+    bool willModify = false;
+    
+    switch (currentTool) {
+        case Tool::PENCIL:
+            // Check if pixel will actually change
+            if (canvas[canvasY][canvasX] != selectedColor) {
+                willModify = true;
+            }
+            break;
+        case Tool::FILL:
+            // Fill always modifies (unless target == replacement)
+            if (canvas[canvasY][canvasX] != selectedColor) {
+                willModify = true;
+            }
+            break;
+        case Tool::PICKER:
+            // Picker never modifies
+            willModify = false;
+            break;
+    }
+    
+    // Only save state if something will change
+    if (willModify) {
+        SaveHistoryState();
+    }
     
     switch (currentTool) {
         case Tool::PENCIL:
@@ -340,14 +363,22 @@ void SpriteEditor::HandleKeyboard(InputManager& input) {
     
     // Check for Ctrl key
     bool ctrlHeld = input.isKeyDown(SDL_SCANCODE_LCTRL) || input.isKeyDown(SDL_SCANCODE_RCTRL);
+    bool shiftHeld = input.isKeyDown(SDL_SCANCODE_LSHIFT) || input.isKeyDown(SDL_SCANCODE_RSHIFT);
     
     if (ctrlHeld) {
-        // Undo (Ctrl+Z)
+        // Undo (Ctrl+Z) or Redo (Ctrl+Shift+Z)
         if (input.isKeyPressed(SDL_SCANCODE_Z)) {
-            Undo();
+            if (shiftHeld) {
+                Log("[REDO TRIGGERED]");
+                Redo();
+            } else {
+                Log("[UNDO TRIGGERED]");
+                Undo();
+            }
         }
-        // Redo (Ctrl+Y)
+        // Redo alternative (Ctrl+Y)
         if (input.isKeyPressed(SDL_SCANCODE_Y)) {
+            Log("[REDO TRIGGERED (Ctrl+Y)]");
             Redo();
         }
         // Save spritesheet (Ctrl+S)
@@ -477,6 +508,11 @@ void SpriteEditor::SwitchSprite(int newIndex) {
     currentSpriteIndex = newIndex;
     std::memcpy(canvas, spriteSheet[currentSpriteIndex], sizeof(canvas));
     
+    // Clear undo/redo history for this sprite
+    undoStack.clear();
+    redoStack.clear();
+    
+    Log("Switched to sprite #" + std::to_string(currentSpriteIndex) + " - History cleared");
     std::cout << "Switched to sprite #" << currentSpriteIndex << std::endl;
 }
 
@@ -604,40 +640,62 @@ void SpriteEditor::Log(const std::string& message) {
 // ===== Undo/Redo System =====
 
 void SpriteEditor::SaveHistoryState() {
-    // Remove any redo history (everything after current index)
-    if (historyIndex >= 0 && historyIndex < (int)undoHistory.size() - 1) {
-        undoHistory.erase(undoHistory.begin() + historyIndex + 1, undoHistory.end());
-    }
-    
-    // Save current canvas state
+    // Save current canvas state to undo stack BEFORE modification
     CanvasState state;
     std::memcpy(state.data, canvas, sizeof(canvas));
-    undoHistory.push_back(state);
+    undoStack.push_back(state);
     
-    // Limit history size
-    if (undoHistory.size() > MAX_HISTORY) {
-        undoHistory.erase(undoHistory.begin());
-    } else {
-        historyIndex++;
+    // Any new modification clears the redo stack
+    redoStack.clear();
+    
+    // Limit undo stack size
+    if (undoStack.size() > MAX_UNDO_LEVELS) {
+        undoStack.erase(undoStack.begin());
     }
+    
+    Log("[SaveHistory] Saved to undo stack. Stack size: " + std::to_string(undoStack.size()));
 }
 
 void SpriteEditor::Undo() {
-    if (historyIndex <= 0) return;  // No history to undo
+    if (undoStack.empty()) {
+        Log("[Undo] Nothing to undo");
+        return;
+    }
     
-    historyIndex--;
-    std::memcpy(canvas, undoHistory[historyIndex].data, sizeof(canvas));
+    // Save current state to redo stack
+    CanvasState currentState;
+    std::memcpy(currentState.data, canvas, sizeof(canvas));
+    redoStack.push_back(currentState);
     
-    // Update spritesheet
+    // Restore last state from undo stack
+    CanvasState previousState = undoStack.back();
+    undoStack.pop_back();
+    
+    std::memcpy(canvas, previousState.data, sizeof(canvas));
     std::memcpy(spriteSheet[currentSpriteIndex], canvas, sizeof(canvas));
+    
+    Log("[Undo] Restored. Undo stack: " + std::to_string(undoStack.size()) + 
+        ", Redo stack: " + std::to_string(redoStack.size()));
 }
 
 void SpriteEditor::Redo() {
-    if (historyIndex >= (int)undoHistory.size() - 1) return;  // No history to redo
+    if (redoStack.empty()) {
+        Log("[Redo] Nothing to redo");
+        return;
+    }
     
-    historyIndex++;
-    std::memcpy(canvas, undoHistory[historyIndex].data, sizeof(canvas));
+    // Save current state to undo stack
+    CanvasState currentState;
+    std::memcpy(currentState.data, canvas, sizeof(canvas));
+    undoStack.push_back(currentState);
     
-    // Update spritesheet
+    // Restore last state from redo stack
+    CanvasState nextState = redoStack.back();
+    redoStack.pop_back();
+    
+    std::memcpy(canvas, nextState.data, sizeof(canvas));
     std::memcpy(spriteSheet[currentSpriteIndex], canvas, sizeof(canvas));
+    
+    Log("[Redo] Restored. Undo stack: " + std::to_string(undoStack.size()) + 
+        ", Redo stack: " + std::to_string(redoStack.size()));
 }

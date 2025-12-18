@@ -77,13 +77,13 @@ private:
     int dragStartX;
     int dragStartY;
     
-    // Undo/Redo system
+    // Undo/Redo system (simple stack approach)
     struct CanvasState {
         uint8_t data[8][8];
     };
-    static constexpr int MAX_HISTORY = 50;
-    std::vector<CanvasState> undoHistory;
-    int historyIndex;  // Current position in history (-1 = no history)
+    static constexpr int MAX_UNDO_LEVELS = 50;
+    std::vector<CanvasState> undoStack;  // States before each modification
+    std::vector<CanvasState> redoStack;  // States that were undone
     
     // UI layout constants - PICO-8 style (Vertical layout)
     // Main canvas (top left, 8x8 sprite with 16x zoom)

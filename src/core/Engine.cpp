@@ -281,6 +281,19 @@ void Engine::Run() {
                 isRunning = false;
             }
             
+            // Handle file drop (for Sprite Editor import)
+            if (event.type == SDL_DROPFILE) {
+                char* droppedFile = event.drop.file;
+                std::cout << "[Engine] File dropped: " << droppedFile << std::endl;
+                
+                // Pass to Sprite Editor if active
+                if (spriteEditor && spriteEditor->IsActive()) {
+                    spriteEditor->OnFileDropped(droppedFile);
+                }
+                
+                SDL_free(droppedFile);
+            }
+            
             // Toggle Debug Console with Ctrl+Alt+1 (v1.5.2 - Updated 2025-12-14)
             // Changed from F1 to free up F-keys for editors
             if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_1) {

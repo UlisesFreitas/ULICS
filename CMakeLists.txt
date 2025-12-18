@@ -124,6 +124,7 @@ add_executable(UliCS WIN32
     src/ui/SpriteEditor.cpp src/ui/SpriteEditor.h
     src/ui/SystemSprites.cpp src/ui/SystemSprites.h
     src/ui/FileExplorer.cpp src/ui/FileExplorer.h
+    src/utils/FileDialog.cpp src/utils/FileDialog.h
     src/editor/text/UndoRedoManager.cpp src/editor/text/UndoRedoManager.h
     src/editor/text/TextBuffer.cpp src/editor/text/TextBuffer.h
     src/editor/text/TextSelection.cpp src/editor/text/TextSelection.h

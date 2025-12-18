@@ -49,6 +49,12 @@ public:
     void Undo();
     void Redo();
     
+    // Import/Export
+    void OnImportClicked();
+    void OnExportClicked();
+    void OnExportCurrentSprite();  // Export only current sprite
+    void OnFileDropped(const char* filepath);  // Drag & drop handler
+    
 private:
     // Tool types
     enum class Tool {
@@ -84,6 +90,10 @@ private:
     static constexpr int MAX_UNDO_LEVELS = 50;
     std::vector<CanvasState> undoStack;  // States before each modification
     std::vector<CanvasState> redoStack;  // States that were undone
+    
+    // Recent files tracking
+    static constexpr int MAX_RECENT_FILES = 5;
+    std::vector<std::string> recentFiles;
     
     // UI layout constants - PICO-8 style (Vertical layout)
     // Main canvas (top left, 8x8 sprite with 16x zoom)
@@ -139,6 +149,17 @@ private:
     
     // Undo/Redo helpers
     void SaveHistoryState();  // Save current canvas before modification
+    
+    // Import/Export helpers
+    bool ImportSpritesheet(const std::string& filepath);
+    bool ExportSpritesheet(const std::string& filepath);
+    bool ExportSingleSprite(int spriteIndex, const std::string& filepath, int scale = 1);
+    bool ValidatePNG(const std::string& filepath, int& width, int& height);
+    
+    // Recent files management
+    void AddToRecentFiles(const std::string& filepath);
+    void LoadRecentFiles();
+    void SaveRecentFiles();
     
     // Debug logging
     void Log(const std::string& message);

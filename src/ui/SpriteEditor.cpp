@@ -3,11 +3,14 @@
 #include "input/InputManager.h"
 #include "ui/UISystem.h"
 #include "ui/SystemSprites.h"
+#include "utils/FileDialog.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <cstring> // for memset
 #include <algorithm> // for min/max
+#include <ctime>  // for timestamp
+#include <filesystem>  // for directory creation
 
 // stb_image for PNG loading/saving (implementation defined in SpriteSheet.cpp)
 #include <stb_image.h>
@@ -36,9 +39,14 @@ SpriteEditor::SpriteEditor()
     
     // Initialize all sprites in spritesheet to transparent
     std::memset(spriteSheet, 0, sizeof(spriteSheet));
+    
+    // Load recent files list
+    LoadRecentFiles();
 }
 
 SpriteEditor::~SpriteEditor() {
+    SaveRecentFiles();  // Save before closing
+    
     Log("SpriteEditor destroyed");
     if (logFile.is_open()) {
         logFile.close();
@@ -233,10 +241,11 @@ void SpriteEditor::RenderSpritesheet(AestheticLayer& renderer) {
 }
 
 void SpriteEditor::RenderToolbar(AestheticLayer& renderer) {
-    const int iconIds[] = { 0, 1, 2, 3, 4 };  // Icon indices from SystemSprites::Icon
-    const int BUTTON_SIZE = 16;  // Square buttons 16x16
+    const int iconIds[] = { 0, 1, 2, 3, 4 };  // Tool icon indices
+    const int BUTTON_SIZE = 16;
     const int BUTTON_SPACING = 4;
     
+    // Draw tool buttons (Pencil, Fill, Line, Rect, Picker)
     for (int i = 0; i < 5; i++) {
         int x = CANVAS_X + (i * (BUTTON_SIZE + BUTTON_SPACING));
         int y = TOOLBAR_Y;
@@ -251,13 +260,33 @@ void SpriteEditor::RenderToolbar(AestheticLayer& renderer) {
         if (systemSprites) {
             systemSprites->DrawSprite(renderer, iconIds[i], x + 4, y + 4, 1);
         } else {
-            // Fallback to text if systemSprites not set
             const char* tools[] = { "P", "F", "L", "R", "C" };
             uint8_t textColor = (static_cast<int>(currentTool) == i)
                 ? UISystem::COLOR_BACKGROUND
                 : UISystem::COLOR_WHITE;
             renderer.Print(tools[i], x + 4, y + 4, textColor);
         }
+    }
+    
+    // Separator (small gap)
+    int separatorX = CANVAS_X + (5 * (BUTTON_SIZE + BUTTON_SPACING)) + 4;
+    
+    // Import button (SystemSprites ID 6 - LOAD icon)
+    int importX = separatorX;
+    renderer.RectFill(importX, TOOLBAR_Y, BUTTON_SIZE, BUTTON_SIZE, UISystem::COLOR_DARK_GRAY);
+    if (systemSprites) {
+        systemSprites->DrawSprite(renderer, 6, importX + 4, TOOLBAR_Y + 4, 1);  // LOAD icon
+    } else {
+        renderer.Print("I", importX + 4, TOOLBAR_Y + 4, UISystem::COLOR_WHITE);
+    }
+    
+    // Export button (SystemSprites ID 5 - SAVE icon)
+    int exportX = importX + BUTTON_SIZE + BUTTON_SPACING;
+    renderer.RectFill(exportX, TOOLBAR_Y, BUTTON_SIZE, BUTTON_SIZE, UISystem::COLOR_DARK_GRAY);
+    if (systemSprites) {
+        systemSprites->DrawSprite(renderer, 5, exportX + 4, TOOLBAR_Y + 4, 1);  // SAVE icon
+    } else {
+        renderer.Print("E", exportX + 4, TOOLBAR_Y + 4, UISystem::COLOR_WHITE);
     }
 }
 
@@ -343,13 +372,32 @@ void SpriteEditor::HandleToolbarClick(int mouseX, int mouseY) {
     // Check if within toolbar Y range
     if (mouseY < TOOLBAR_Y || mouseY > TOOLBAR_Y + BUTTON_SIZE) return;
     
-    // Check each button
+    // Check tool buttons (0-4)
     for (int i = 0; i < 5; i++) {
         int buttonX = CANVAS_X + (i * (BUTTON_SIZE + BUTTON_SPACING));
         if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE) {
             currentTool = static_cast<Tool>(i);
             return;
         }
+    }
+    
+    // Check Import/Export buttons
+    int separatorX = CANVAS_X + (5 * (BUTTON_SIZE + BUTTON_SPACING)) + 4;
+    
+    // Import button
+    int importX = separatorX;
+    if (mouseX >= importX && mouseX < importX + BUTTON_SIZE) {
+        Log("[HandleToolbarClick] Import button clicked");
+        OnImportClicked();
+        return;
+    }
+    
+    // Export button
+    int exportX = importX + BUTTON_SIZE + BUTTON_SPACING;
+    if (mouseX >= exportX && mouseX < exportX + BUTTON_SIZE) {
+        Log("[HandleToolbarClick] Export button clicked");
+        OnExportClicked();
+        return;
     }
 }
 
@@ -384,6 +432,22 @@ void SpriteEditor::HandleKeyboard(InputManager& input) {
         // Save spritesheet (Ctrl+S)
         if (input.isKeyPressed(SDL_SCANCODE_S)) {
             SaveSpritesheet();
+            Log("[Save] Spritesheet saved");
+        }
+        // Import spritesheet (Ctrl+O)
+        if (input.isKeyPressed(SDL_SCANCODE_O)) {
+            Log("[Hotkey] Ctrl+O - Import triggered");
+            OnImportClicked();
+        }
+        // Export spritesheet (Ctrl+E) or current sprite (Ctrl+Shift+E)
+        if (input.isKeyPressed(SDL_SCANCODE_E)) {
+            if (shiftHeld) {
+                Log("[Hotkey] Ctrl+Shift+E - Export current sprite triggered");
+                OnExportCurrentSprite();
+            } else {
+                Log("[Hotkey] Ctrl+E - Export triggered");
+                OnExportClicked();
+            }
         }
     }
     
@@ -698,4 +762,347 @@ void SpriteEditor::Redo() {
     
     Log("[Redo] Restored. Undo stack: " + std::to_string(undoStack.size()) + 
         ", Redo stack: " + std::to_string(redoStack.size()));
+}
+
+// ===== Import/Export System =====
+
+// Validate PNG file (check if it's 128x128)
+bool SpriteEditor::ValidatePNG(const std::string& filepath, int& width, int& height) {
+    unsigned char* data = stbi_load(filepath.c_str(), &width, &height, nullptr, 4);
+    
+    if (!data) {
+        Log("[ValidatePNG] Failed to load: " + filepath);
+        return false;
+    }
+    
+    stbi_image_free(data);
+    
+    if (width != 128 || height != 128) {
+        Log("[ValidatePNG] Invalid size: " + std::to_string(width) + "x" + std::to_string(height) + 
+            " (expected 128x128)");
+        return false;
+    }
+    
+    Log("[ValidatePNG] Valid PNG: 128x128");
+    return true;
+}
+
+// Import spritesheet from external PNG
+bool SpriteEditor::ImportSpritesheet(const std::string& filepath) {
+    Log("[ImportSpritesheet] Loading from: " + filepath);
+    
+    // Validate first
+    int width, height;
+    if (!ValidatePNG(filepath, width, height)) {
+        return false;
+    }
+    
+    // Load PNG data
+    int channels;
+    unsigned char* data = stbi_load(filepath.c_str(), &width, &height, &channels, 4);
+    
+    if (!data) {
+        Log("[ImportSpritesheet] Failed to load image data");
+        return false;
+    }
+    
+    // Parse 128x128 image into 256 sprites (16x16 grid)
+    const int SPRITES_PER_ROW = 16;
+    const int SPRITE_SIZE = 8;
+    
+    for (int spriteIndex = 0; spriteIndex < 256; spriteIndex++) {
+        int gridX = spriteIndex % SPRITES_PER_ROW;
+        int gridY = spriteIndex / SPRITES_PER_ROW;
+        
+        for (int py = 0; py < SPRITE_SIZE; py++) {
+            for (int px = 0; px < SPRITE_SIZE; px++) {
+                int imageX = gridX * SPRITE_SIZE + px;
+                int imageY = gridY * SPRITE_SIZE + py;
+                int pixelIndex = (imageY * 128 + imageX) * 4;
+                
+                // Convert grayscale to palette index (0-15)
+                uint8_t grayValue = data[pixelIndex];  // R channel
+                uint8_t paletteIndex = grayValue / 16;  // 0-255 -> 0-15
+                
+                spriteSheet[spriteIndex][py][px] = paletteIndex;
+            }
+        }
+    }
+    
+    // Reload current sprite to canvas
+    std::memcpy(canvas, spriteSheet[currentSpriteIndex], sizeof(canvas));
+    
+    // Clear undo/redo since we loaded new data
+    undoStack.clear();
+    redoStack.clear();
+    
+    stbi_image_free(data);
+    Log("[ImportSpritesheet] Successfully imported 256 sprites");
+    return true;
+}
+
+// Export spritesheet to external PNG
+bool SpriteEditor::ExportSpritesheet(const std::string& filepath) {
+    Log("[ExportSpritesheet] Exporting to: " + filepath);
+    
+    // Use existing SaveSpritesheet logic but to custom path
+    const int SHEET_WIDTH = 128;
+    const int SPRITES_PER_ROW = 16;
+    std::vector<uint8_t> imageData(SHEET_WIDTH * SHEET_WIDTH * 4);
+    
+    for (int spriteIndex = 0; spriteIndex < 256; spriteIndex++) {
+        int gridX = spriteIndex % SPRITES_PER_ROW;
+        int gridY = spriteIndex / SPRITES_PER_ROW;
+        
+        for (int py = 0; py < 8; py++) {
+            for (int px = 0; px < 8; px++) {
+                uint8_t paletteIndex = spriteSheet[spriteIndex][py][px];
+                
+                int imageX = gridX * 8 + px;
+                int imageY = gridY * 8 + py;
+                int pixelIndex = (imageY * SHEET_WIDTH + imageX) * 4;
+                
+                uint8_t value = paletteIndex * 16;
+                imageData[pixelIndex + 0] = value;  // R
+                imageData[pixelIndex + 1] = value;  // G
+                imageData[pixelIndex + 2] = value;  // B
+                imageData[pixelIndex + 3] = 255;    // A
+            }
+        }
+    }
+    
+    int result = stbi_write_png(filepath.c_str(), SHEET_WIDTH, SHEET_WIDTH, 4, 
+                                 imageData.data(), SHEET_WIDTH * 4);
+    
+    if (result == 0) {
+        Log("[ExportSpritesheet] Failed to write PNG");
+        return false;
+    }
+    
+    Log("[ExportSpritesheet] Successfully exported to: " + filepath);
+    return true;
+}
+
+// Export single sprite (8×8 or scaled)
+bool SpriteEditor::ExportSingleSprite(int spriteIndex, const std::string& filepath, int scale) {
+    if (spriteIndex < 0 || spriteIndex >= 256) {
+        Log("[ExportSingleSprite] Invalid sprite index: " + std::to_string(spriteIndex));
+        return false;
+    }
+    
+    Log("[ExportSingleSprite] Exporting sprite #" + std::to_string(spriteIndex) + 
+        " at " + std::to_string(scale) + "x scale");
+    
+    int size = 8 * scale;
+    std::vector<uint8_t> imageData(size * size * 4);
+    
+    for (int py = 0; py < 8; py++) {
+        for (int px = 0; px < 8; px++) {
+            uint8_t paletteIndex = spriteSheet[spriteIndex][py][px];
+            uint8_t value = paletteIndex * 16;
+            
+            // Draw scaled pixel (scale×scale block)
+            for (int sy = 0; sy < scale; sy++) {
+                for (int sx = 0; sx < scale; sx++) {
+                    int imageX = px * scale + sx;
+                    int imageY = py * scale + sy;
+                    int pixelIndex = (imageY * size + imageX) * 4;
+                    
+                    imageData[pixelIndex + 0] = value;  // R
+                    imageData[pixelIndex + 1] = value;  // G
+                    imageData[pixelIndex + 2] = value;  // B
+                    imageData[pixelIndex + 3] = 255;    // A
+                }
+            }
+        }
+    }
+    
+    int result = stbi_write_png(filepath.c_str(), size, size, 4, 
+                                 imageData.data(), size * 4);
+    
+    if (result == 0) {
+        Log("[ExportSingleSprite] Failed to write PNG");
+        return false;
+    }
+    
+    Log("[ExportSingleSprite] Successfully exported: " + filepath);
+    return true;
+}
+
+void SpriteEditor::OnImportClicked() {
+    Log("[Import] Button clicked - Opening file dialog...");
+    
+    std::string filepath = FileDialog::OpenFile(
+        "PNG Files\0*.png\0All Files\0*.*\0",
+        "Import Spritesheet"
+    );
+    
+    if (filepath.empty()) {
+        Log("[Import] User cancelled");
+        return;
+    }
+    
+    Log("[Import] Selected file: " + filepath);
+    
+    if (ImportSpritesheet(filepath)) {
+        AddToRecentFiles(filepath);  // Add to recent list
+        Log("[Import] Import successful!");
+        std::cout << "Successfully imported: " << filepath << std::endl;
+    } else {
+        Log("[Import] Import failed - check that PNG is 128x128");
+        std::cout << "Import FAILED. PNG must be 128x128 pixels." << std::endl;
+    }
+}
+
+void SpriteEditor::OnExportClicked() {
+    Log("[Export] Button clicked - Opening save dialog...");
+    
+    // Generate default filename with timestamp
+    time_t now = time(0);
+    tm* ltm = localtime(&now);
+    char defaultName[256];
+    sprintf_s(defaultName, "spritesheet_%04d-%02d-%02d.png",
+        1900 + ltm->tm_year, 1 + ltm->tm_mon, ltm->tm_mday);
+    
+    std::string filepath = FileDialog::SaveFile(
+        defaultName,
+        "PNG Files\0*.png\0All Files\0*.*\0",
+        "Export Spritesheet",
+        "png"
+    );
+    
+    if (filepath.empty()) {
+        Log("[Export] User cancelled");
+        return;
+    }
+    
+    Log("[Export] Selected file: " + filepath);
+    
+    if (ExportSpritesheet(filepath)) {
+        Log("[Export] Export successful!");
+        std::cout << "Successfully exported to: " << filepath << std::endl;
+    } else {
+        Log("[Export] Export failed");
+        std::cout << "Export FAILED." << std::endl;
+    }
+}
+
+void SpriteEditor::OnExportCurrentSprite() {
+    Log("[ExportCurrent] Export current sprite triggered");
+    
+    // Generate default filename
+    char defaultName[256];
+    sprintf_s(defaultName, "sprite_%03d.png", currentSpriteIndex);
+    
+    std::string filepath = FileDialog::SaveFile(
+        defaultName,
+        "PNG Files\0*.png\0All Files\0*.*\0",
+        "Export Current Sprite",
+        "png"
+    );
+    
+    if (filepath.empty()) {
+        Log("[ExportCurrent] User cancelled");
+        return;
+    }
+    
+    Log("[ExportCurrent] Selected file: " + filepath);
+    
+    // Export at 16× scale (128×128) for better visibility
+    if (ExportSingleSprite(currentSpriteIndex, filepath, 16)) {
+        Log("[ExportCurrent] Export successful!");
+        std::cout << "Successfully exported sprite #" << currentSpriteIndex 
+                 << " to: " << filepath << std::endl;
+    } else {
+        Log("[ExportCurrent] Export failed");
+        std::cout << "Export FAILED." << std::endl;
+    }
+}
+
+void SpriteEditor::OnFileDropped(const char* filepath) {
+    Log("[DragDrop] File dropped: " + std::string(filepath));
+    std::cout << "[Drag&Drop] File: " << filepath << std::endl;
+    
+    // Validate file extension
+    std::string path(filepath);
+    if (path.length() < 4 || path.substr(path.length() - 4) != ".png") {
+        Log("[DragDrop] Rejected: Not a PNG file");
+        std::cout << "Drop rejected: File must be a PNG" << std::endl;
+        return;
+    }
+    
+    // Validate dimensions
+    int width, height;
+    if (!ValidatePNG(path, width, height)) {
+        std::cout << "Drop rejected: PNG must be 128x128 pixels (found: " 
+                  << width << "×" << height << ")" << std::endl;
+        return;
+    }
+    
+    // Auto-import if valid
+    if (ImportSpritesheet(path)) {
+        AddToRecentFiles(path);
+        Log("[DragDrop] Import successful!");
+        std::cout << "✓ Drag & Drop Import successful: " << filepath << std::endl;
+    } else {
+        Log("[DragDrop] Import failed");
+        std::cout << "✗ Drag & Drop Import FAILED" << std::endl;
+    }
+}
+
+// ===== Recent Files Management =====
+
+void SpriteEditor::AddToRecentFiles(const std::string& filepath) {
+    // Remove if already exists (to move to front)
+    auto it = std::find(recentFiles.begin(), recentFiles.end(), filepath);
+    if (it != recentFiles.end()) {
+        recentFiles.erase(it);
+    }
+    
+    // Add to front
+    recentFiles.insert(recentFiles.begin(), filepath);
+    
+    // Keep only MAX_RECENT_FILES
+    if (recentFiles.size() > MAX_RECENT_FILES) {
+        recentFiles.resize(MAX_RECENT_FILES);
+    }
+    
+    Log("[RecentFiles] Added: " + filepath);
+}
+
+void SpriteEditor::LoadRecentFiles() {
+    std::ifstream file("config/sprite_editor_recent.txt");
+    if (!file.is_open()) {
+        Log("[RecentFiles] No recent files found");
+        return;
+    }
+    
+    recentFiles.clear();
+    std::string line;
+    while (std::getline(file, line) && recentFiles.size() < MAX_RECENT_FILES) {
+        if (!line.empty()) {
+            recentFiles.push_back(line);
+        }
+    }
+    
+    file.close();
+    Log("[RecentFiles] Loaded " + std::to_string(recentFiles.size()) + " recent files");
+}
+
+void SpriteEditor::SaveRecentFiles() {
+    // Create config directory if it doesn't exist
+    std::filesystem::create_directory("config");
+    
+    std::ofstream file("config/sprite_editor_recent.txt");
+    if (!file.is_open()) {
+        Log("[RecentFiles] Failed to save recent files");
+        return;
+    }
+    
+    for (const auto& path : recentFiles) {
+        file << path << "\n";
+    }
+    
+    file.close();
+    Log("[RecentFiles] Saved " + std::to_string(recentFiles.size()) + " recent files");
 }

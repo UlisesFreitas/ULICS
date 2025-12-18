@@ -3,6 +3,8 @@
 #include "ui/DebugConsole.h"  // Debug overlay (v1.5.2)
 #include "ui/UISystem.h"      // Custom UI system (Phase 2.0.1)
 #include "ui/CodeEditor.h"    // Code editor (Phase 2.0.2-2.0.4)
+#include "ui/SpriteEditor.h"  // Sprite editor (Phase 3)
+#include "ui/SystemSprites.h" // System UI icons
 #include "capture/Screenshot.h"  // Screenshot system (v1.5.3)
 #include "capture/GifRecorder.h"  // GIF recording system (v1.5.4)
 #include "audio/AudioManager.h"  // Audio system (Phase 5.12 + Bug 1.1.3 fix)
@@ -26,7 +28,7 @@ Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    activeGame(nullptr), scriptingManager(nullptr),
                    inputManager(nullptr), cartridgeLoader(nullptr), currentMap(nullptr), hotReload(nullptr), debugConsole(nullptr), gifRecorder(nullptr),
                    audioManager(nullptr),
-                   uiSystem(nullptr), codeEditor(nullptr),
+                   uiSystem(nullptr), codeEditor(nullptr), spriteEditor(nullptr), systemSprites(nullptr),
                    currentState(EngineState::BOOT), previousState(EngineState::BOOT),
                    currentMode(EngineMode::GAME),
                    currentCartridgePath("") {
@@ -147,6 +149,17 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         // Continue without UI System
     }
 
+    // Initialize System Sprites (icon system) - MUST BE EARLY
+    try {
+        systemSprites = std::make_unique<SystemSprites>();
+        systemSprites->Initialize();  // Loads or generates system_sprites.png
+        std::cout << "System sprites initialized" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: SystemSprites failed to initialize: " << e.what() << std::endl;
+        // Continue without system sprites
+    }
+
     // Initialize Code Editor (Phase 2.0.2-2.0.4)
     try {
         codeEditor = std::make_unique<CodeEditor>();
@@ -155,6 +168,20 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
     catch (const std::exception& e) {
         std::cerr << "Warning: CodeEditor failed to initialize: " << e.what() << std::endl;
         // Continue without Code Editor
+    }
+
+    // Initialize Sprite Editor (Phase 3)
+    try {
+        spriteEditor = std::make_unique<SpriteEditor>();
+        // Connect system sprites to sprite editor
+        if (systemSprites) {
+            spriteEditor->SetSystemSprites(systemSprites.get());
+        }
+        std::cout << "Sprite Editor ready - press F2 to toggle" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: SpriteEditor failed to initialize: " << e.what() << std::endl;
+        // Continue without Sprite Editor
     }
 
     // Initialize CartridgeLoader
@@ -268,13 +295,32 @@ void Engine::Run() {
                 }
             }
             
-            // Mode Switching (Phase 2.0.5)
-            // F1 - Toggle Code Editor
+            // Mode Switching (Phase 2.0.5 + Phase 3)
+            // F1 - Code Editor
             if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F1) {
+                std::ofstream log("sprite_editor_log.txt", std::ios::app);
+                if (log.is_open()) {
+                    log << "[Engine] F1 pressed, current mode: " << static_cast<int>(currentMode) << std::endl;
+                    log.close();
+                }
                 if (currentMode == EngineMode::CODE_EDITOR) {
                     SetMode(EngineMode::GAME);
                 } else {
                     SetMode(EngineMode::CODE_EDITOR);
+                }
+            }
+            
+            // F2 - Sprite Editor
+            if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F2) {
+                std::ofstream log("sprite_editor_log.txt", std::ios::app);
+                if (log.is_open()) {
+                    log << "[Engine] F2 pressed, current mode: " << static_cast<int>(currentMode) << std::endl;
+                    log.close();
+                }
+                if (currentMode == EngineMode::SPRITE_EDITOR) {
+                    SetMode(EngineMode::GAME);
+                } else {
+                    SetMode(EngineMode::SPRITE_EDITOR);
                 }
             }
             
@@ -348,6 +394,19 @@ void Engine::Run() {
             if (codeEditor && inputManager) {
                 codeEditor->Update(*inputManager);
             }
+        } else if (currentMode == EngineMode::SPRITE_EDITOR) {
+            // Sprite Editor mode - update editor (Phase 3)
+            if (spriteEditor && inputManager) {
+                static int frameCount = 0;
+                if (frameCount++ % 60 == 0) {  // Log once per second
+                    std::ofstream log("sprite_editor_log.txt", std::ios::app);
+                    if (log.is_open()) {
+                        log << "[Engine] Calling SpriteEditor::Update() frame: " << frameCount << std::endl;
+                        log.close();
+                    }
+                }
+                spriteEditor->Update(*inputManager);
+            }
         }
         // TODO: Add handlers for other editor modes (SPRITE, MAP, SFX, MUSIC)
 
@@ -372,6 +431,11 @@ void Engine::Run() {
             // Code Editor mode - render editor
             if (codeEditor && uiSystem) {
                 codeEditor->Render(*aestheticLayer, *uiSystem);
+            }
+        } else if (currentMode == EngineMode::SPRITE_EDITOR) {
+            // Sprite Editor mode - render editor (Phase 3)
+            if (spriteEditor) {
+                spriteEditor->Render(*aestheticLayer);
             }
         }
         // TODO: Add render handlers for other editor modes
@@ -663,11 +727,35 @@ void Engine::SetMode(EngineMode newMode) {
         codeEditor->Initialize(mainLuaPath);
     }
     
+    // Initialize Sprite Editor when entering SPRITE_EDITOR mode (Phase 3)
+    if (currentMode == EngineMode::SPRITE_EDITOR && spriteEditor && !currentCartridgePath.empty()) {
+        std::ofstream log("sprite_editor_log.txt", std::ios::app);
+        if (log.is_open()) {
+            log << "[Engine::SetMode] Activating Sprite Editor" << std::endl;
+            log.close();
+        }
+        std::string spritesheetPath = currentCartridgePath + "/spritesheet.png";
+        spriteEditor->Initialize(spritesheetPath);
+        spriteEditor->SetActive(true);
+        std::ofstream log2("sprite_editor_log.txt", std::ios::app);
+        if (log2.is_open()) {
+            log2 << "[Engine::SetMode] Sprite Editor activated" << std::endl;
+            log2.close();
+        }
+    } else if (spriteEditor) {
+        std::ofstream log("sprite_editor_log.txt", std::ios::app);
+        if (log.is_open()) {
+            log << "[Engine::SetMode] Deactivating Sprite Editor" << std::endl;
+            log.close();
+        }
+        spriteEditor->SetActive(false);
+    }
+    
     std::cout << "Mode switched to: ";
     switch (currentMode) {
         case EngineMode::GAME: std::cout << "GAME"; break;
         case EngineMode::CODE_EDITOR: std::cout << "CODE_EDITOR"; break;
-        case EngineMode::SPRITE_EDITOR: std::cout << "SPRITE_EDITOR (not implemented)"; break;
+        case EngineMode::SPRITE_EDITOR: std::cout << "SPRITE_EDITOR"; break;
         case EngineMode::MAP_EDITOR: std::cout << "MAP_EDITOR (not implemented)"; break;
         case EngineMode::SFX_EDITOR: std::cout << "SFX_EDITOR (not implemented)"; break;
         case EngineMode::MUSIC_EDITOR: std::cout << "MUSIC_EDITOR (not implemented)"; break;

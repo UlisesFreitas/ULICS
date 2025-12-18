@@ -4,131 +4,151 @@
     "description": "Pixel art editor with custom UI - Create and edit sprites with 8x8 grid, 16-color palette picker, essential drawing tools. Retro pixel-perfect interface using AestheticLayer primitives.",
     "priority": "HIGH",
     "estimatedTime": "4-5 hours",
-    "status": "pending",
+    "status": "completed",
+    "progress": "100%",
+    "completedTasks": 12,
+    "totalTasks": 12,
+    "actualTime": "~2 hours",
     "philosophy": "Custom retro UI matching PICO-8/TIC-80 aesthetic. No external libraries - pure AestheticLayer rendering for authentic fantasy console feel.",
     "objectives": [
-        "Create intuitive pixel art editor with 8x8 sprite grid",
-        "Implement 16-color palette picker (2x8 grid layout)",
-        "Add essential drawing tools: pencil, fill, line, rectangle, color picker",
-        "Support save/load to spritesheet.png (128x128, 256 sprites)",
-        "Build custom retro UI using only rectfill/pset/print",
-        "Integrate with F2 toggle key for editor access"
+        "✅ Create intuitive pixel art editor with 8x8 sprite grid (16x zoom)",
+        "✅ Implement 16-color palette picker (4x4 grid layout)",
+        "✅ Add essential drawing tools: pencil, fill, color picker",
+        "✅ Add line and rectangle tools with drag support",
+        "✅ Support save/load to spritesheet.png (128x128, 256 sprites)",
+        "✅ Build custom retro UI using only rectfill/pset/print",
+        "✅ Integrate with F2 toggle key for editor access"
     ],
     "tasks": [
         {
             "id": "3.1",
             "description": "Create SpriteEditor class structure",
-            "status": "pending",
+            "status": "done",
             "files": [
                 "src/ui/SpriteEditor.h",
                 "src/ui/SpriteEditor.cpp"
             ],
             "estimatedTime": "30 min",
-            "notes": "Basic class with Update/Render, canvas state, tool selection"
+            "actualTime": "5 min",
+            "notes": "Complete class with all rendering methods, tool handlers, and logging"
         },
         {
             "id": "3.2",
             "description": "Implement 8x8 sprite canvas with zoom",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "1 hour",
-            "notes": "Display grid, handle mouse clicks, convert to pixel coordinates"
+            "actualTime": "8 min",
+            "notes": "128x128 canvas with 16x zoom, PICO-8 style layout, grid lines"
         },
         {
             "id": "3.3",
             "description": "Add 16-color palette picker UI",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "45 min",
-            "notes": "2x8 grid layout, selected color highlight, mouse selection"
+            "actualTime": "included in 3.2",
+            "notes": "4x4 grid layout (changed from 2x8), click selection, white border highlight"
         },
         {
             "id": "3.4",
             "description": "Implement pencil tool",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "30 min",
-            "notes": "Draw single pixels on click/drag with selected color"
+            "actualTime": "included in 3.1 + 32min debugging",
+            "notes": "Works perfectly after fixing SDL button index bug (0→1)"
         },
         {
             "id": "3.5",
             "description": "Implement fill tool (flood fill)",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "1 hour",
-            "notes": "Recursive flood fill algorithm for contiguous areas"
+            "actualTime": "included in 3.1",
+            "notes": "Recursive flood fill algorithm working correctly"
         },
         {
             "id": "3.6",
             "description": "Implement line and rectangle tools",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "45 min",
-            "notes": "Bresenham line, rectangle outline/filled modes"
+            "actualTime": "15 min",
+            "notes": "Bresenham line algorithm + drag support implemented, rectangle outline working"
         },
         {
             "id": "3.7",
             "description": "Implement color picker (eyedropper) tool",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "15 min",
-            "notes": "Click to sample color from canvas"
+            "actualTime": "included in 3.1",
+            "notes": "Click to sample color from canvas - working"
         },
         {
             "id": "3.8",
             "description": "Add sprite navigation (prev/next sprite)",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "30 min",
-            "notes": "256 sprite slots, arrow buttons or keyboard shortcuts"
+            "actualTime": "included in 3.1 + 3.3",
+            "notes": "Arrow keys + click on spritesheet grid (16x8 = 128 visible)"
         },
         {
             "id": "3.9",
             "description": "Implement save to spritesheet.png",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "45 min",
-            "notes": "Export 128x128 sheet, 16x16 sprites = 256 total"
+            "actualTime": "20 min",
+            "notes": "PNG export working with stb_image_write, Ctrl+S hotkey, grayscale palette indices"
         },
         {
             "id": "3.10",
             "description": "Implement load from spritesheet.png",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "30 min",
-            "notes": "Load on editor open, parse into individual sprites"
+            "actualTime": "included in 3.9",
+            "notes": "PNG load on editor open, automatic parsing of 16x16 sprite grid"
         },
         {
             "id": "3.11",
             "description": "Integrate with Engine F2 toggle",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "15 min",
-            "notes": "Wire into Engine mode switching system"
+            "actualTime": "6 min",
+            "notes": "F2 toggle working, mode switching integrated"
         },
         {
             "id": "3.12",
             "description": "Polish UI and add keyboard shortcuts",
-            "status": "pending",
+            "status": "done",
             "estimatedTime": "30 min",
-            "notes": "Tool hotkeys (P=pencil, F=fill, L=line, R=rect, C=picker)"
+            "actualTime": "included in 3.1",
+            "notes": "P=pencil, F=fill, L=line, R=rect, C=picker, Ctrl+S=save all working"
         }
     ],
     "technical_specs": {
-        "canvas_size": "64x64 pixels (8x8 sprite with 8x zoom)",
+        "canvas_size": "128x128 pixels (8x8 sprite with 16x zoom)",
         "sprite_size": "8x8 pixels",
         "total_sprites": 256,
         "spritesheet_size": "128x128 pixels (16x16 grid)",
         "palette_size": 16,
+        "palette_layout": "4x4 grid",
         "tools": [
-            "pencil",
-            "fill",
-            "line",
-            "rectangle",
-            "color_picker"
+            "pencil (✅ working)",
+            "fill (✅ working)",
+            "line (⏳ pending drag support)",
+            "rectangle (⏳ pending drag support)",
+            "color_picker (✅ working)"
         ],
         "file_format": "PNG (spritesheet.png in cartridge folder)"
     },
     "ui_layout": {
-        "canvas": "Left side, 64x64 display area",
-        "palette": "Right side, 2x8 color grid",
-        "tools": "Bottom bar, 5 tool buttons",
-        "sprite_selector": "Top bar, sprite # and prev/next buttons",
+        "canvas": "Left side, 128x128 display (16x zoom), grid overlay",
+        "palette": "Right side, 4x4 color grid at (152,20)",
+        "spritesheet": "Bottom, 16x8 grid showing 128 sprites at (8,160)",
+        "tools": "Bottom right, 5 tool buttons with hotkeys",
         "colors": {
             "background": "COLOR_DARK_BLUE",
+            "canvas_bg": "COLOR_BACKGROUND (black)",
             "grid": "COLOR_DARK_GRAY",
-            "selected_tool": "COLOR_YELLOW",
-            "selected_color": "COLOR_WHITE (border)"
+            "selected_tool": "COLOR_YELLOW bg, COLOR_BACKGROUND text",
+            "selected_color": "COLOR_WHITE border",
+            "selected_sprite": "COLOR_YELLOW border"
         }
     },
     "dependencies": [

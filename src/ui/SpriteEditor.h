@@ -31,7 +31,7 @@ public:
     
     // Core methods
     void Update(InputManager& input);
-    void Render(AestheticLayer& renderer);
+    void Render(AestheticLayer& renderer, InputManager& input);
     
     // Initialization and persistence
     void Initialize(const std::string& spritesheetPath);
@@ -96,26 +96,30 @@ private:
     std::vector<std::string> recentFiles;
     
     // UI layout constants - PICO-8 style (Vertical layout)
+    // Title and status bars (matching CodeEditor style)
+    static constexpr int TITLE_BAR_H = 10;
+    static constexpr int STATUS_BAR_H = 10;
+    
     // Main canvas (top left, 8x8 sprite with 16x zoom)
     static constexpr int CANVAS_X = 16;
-    static constexpr int CANVAS_Y = 8;
+    static constexpr int CANVAS_Y = 18;  // Was 8, +10 for title bar
     static constexpr int CANVAS_ZOOM = 16;  // 16x zoom = 128x128 display
     static constexpr int CANVAS_SIZE = 8 * CANVAS_ZOOM;  // 128px
     
     // Palette (right side, 4x4 square grid)
     static constexpr int PALETTE_X = 152;
-    static constexpr int PALETTE_Y = 20;
+    static constexpr int PALETTE_Y = 30;  // Was 20, +10 for title bar
     static constexpr int PALETTE_COLS = 4;
     static constexpr int PALETTE_ROWS = 4;
     static constexpr int COLOR_BOX_SIZE = 12;
     
     // Toolbar (below canvas, left side)
     static constexpr int TOOLBAR_X = 16;
-    static constexpr int TOOLBAR_Y = CANVAS_Y + CANVAS_SIZE + 8;  // 144
+    static constexpr int TOOLBAR_Y = CANVAS_Y + CANVAS_SIZE + 8;  // 154 (18+128+8)
     
     // Spritesheet grid (below toolbar, 16x8 = 128 visible sprites)
     static constexpr int SHEET_X = 8;
-    static constexpr int SHEET_Y = TOOLBAR_Y + 32;  // 176 (toolbar 16px + spacing)
+    static constexpr int SHEET_Y = TOOLBAR_Y + 32;  // 186 (toolbar 16px + spacing)
     static constexpr int SHEET_COLS = 16;
     static constexpr int SHEET_ROWS = 8;
     static constexpr int SHEET_SPRITE_SIZE = 8;  // Each sprite 8x8px
@@ -126,6 +130,8 @@ private:
     void RenderSpritesheet(AestheticLayer& renderer);
     void RenderToolbar(AestheticLayer& renderer);
     void RenderHeader(AestheticLayer& renderer);
+    void RenderCursorHighlight(AestheticLayer& renderer, InputManager& input);
+    void RenderDragPreview(AestheticLayer& renderer, InputManager& input);
     
     // Input handling
     void HandleCanvasClick(int mouseX, int mouseY);

@@ -101,6 +101,9 @@ void SpriteEditor::Update(InputManager& input) {
         
         // End drag on release
         if (!leftButtonDown && isDragging) {
+            // Save history BEFORE drawing the line/rect
+            SaveHistoryState();
+            
             if (currentTool == Tool::LINE) {
                 UseLine(dragStartX, dragStartY, canvasX, canvasY);
             } else if (currentTool == Tool::RECT) {
@@ -142,17 +145,63 @@ void SpriteEditor::Update(InputManager& input) {
     }
 }
 
-void SpriteEditor::Render(AestheticLayer& renderer) {
+void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
     if (!isActive) return;
+    
+    // === Constants ===
+    const int SCREEN_W = 256;
+    const int SCREEN_H = 256;
+    const int THEME_BAR = UISystem::COLOR_LIGHT_GRAY;
+    const int THEME_BAR_TEXT = UISystem::COLOR_BACKGROUND;
+    
+    // Bar heights (from class constants)
+    const int TITLE_BAR_H = SpriteEditor::TITLE_BAR_H;
+    const int STATUS_BAR_H = SpriteEditor::STATUS_BAR_H;
     
     // Clear screen
     renderer.Clear(UISystem::COLOR_DARK_BLUE);
     
-    // Render all components (PICO-8 style layout)
+    // === TITLE BAR (matching CodeEditor style) ===
+    renderer.RectFill(0, 0, SCREEN_W, TITLE_BAR_H, THEME_BAR);
+    renderer.Print("SPRITES", 4, 1, THEME_BAR_TEXT);
+    
+    // Sprite number (right side)
+    char spriteNum[16];
+    sprintf(spriteNum, "#%03d", currentSpriteIndex);
+    int numX = SCREEN_W - (strlen(spriteNum) * 8) - 4;
+    renderer.Print(spriteNum, numX, 1, THEME_BAR_TEXT);
+    
+    // === MAIN CONTENT ===
     RenderCanvas(renderer);        // Large sprite (left, 128x128)
     RenderPalette(renderer);       // Palette (right, vertical)
     RenderSpritesheet(renderer);   // Spritesheet grid (bottom)
     RenderToolbar(renderer);       // Tools (bottom right)
+    
+    // === CURSOR HIGHLIGHT (on top of canvas) ===
+    RenderCursorHighlight(renderer, input);
+    
+    // === DRAG PREVIEW (Line/Rect preview while dragging) ===
+    if (isDragging) {
+        RenderDragPreview(renderer, input);
+    }
+    
+    // === STATUS BAR (matching CodeEditor style) ===
+    int statusY = SCREEN_H - STATUS_BAR_H;
+    renderer.RectFill(0, statusY, SCREEN_W, STATUS_BAR_H, THEME_BAR);
+    
+    // Tool name + selected color (left side)
+    const char* toolNames[] = { "PENCIL", "FILL", "LINE", "RECT", "PICKER" };
+    char status[64];
+    sprintf(status, "%s C:%d", toolNames[static_cast<int>(currentTool)], selectedColor);
+    renderer.Print(status, 2, statusY + 1, THEME_BAR_TEXT);
+    
+    // Undo stack info (right side)
+    if (!undoStack.empty()) {
+        char undoInfo[16];
+        sprintf(undoInfo, "U:%d", static_cast<int>(undoStack.size()));
+        int undoX = SCREEN_W - (strlen(undoInfo) * 8) - 2;
+        renderer.Print(undoInfo, undoX, statusY + 1, THEME_BAR_TEXT);
+    }
 }
 
 // ===== Rendering Methods =====
@@ -1105,4 +1154,99 @@ void SpriteEditor::SaveRecentFiles() {
     
     file.close();
     Log("[RecentFiles] Saved " + std::to_string(recentFiles.size()) + " recent files");
+}
+// Cursor Highlight and Drag Preview Implementation
+
+void SpriteEditor::RenderCursorHighlight(AestheticLayer& renderer, InputManager& input) {
+    int mouseX = input.getMouseX();
+    int mouseY = input.getMouseY();
+    
+    // Check if mouse is over canvas
+    if (mouseX >= CANVAS_X && mouseX < CANVAS_X + CANVAS_SIZE &&
+        mouseY >= CANVAS_Y && mouseY < CANVAS_Y + CANVAS_SIZE) {
+        
+        int canvasX = ScreenToCanvasX(mouseX);
+        int canvasY = ScreenToCanvasY(mouseY);
+        
+        if (IsInCanvas(canvasX, canvasY)) {
+            // Draw highlight border around the pixel under the cursor
+            int screenX = CANVAS_X + (canvasX * CANVAS_ZOOM);
+            int screenY = CANVAS_Y + (canvasY * CANVAS_ZOOM);
+            
+            //  Border blanco alrededor del pixel
+            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, 
+                         UISystem::COLOR_WHITE);
+        }
+    }
+}
+
+void SpriteEditor::RenderDragPreview(AestheticLayer& renderer, InputManager& input) {
+    if (!isDragging) return;
+    
+    int mouseX = input.getMouseX();
+    int mouseY = input.getMouseY();
+    
+    int endCanvasX = ScreenToCanvasX(mouseX);
+    int endCanvasY = ScreenToCanvasY(mouseY);
+    
+    if (!IsInCanvas(endCanvasX, endCanvasY)) return;
+    
+    const int PREVIEW_COLOR = UISystem::COLOR_YELLOW;  // Color amarillo para preview
+    
+    if (currentTool == Tool::LINE) {
+        //  Preview de línea usando Bresenham
+        int x1 = dragStartX, y1 = dragStartY;
+        int x2 = endCanvasX, y2 = endCanvasY;
+        
+        // Bresenham's line algorithm
+        int dx = abs(x2 - x1);
+        int dy = abs(y2 - y1);
+        int sx = (x1 < x2) ? 1 : -1;
+        int sy = (y1 < y2) ? 1 : -1;
+        int err = dx - dy;
+        
+        int x = x1, y = y1;
+        while (true) {
+            // Draw preview pixel (no fill, just outline)
+            int screenX = CANVAS_X + (x * CANVAS_ZOOM);
+            int screenY = CANVAS_Y + (y * CANVAS_ZOOM);
+            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+            
+            if (x == x2 && y == y2) break;
+            
+            int e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; x += sx; }
+            if (e2 < dx) { err += dx; y += sy; }
+        }
+    }
+    else if (currentTool == Tool::RECT) {
+        // Preview de rectángulo (solo outline)
+        int minX = std::min(dragStartX, endCanvasX);
+        int maxX = std::max(dragStartX, endCanvasX);
+        int minY = std::min(dragStartY, endCanvasY);
+        int maxY = std::max(dragStartY, endCanvasY);
+        
+        // Draw preview rectangle outline
+        for (int x = minX; x <= maxX; x++) {
+            // Top edge
+            int screenX = CANVAS_X + (x * CANVAS_ZOOM);
+            int screenY = CANVAS_Y + (minY * CANVAS_ZOOM);
+            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+            
+            // Bottom edge
+            screenY = CANVAS_Y + (maxY * CANVAS_ZOOM);
+            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+        }
+        
+        for (int y = minY + 1; y < maxY; y++) {
+            // Left edge
+            int screenX = CANVAS_X + (minX * CANVAS_ZOOM);
+            int screenY = CANVAS_Y + (y * CANVAS_ZOOM);
+            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+            
+            // Right edge
+            screenX = CANVAS_X + (maxX * CANVAS_ZOOM);
+            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+        }
+    }
 }

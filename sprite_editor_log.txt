@@ -1,0 +1,161 @@
+=== SPRITE EDITOR LOG ===
+SpriteEditor initialized
+[RecentFiles] Loaded 1 recent files
+[LoadSpritesheet] Loaded successfully from: ./cartridges\api_test/spritesheet.png
+[Update] Active! Update count: 60
+[Update] Active! Update count: 120
+[Update] Active! Update count: 180
+[HandleCanvasClick] Screen(52,107) -> Canvas(2,5)
+[HandleCanvasClick] Current tool: 0, Selected color: 7
+[SaveHistory] Saved to undo stack. Stack size: 1
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(52,107) -> Canvas(2,5)
+[HandleCanvasClick] Current tool: 0, Selected color: 7
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(52,107) -> Canvas(2,5)
+[HandleCanvasClick] Current tool: 0, Selected color: 7
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(52,107) -> Canvas(2,5)
+[HandleCanvasClick] Current tool: 0, Selected color: 7
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(52,107) -> Canvas(2,5)
+[HandleCanvasClick] Current tool: 0, Selected color: 7
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(52,107) -> Canvas(2,5)
+[HandleCanvasClick] Current tool: 0, Selected color: 7
+[HandleCanvasClick] Using PENCIL
+[Update] Active! Update count: 240
+[UNDO TRIGGERED]
+[Undo] Restored. Undo stack: 0, Redo stack: 1
+[Update] Active! Update count: 300
+[Update] Active! Update count: 360
+[HandleCanvasClick] Screen(40,127) -> Canvas(1,6)
+[HandleCanvasClick] Current tool: 1, Selected color: 7
+[SaveHistory] Saved to undo stack. Stack size: 1
+[HandleCanvasClick] Using FILL
+[HandleCanvasClick] Screen(40,127) -> Canvas(1,6)
+[HandleCanvasClick] Current tool: 1, Selected color: 7
+[HandleCanvasClick] Using FILL
+[HandleCanvasClick] Screen(39,127) -> Canvas(1,6)
+[HandleCanvasClick] Current tool: 1, Selected color: 7
+[HandleCanvasClick] Using FILL
+[HandleCanvasClick] Screen(39,127) -> Canvas(1,6)
+[HandleCanvasClick] Current tool: 1, Selected color: 7
+[HandleCanvasClick] Using FILL
+[HandleCanvasClick] Screen(39,127) -> Canvas(1,6)
+[HandleCanvasClick] Current tool: 1, Selected color: 7
+[HandleCanvasClick] Using FILL
+[HandleCanvasClick] Screen(39,127) -> Canvas(1,6)
+[HandleCanvasClick] Current tool: 1, Selected color: 7
+[HandleCanvasClick] Using FILL
+[HandleCanvasClick] Screen(39,127) -> Canvas(1,6)
+[HandleCanvasClick] Current tool: 1, Selected color: 7
+[HandleCanvasClick] Using FILL
+[Update] Active! Update count: 420
+[UNDO TRIGGERED]
+[Undo] Restored. Undo stack: 0, Redo stack: 1
+[Update] Active! Update count: 480
+[Update] Active! Update count: 540
+[Update] Active! Update count: 600
+[Update] Active! Update count: 660
+[SaveHistory] Saved to undo stack. Stack size: 1
+[Update] Active! Update count: 720
+[UNDO TRIGGERED]
+[Undo] Restored. Undo stack: 0, Redo stack: 1
+[Update] Active! Update count: 780
+[Update] Active! Update count: 840
+[Update] Active! Update count: 900
+[Update] Active! Update count: 960
+[SaveHistory] Saved to undo stack. Stack size: 1
+[Update] Active! Update count: 1020
+[UNDO TRIGGERED]
+[Undo] Restored. Undo stack: 0, Redo stack: 1
+[Update] Active! Update count: 1080
+[Update] Active! Update count: 1140
+[HandleCanvasClick] Screen(100,137) -> Canvas(5,7)
+[HandleCanvasClick] Current tool: 4, Selected color: 7
+[HandleCanvasClick] Using PICKER
+[HandleCanvasClick] Screen(100,137) -> Canvas(5,7)
+[HandleCanvasClick] Current tool: 4, Selected color: 3
+[HandleCanvasClick] Using PICKER
+[HandleCanvasClick] Screen(100,137) -> Canvas(5,7)
+[HandleCanvasClick] Current tool: 4, Selected color: 3
+[HandleCanvasClick] Using PICKER
+[HandleCanvasClick] Screen(100,137) -> Canvas(5,7)
+[HandleCanvasClick] Current tool: 4, Selected color: 3
+[HandleCanvasClick] Using PICKER
+[HandleCanvasClick] Screen(100,137) -> Canvas(5,7)
+[HandleCanvasClick] Current tool: 4, Selected color: 3
+[HandleCanvasClick] Using PICKER
+[HandleCanvasClick] Screen(100,137) -> Canvas(5,7)
+[HandleCanvasClick] Current tool: 4, Selected color: 3
+[HandleCanvasClick] Using PICKER
+[HandleCanvasClick] Screen(100,137) -> Canvas(5,7)
+[HandleCanvasClick] Current tool: 4, Selected color: 3
+[HandleCanvasClick] Using PICKER
+[HandleCanvasClick] Screen(100,137) -> Canvas(5,7)
+[HandleCanvasClick] Current tool: 4, Selected color: 3
+[HandleCanvasClick] Using PICKER
+[Update] Active! Update count: 1200
+[Update] Active! Update count: 1260
+[Update] Active! Update count: 1320
+[HandleCanvasClick] Screen(22,130) -> Canvas(0,7)
+[HandleCanvasClick] Current tool: 0, Selected color: 3
+[SaveHistory] Saved to undo stack. Stack size: 1
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(22,130) -> Canvas(0,7)
+[HandleCanvasClick] Current tool: 0, Selected color: 3
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(22,130) -> Canvas(0,7)
+[HandleCanvasClick] Current tool: 0, Selected color: 3
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(22,130) -> Canvas(0,7)
+[HandleCanvasClick] Current tool: 0, Selected color: 3
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(22,130) -> Canvas(0,7)
+[HandleCanvasClick] Current tool: 0, Selected color: 3
+[HandleCanvasClick] Using PENCIL
+[HandleCanvasClick] Screen(22,130) -> Canvas(0,7)
+[HandleCanvasClick] Current tool: 0, Selected color: 3
+[HandleCanvasClick] Using PENCIL
+[Update] Active! Update count: 1380
+[UNDO TRIGGERED]
+[Undo] Restored. Undo stack: 0, Redo stack: 1
+[Update] Active! Update count: 1440
+[Update] Active! Update count: 1500
+[REDO TRIGGERED (Ctrl+Y)]
+[Redo] Restored. Undo stack: 1, Redo stack: 0
+[Update] Active! Update count: 1560
+[Update] Active! Update count: 1620
+[UNDO TRIGGERED]
+[Undo] Restored. Undo stack: 0, Redo stack: 1
+[Update] Active! Update count: 1680
+[Update] Active! Update count: 1740
+[Update] Active! Update count: 1800
+[SaveHistory] Saved to undo stack. Stack size: 1
+[Update] Active! Update count: 1860
+[Update] Active! Update count: 1920
+[UNDO TRIGGERED]
+[Undo] Restored. Undo stack: 0, Redo stack: 1
+[Update] Active! Update count: 1980
+[REDO TRIGGERED (Ctrl+Y)]
+[Redo] Restored. Undo stack: 1, Redo stack: 0
+[Update] Active! Update count: 2040
+[UNDO TRIGGERED]
+[Undo] Restored. Undo stack: 0, Redo stack: 1
+[Update] Active! Update count: 2100
+[Update] Active! Update count: 2160
+[Update] Active! Update count: 2220
+[Update] Active! Update count: 2280
+[Update] Active! Update count: 2340
+[Update] Active! Update count: 2400
+[Update] Active! Update count: 2460
+[Update] Active! Update count: 2520
+[Update] Active! Update count: 2580
+[Update] Active! Update count: 2640
+[Update] Active! Update count: 2700
+[RecentFiles] Saved 1 recent files
+SpriteEditor destroyed
+e] Calling SpriteEditor::Update() frame: 2581
+[Engine] Calling SpriteEditor::Update() frame: 2641
+[Engine] Calling SpriteEditor::Update() frame: 2701

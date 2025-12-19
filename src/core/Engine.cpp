@@ -448,7 +448,7 @@ void Engine::Run() {
         } else if (currentMode == EngineMode::SPRITE_EDITOR) {
             // Sprite Editor mode - render editor (Phase 3)
             if (spriteEditor) {
-                spriteEditor->Render(*aestheticLayer);
+                spriteEditor->Render(*aestheticLayer, *inputManager);
             }
         }
         // TODO: Add render handlers for other editor modes

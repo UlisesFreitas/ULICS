@@ -34,6 +34,9 @@ public:
 
     // Draws a filled rectangle.
     void RectFill(int x, int y, int w, int h, uint8_t colorIndex);
+    
+    // Draws a filled rectangle with direct RGB color (bypasses palette)
+    void RectFillRGB(int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_t b);
 
     // Draws the outline of a circle.
     void Circ(int centerX, int centerY, int radius, uint8_t colorIndex);
@@ -76,6 +79,9 @@ public:
 
     // Gets the current palette size.
     int GetPaletteSize() const;
+    
+    // Gets a specific color from the palette.
+    SDL_Color GetPaletteColor(int index) const;
 
     // Resets the palette to the default PICO-8 16-color palette.
     void ResetToDefaultPalette();
@@ -89,13 +95,35 @@ public:
     // Get pixel data for GIF recording (v1.5.4)
     const uint8_t* GetPixelData() const;
     int GetPixelDataSize() const { return FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * 4; }
+    
+    // === Palette Mode System (Separate UI and Sprite Palettes) ===
+    enum class PaletteMode {
+        UI,      // Use UI palette (for SystemSprites, UI elements)
+        SPRITE   // Use sprite palette (for user sprites)
+    };
+    
+    void SetPaletteMode(PaletteMode mode);
+    PaletteMode GetPaletteMode() const { return currentPaletteMode; }
+    
+    // Sprite palette management (doesn't affect UI colors)
+    void LoadSpritePalette(const std::vector<SDL_Color>& newPalette);
+    SDL_Color GetSpritePaletteColor(int index) const;
+    int GetSpritePaletteSize() const;
 
 private:
     SDL_Renderer* renderer;
     SDL_Texture* texture;
     std::vector<uint32_t> pixelBuffer; // Pixel buffer in ARGB8888 format for the texture.
     std::vector<uint8_t> framebuffer;  // Color index buffer (256x256).
-    std::vector<SDL_Color> palette;    // 16-color palette.
+    
+    // Dual palette system
+    std::vector<SDL_Color> uiPalette;     // Fixed palette for UI (32 colors, never changes)
+    std::vector<SDL_Color> spritePalette; // Editable palette for sprites (32 colors)
+    PaletteMode currentPaletteMode;       // Which palette to use for rendering
+    
+    // Legacy palette (for backwards compatibility)
+    std::vector<SDL_Color> palette;    // Points to either uiPalette or spritePalette
+    
     int cameraX = 0;
     int cameraY = 0;
     int transparentColorIndex = -1; // -1 means no transparent color set.

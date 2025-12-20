@@ -67,12 +67,15 @@ private:
     
     // Canvas state
     uint8_t canvas[8][8];           // Current sprite being edited (8x8 pixels)
-    uint8_t spriteSheet[256][8][8]; // All 256 sprites
+    uint8_t spriteSheet[256][8][8]; // All 256 sprites (256 x 8x8)
     int currentSpriteIndex;          // 0-255
+    
+    SystemSprites* systemSprites;    // Pointer to system sprites for icons
+    AestheticLayer* aestheticLayer;  // Pointer to renderer (for palette access)
     
     // Tool and color state
     Tool currentTool;
-    int selectedColor;  // 0-15 (palette index)
+    int selectedColor;  // 0-31 (palette index)
     
     // UI state
     bool isActive;
@@ -118,12 +121,17 @@ private:
     static constexpr int UTILITY_BUTTON_SIZE = 16;
     static constexpr int UTILITY_BUTTON_SPACING = 4;
     
-    // Palette (right side, 4x4 square grid) - moved right
+    // Palette (right side, 4x8 grid for 32 colors) - moved right
     static constexpr int PALETTE_X = 176;  // Was 152, moved +24 for utility bar
-    static constexpr int PALETTE_Y = 30;  // Was 20, +10 for title bar
+    static constexpr int PALETTE_Y = CANVAS_Y;  // Same height as canvas (18)
     static constexpr int PALETTE_COLS = 4;
-    static constexpr int PALETTE_ROWS = 4;
+    static constexpr int PALETTE_ROWS = 8;  // Was 4, now 8 for 32 colors
     static constexpr int COLOR_BOX_SIZE = 12;
+    
+    // Palette Import/Export buttons (vertical, right of palette)
+    static constexpr int PALETTE_BUTTON_X = PALETTE_X + (PALETTE_COLS * COLOR_BOX_SIZE) + 4;  // +4px gap
+    static constexpr int PALETTE_BUTTON_Y = PALETTE_Y;
+    static constexpr int PALETTE_BUTTON_SIZE = 16;
     
     // Toolbar (below canvas, left side) - 4px gap from spritesheet
     static constexpr int TOOLBAR_X = 16;
@@ -150,7 +158,16 @@ private:
     void HandleCanvasClick(int mouseX, int mouseY);
     void HandlePaletteClick(int mouseX, int mouseY);
     void HandleToolbarClick(int mouseX, int mouseY);
-    void HandleUtilityButtonClick(int index);  // Helper for utility bar clicks
+    void HandleUtilityButtonClick(int index);
+    void HandlePaletteButtonClick(int buttonIndex);  // 0 = Import, 1 = Export
+    
+    // Palette Import/Export
+    void ImportPalette();
+    void ExportPalette();
+    
+    // Auto-load/save palette from cartridge folder
+    void LoadCartridgePalette();   // Load palette.pal from cartridge folder
+    void SaveCartridgePalette();   // Save palette.pal to cartridge folder
     void HandleKeyboard(InputManager& input);
     
     // Drawing tools implementation
@@ -190,9 +207,6 @@ private:
     // Debug logging
     void Log(const std::string& message);
     std::ofstream logFile;
-    
-    // System sprites for UI icons
-    SystemSprites* systemSprites;
     
     // Spritesheet path
     std::string spritesheetPath;

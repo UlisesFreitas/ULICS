@@ -117,6 +117,7 @@ endif()
 add_executable(UliCS WIN32
     src/main.cpp
     src/core/Engine.cpp src/core/Engine.h
+    src/core/Bootstrap.cpp src/core/Bootstrap.h
     src/core/HotReload.cpp src/core/HotReload.h
     src/ui/DebugConsole.cpp src/ui/DebugConsole.h
     src/ui/UISystem.cpp src/ui/UISystem.h

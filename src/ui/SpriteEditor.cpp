@@ -29,6 +29,7 @@ SpriteEditor::SpriteEditor()
     , dragStartY(0)
     , hasClipboardData(false)  // No clipboard data initially
     , systemSprites(nullptr)
+    , aestheticLayer(nullptr)  // Will be set in Render
 {
     // Open log file
     logFile.open("sprite_editor_log.txt", std::ios::out | std::ios::trunc);
@@ -128,7 +129,18 @@ void SpriteEditor::Update(InputManager& input) {
             // Check palette area (4x4 grid)
             if (mouseX >= PALETTE_X && mouseX < PALETTE_X + (PALETTE_COLS * COLOR_BOX_SIZE) &&
                      mouseY >= PALETTE_Y && mouseY < PALETTE_Y + (PALETTE_ROWS * COLOR_BOX_SIZE)) {
-                HandlePaletteClick(mouseX, mouseY);
+                 HandlePaletteClick(mouseX, mouseY);
+            }
+            // Check palette Import/Export buttons
+            else if (mouseX >= PALETTE_BUTTON_X && mouseX < PALETTE_BUTTON_X + PALETTE_BUTTON_SIZE) {
+                // Button 0: Import (Y: PALETTE_BUTTON_Y to PALETTE_BUTTON_Y + 16)
+                // Button 1: Export (Y: PALETTE_BUTTON_Y + 16 to PALETTE_BUTTON_Y + 32)
+                if (mouseY >= PALETTE_BUTTON_Y && mouseY < PALETTE_BUTTON_Y + PALETTE_BUTTON_SIZE) {
+                    HandlePaletteButtonClick(0);  // Import
+                }
+                else if (mouseY >= PALETTE_BUTTON_Y + PALETTE_BUTTON_SIZE && mouseY < PALETTE_BUTTON_Y + (2 * PALETTE_BUTTON_SIZE)) {
+                    HandlePaletteButtonClick(1);  // Export
+                }
             }
             // Check spritesheet area
             else if (mouseX >= SHEET_X && mouseX < SHEET_X + (SHEET_COLS * SHEET_SPRITE_SIZE) &&
@@ -156,6 +168,9 @@ void SpriteEditor::Update(InputManager& input) {
 void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
     if (!isActive) return;
     
+    // Save aestheticLayer pointer for palette access
+    aestheticLayer = &renderer;
+    
     // === Constants ===
     const int SCREEN_W = 256;
     const int SCREEN_H = 256;
@@ -179,17 +194,31 @@ void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
     int numX = SCREEN_W - (strlen(spriteNum) * 8) - 4;
     renderer.Print(spriteNum, numX, 1, THEME_BAR_TEXT);
     
-    // === MAIN CONTENT ===
-    RenderCanvas(renderer);        // Large sprite (left, 128x128)
-    RenderUtilityBar(renderer);    // Utility icons (vertical bar, right of canvas)
-    RenderPalette(renderer);       // Palette (right, vertical)
-    RenderSpritesheet(renderer);   // Spritesheet grid (bottom)
-    RenderToolbar(renderer);       // Tools (bottom right)
+    // === IMPORTANT: Switch to SPRITE mode for user content ===
+    renderer.SetPaletteMode(AestheticLayer::PaletteMode::SPRITE);
     
-    // === CURSOR HIGHLIGHT (on top of canvas) ===
+    // Render palette (shows SPRITE palette - can be edited via Import)
+    RenderPalette(renderer);
+    
+    // Render main canvas (uses SPRITE palette)
+    RenderCanvas(renderer);
+    
+    // Render spritesheet grid (uses SPRITE palette)
+    RenderSpritesheet(renderer);
+    
+    // === IMPORTANT: Back to UI mode for interface elements ===
+    renderer.SetPaletteMode(AestheticLayer::PaletteMode::UI);
+    
+    // Render toolbar
+    RenderToolbar(renderer);
+    
+    // Render utility bar (vertical icons)
+    RenderUtilityBar(renderer);
+    
+    // Render cursor highlight
     RenderCursorHighlight(renderer, input);
     
-    // === DRAG PREVIEW (Line/Rect preview while dragging) ===
+    // Render drag preview (line/rect)
     if (isDragging) {
         RenderDragPreview(renderer, input);
     }
@@ -256,7 +285,7 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
             int x = PALETTE_X + (col * COLOR_BOX_SIZE);
             int y = PALETTE_Y + (row * COLOR_BOX_SIZE);
             
-            // Draw color box
+            // Draw color box (uses active sprite palette)
             renderer.RectFill(x, y, COLOR_BOX_SIZE, COLOR_BOX_SIZE, colorIndex);
             
             // Highlight selected color with white border
@@ -270,6 +299,36 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
     renderer.Rect(PALETTE_X - 1, PALETTE_Y - 1, 
                  PALETTE_COLS * COLOR_BOX_SIZE + 2, 
                  PALETTE_ROWS * COLOR_BOX_SIZE + 2, 
+                 UISystem::COLOR_WHITE);
+    
+    // === Palette Import/Export Buttons (vertical, right of palette) ===
+    const int buttonIcons[] = { 6, 5 };  // 6 = Import (Load), 5 = Export (Save)
+    
+    for (int i = 0; i < 2; i++) {
+        int x = PALETTE_BUTTON_X;
+        int y = PALETTE_BUTTON_Y + (i * PALETTE_BUTTON_SIZE);  // Sin spacing - pegados
+        
+        // Fondo negro
+        renderer.RectFill(x, y, PALETTE_BUTTON_SIZE, PALETTE_BUTTON_SIZE, 0);
+        
+        // Fondo gris interior
+        renderer.RectFill(x + 1, y + 1, PALETTE_BUTTON_SIZE - 2, PALETTE_BUTTON_SIZE - 2, UISystem::COLOR_DARK_GRAY);
+        
+        // Bordes 3D
+        renderer.Line(x + 1, y + 1, x + 1, y + 13, UISystem::COLOR_INDIGO);
+        renderer.Line(x + 1, y + 1, x + 13, y + 1, UISystem::COLOR_INDIGO);
+        renderer.Line(x + 14, y + 1, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);
+        renderer.Line(x + 1, y + 14, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);
+        
+        // Icono
+        if (systemSprites) {
+            systemSprites->DrawSprite(renderer, buttonIcons[i], x + 4, y + 4, 1);
+        }
+    }
+    
+    // White border around both buttons
+    renderer.Rect(PALETTE_BUTTON_X - 1, PALETTE_BUTTON_Y - 1, 
+                 PALETTE_BUTTON_SIZE + 2, (2 * PALETTE_BUTTON_SIZE) + 2, 
                  UISystem::COLOR_WHITE);
 }
 
@@ -816,6 +875,9 @@ void SpriteEditor::SaveSpritesheet() {
     if (stbi_write_png(spritesheetPath.c_str(), SHEET_WIDTH, SHEET_HEIGHT, 4, 
                        imageData.data(), SHEET_WIDTH * 4)) {
         Log("[SaveSpritesheet] Saved successfully to: " + spritesheetPath);
+        
+        // Auto-save palette.pal to cartridge folder
+        SaveCartridgePalette();
     } else {
         Log("[SaveSpritesheet] ERROR: Failed to save to: " + spritesheetPath);
     }
@@ -870,6 +932,9 @@ void SpriteEditor::LoadSpritesheet() {
     
     stbi_image_free(data);
     Log("[LoadSpritesheet] Loaded successfully from: " + spritesheetPath);
+    
+    // Auto-load palette.pal from cartridge folder
+    LoadCartridgePalette();
 }
 
 
@@ -1476,3 +1541,210 @@ void SpriteEditor::RenderUtilityBar(AestheticLayer& renderer) {
                  UTILITY_BUTTON_SIZE + 2, UTILITY_BAR_HEIGHT + 2, 
                  UISystem::COLOR_WHITE);
 }
+
+void SpriteEditor::HandlePaletteButtonClick(int buttonIndex) {
+    Log("[Palette] Button clicked: " + std::to_string(buttonIndex));
+    if (buttonIndex == 0) {
+        // Import palette
+        ImportPalette();
+    } else if (buttonIndex == 1) {
+        // Export palette
+        ExportPalette();
+    }
+}
+
+void SpriteEditor::ImportPalette() {
+    Log("[Palette] Import button clicked - Opening file dialog...");
+    
+    // Open file dialog for .pal file
+    std::string filename = FileDialog::OpenFile("Palette Files\0*.pal\0All Files\0*.*\0", "Import Palette");
+    
+    if (filename.empty()) {
+        Log("[Palette] User cancelled import");
+        return;
+    }
+    
+    Log("[Palette] Loading palette from: " + filename);
+    
+    // Load palette file
+    std::ifstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        Log("[Palette] ERROR: Could not open file");
+        return;
+    }
+    
+    // Read palette data (32 colors * 3 bytes RGB = 96 bytes)
+    std::vector<SDL_Color> newPalette;
+    for (int i = 0; i < 32; i++) {
+        uint8_t r, g, b;
+        file.read(reinterpret_cast<char*>(&r), 1);
+        file.read(reinterpret_cast<char*>(&g), 1);
+        file.read(reinterpret_cast<char*>(&b), 1);
+        
+        if (file.fail()) {
+            Log("[Palette] ERROR: Failed to read color " + std::to_string(i));
+            file.close();
+            return;
+        }
+        
+        newPalette.push_back({r, g, b, 255});
+    }
+    
+    file.close();
+    
+    // Apply palette to AestheticLayer (ONLY sprite palette, NOT UI)
+    if (aestheticLayer) {
+        aestheticLayer->LoadSpritePalette(newPalette);
+        
+        // Force palette update by switching to SPRITE mode
+        aestheticLayer->SetPaletteMode(AestheticLayer::PaletteMode::SPRITE);
+        
+        Log("[Palette] Successfully imported 32 colors to SPRITE palette");
+    }
+}
+
+void SpriteEditor::ExportPalette() {
+    Log("[Palette] Export button clicked - Opening save dialog...");
+    
+    // Open save dialog for .pal file
+    std::string filename = FileDialog::SaveFile("palette.pal", "Palette Files\0*.pal\0All Files\0*.*\0", "Export Palette", "pal");
+    
+    if (filename.empty()) {
+        Log("[Palette] User cancelled export");
+        return;
+    }
+    
+    // Ensure .pal extension
+    if (filename.find(".pal") == std::string::npos) {
+        filename += ".pal";
+    }
+    
+    Log("[Palette] Saving palette to: " + filename);
+    
+    // Save palette file
+    std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        Log("[Palette] ERROR: Could not create file");
+        return;
+    }
+    
+    // Get current palette from AestheticLayer
+    if (!aestheticLayer) {
+        Log("[Palette] ERROR: AestheticLayer not available");
+        file.close();
+        return;
+    }
+    
+    int paletteSize = aestheticLayer->GetSpritePaletteSize();
+    Log("[Palette] Current sprite palette size: " + std::to_string(paletteSize));
+    
+    // Write palette data (always export 32 colors, pad with black if needed)
+    for (int i = 0; i < 32; i++) {
+        SDL_Color color = aestheticLayer->GetSpritePaletteColor(i);
+        
+        file.write(reinterpret_cast<const char*>(&color.r), 1);
+        file.write(reinterpret_cast<const char*>(&color.g), 1);
+        file.write(reinterpret_cast<const char*>(&color.b), 1);
+    }
+    
+    file.close();
+    Log("[Palette] Successfully exported 32 colors");
+}
+
+// === Auto-load/save palette from cartridge ===
+
+void SpriteEditor::LoadCartridgePalette() {
+    if (spritesheetPath.empty()) {
+        Log("[Palette] No spritesheet path, using default palette");
+        return;
+    }
+    
+    // Get palette path (same folder as spritesheet)
+    std::filesystem::path sheetPath(spritesheetPath);
+    std::filesystem::path palettePath = sheetPath.parent_path() / "palette.pal";
+    
+    Log("[Palette] Looking for palette.pal at: " + palettePath.string());
+    
+    // Check if palette.pal exists
+    if (!std::filesystem::exists(palettePath)) {
+        Log("[Palette] No palette.pal found, creating default");
+        SaveCartridgePalette();  // Create default palette.pal
+        return;
+    }
+    
+    // Load palette file
+    std::ifstream file(palettePath, std::ios::binary);
+    if (!file.is_open()) {
+        Log("[Palette] ERROR: Could not open palette.pal");
+        return;
+    }
+    
+    // Read palette data (32 colors * 3 bytes RGB = 96 bytes)
+    std::vector<SDL_Color> newPalette;
+    for (int i = 0; i < 32; i++) {
+        uint8_t r, g, b;
+        file.read(reinterpret_cast<char*>(&r), 1);
+        file.read(reinterpret_cast<char*>(&g), 1);
+        file.read(reinterpret_cast<char*>(&b), 1);
+        
+        if (file.fail()) {
+            Log("[Palette] ERROR: Failed to read color " + std::to_string(i));
+            file.close();
+            return;
+        }
+        
+        newPalette.push_back({r, g, b, 255});
+    }
+    
+    file.close();
+    
+    // Apply palette to AestheticLayer
+    if (aestheticLayer) {
+        aestheticLayer->LoadSpritePalette(newPalette);
+        aestheticLayer->SetPaletteMode(AestheticLayer::PaletteMode::SPRITE);
+        Log("[Palette] Loaded palette.pal successfully (32 colors)");
+    }
+}
+
+void SpriteEditor::SaveCartridgePalette() {
+    if (spritesheetPath.empty()) {
+        Log("[Palette] No spritesheet path, cannot save palette");
+        return;
+    }
+    
+    // Get palette path (same folder as spritesheet)
+    std::filesystem::path sheetPath(spritesheetPath);
+    std::filesystem::path palettePath = sheetPath.parent_path() / "palette.pal";
+    
+    Log("[Palette] Saving palette.pal to: " + palettePath.string());
+    
+    // Save palette file
+    std::ofstream file(palettePath, std::ios::binary);
+    if (!file.is_open()) {
+        Log("[Palette] ERROR: Could not create palette.pal");
+        return;
+    }
+    
+    // Write palette data (always export 32 colors)
+    if (aestheticLayer) {
+        for (int i = 0; i < 32; i++) {
+            SDL_Color color = aestheticLayer->GetSpritePaletteColor(i);
+            file.write(reinterpret_cast<const char*>(&color.r), 1);
+            file.write(reinterpret_cast<const char*>(&color.g), 1);
+            file.write(reinterpret_cast<const char*>(&color.b), 1);
+        }
+        file.close();
+        Log("[Palette] Saved palette.pal successfully");
+    } else {
+        // Write default palette if no aestheticLayer
+        for (int i = 0; i < 32; i++) {
+            uint8_t r = 0, g = 0, b = 0;
+            file.write(reinterpret_cast<const char*>(&r), 1);
+            file.write(reinterpret_cast<const char*>(&g), 1);
+            file.write(reinterpret_cast<const char*>(&b), 1);
+        }
+        file.close();
+        Log("[Palette] Saved default (empty) palette.pal");
+    }
+}
+

@@ -24,8 +24,9 @@ AestheticLayer::AestheticLayer(SDL_Renderer* renderer) : renderer(renderer) {
     framebuffer.resize(FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT, 0);
     pixelBuffer.resize(FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT, 0);
 
-    // Define the 16-color palette (PICO-8).
-    palette = {
+    // Define the default 32-color palette (PICO-8 + TIC-80 extended).
+    std::vector<SDL_Color> defaultPalette = {
+        // First 16 colors (PICO-8 compatible)
         {0, 0, 0, 255},       // 0: Black
         {29, 43, 83, 255},    // 1: Dark Blue
         {126, 37, 83, 255},   // 2: Dark Purple
@@ -41,8 +42,34 @@ AestheticLayer::AestheticLayer(SDL_Renderer* renderer) : renderer(renderer) {
         {41, 173, 255, 255},  // 12: Blue
         {131, 118, 156, 255}, // 13: Lavender
         {255, 119, 168, 255}, // 14: Pink
-        {255, 204, 170, 255}  // 15: Light Peach
+        {255, 204, 170, 255}, // 15: Light Peach
+        
+        // Extended 16 colors (TIC-80 style)
+        {26, 28, 44, 255},    // 16: Very dark blue
+        {93, 39, 93, 255},    // 17: Dark purple 2
+        {177, 62, 83, 255},   // 18: Red-purple
+        {239, 125, 87, 255},  // 19: Light orange
+        {255, 205, 117, 255}, // 20: Light yellow
+        {167, 240, 112, 255}, // 21: Light green
+        {56, 183, 100, 255},  // 22: Medium green
+        {37, 113, 121, 255},  // 23: Teal
+        {41, 54, 111, 255},   // 24: Navy
+        {59, 93, 201, 255},   // 25: Royal blue
+        {65, 166, 246, 255},  // 26: Sky blue
+        {115, 239, 247, 255}, // 27: Cyan
+        {244, 244, 244, 255}, // 28: Off-white
+        {148, 176, 194, 255}, // 29: Light blue-gray
+        {86, 108, 134, 255},  // 30: Blue-gray
+        {51, 60, 87, 255}     // 31: Dark blue-gray
     };
+    
+    // Initialize both palettes with the same default
+    uiPalette = defaultPalette;      // UI palette (FIXED, never changes)
+    spritePalette = defaultPalette;  // Sprite palette (editable)
+    
+    // Start in UI mode
+    currentPaletteMode = PaletteMode::UI;
+    palette = uiPalette;  // Legacy compatibility
 }
 
 AestheticLayer::~AestheticLayer() {
@@ -103,9 +130,61 @@ int AestheticLayer::GetPaletteSize() const {
     return static_cast<int>(palette.size());
 }
 
+SDL_Color AestheticLayer::GetPaletteColor(int index) const {
+    if (index < 0 || index >= static_cast<int>(palette.size())) {
+        return {0, 0, 0, 255};  // Return black for out of range
+    }
+    return palette[index];
+}
+
+// === Palette Mode System Implementation ===
+
+void AestheticLayer::SetPaletteMode(PaletteMode mode) {
+    currentPaletteMode = mode;
+    
+    // Update legacy palette pointer
+    if (mode == PaletteMode::UI) {
+        palette = uiPalette;
+    } else {
+        palette = spritePalette;
+    }
+}
+
+void AestheticLayer::LoadSpritePalette(const std::vector<SDL_Color>& newPalette) {
+    if (newPalette.empty()) {
+        throw std::invalid_argument("Cannot load an empty sprite palette.");
+    }
+    
+    int size = static_cast<int>(newPalette.size());
+    if (size != 16 && size != 32 && size != 64 && size != 128) {
+        throw std::invalid_argument("Sprite palette size must be 16, 32, 64, or 128.");
+    }
+    
+    // Only update spritePalette, NOT uiPalette
+    spritePalette = newPalette;
+    
+    // IMPORTANT: Always update active palette if in SPRITE mode
+    // This ensures the palette updates immediately
+    if (currentPaletteMode == PaletteMode::SPRITE) {
+        palette = spritePalette;
+    }
+}
+
+SDL_Color AestheticLayer::GetSpritePaletteColor(int index) const {
+    if (index < 0 || index >= static_cast<int>(spritePalette.size())) {
+        return {0, 0, 0, 255};
+    }
+    return spritePalette[index];
+}
+
+int AestheticLayer::GetSpritePaletteSize() const {
+    return static_cast<int>(spritePalette.size());
+}
+
 void AestheticLayer::ResetToDefaultPalette() {
-    // Reset to the default PICO-8 16-color palette.
+    // Reset to the default 32-color palette (PICO-8 + TIC-80 extended).
     palette = {
+        // First 16 colors (PICO-8 compatible)
         {0, 0, 0, 255},       // 0: Black
         {29, 43, 83, 255},    // 1: Dark Blue
         {126, 37, 83, 255},   // 2: Dark Purple
@@ -121,7 +200,25 @@ void AestheticLayer::ResetToDefaultPalette() {
         {41, 173, 255, 255},  // 12: Blue
         {131, 118, 156, 255}, // 13: Lavender
         {255, 119, 168, 255}, // 14: Pink
-        {255, 204, 170, 255}  // 15: Light Peach
+        {255, 204, 170, 255}, // 15: Light Peach
+        
+        // Extended 16 colors (TIC-80 style)
+        {26, 28, 44, 255},    // 16: Very dark blue
+        {93, 39, 93, 255},    // 17: Dark purple 2
+        {177, 62, 83, 255},   // 18: Red-purple
+        {239, 125, 87, 255},  // 19: Light orange
+        {255, 205, 117, 255}, // 20: Light yellow
+        {167, 240, 112, 255}, // 21: Light green
+        {56, 183, 100, 255},  // 22: Medium green
+        {37, 113, 121, 255},  // 23: Teal
+        {41, 54, 111, 255},   // 24: Navy
+        {59, 93, 201, 255},   // 25: Royal blue
+        {65, 166, 246, 255},  // 26: Sky blue
+        {115, 239, 247, 255}, // 27: Cyan
+        {244, 244, 244, 255}, // 28: Off-white
+        {148, 176, 194, 255}, // 29: Light blue-gray
+        {86, 108, 134, 255},  // 30: Blue-gray
+        {51, 60, 87, 255}     // 31: Dark blue-gray
     };
 }
 
@@ -199,6 +296,32 @@ void AestheticLayer::RectFill(int x, int y, int w, int h, uint8_t colorIndex) {
     for (int j = startY; j < endY; ++j) {
         for (int i = startX; i < endX; ++i) {
             framebuffer[j * FRAMEBUFFER_WIDTH + i] = colorIndex;
+        }
+    }
+}
+
+void AestheticLayer::RectFillRGB(int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_t b) {
+    x -= cameraX;
+    y -= cameraY;
+
+    int x2 = x + w;
+    int y2 = y + h;
+
+    // Clip the rectangle to the screen boundaries
+    int startX = std::max(x, 0);
+    int startY = std::max(y, 0);
+    int endX = std::min(x2, FRAMEBUFFER_WIDTH);
+    int endY = std::min(y2, FRAMEBUFFER_HEIGHT);
+
+    // Calculate ARGB8888 color
+    uint32_t argb = (255 << 24) | (r << 16) | (g << 8) | b;
+
+    // Write directly to pixelBuffer, bypassing framebuffer and palette
+    for (int j = startY; j < endY; ++j) {
+        for (int i = startX; i < endX; ++i) {
+            pixelBuffer[j * FRAMEBUFFER_WIDTH + i] = argb;
+            // Also update framebuffer with black to avoid artifacts
+            framebuffer[j * FRAMEBUFFER_WIDTH + i] = 0;
         }
     }
 }
@@ -396,9 +519,13 @@ void AestheticLayer::DrawMap(Map* map, int mx, int my, int sx, int sy, int w, in
 }
 
 void AestheticLayer::Present() {
+    // Select the correct palette based on current mode
+    const std::vector<SDL_Color>& activePalette = 
+        (currentPaletteMode == PaletteMode::SPRITE) ? spritePalette : uiPalette;
+    
     // 1. Translate our color-indexed framebuffer to a 32-bit pixel buffer.
     for (size_t i = 0; i < framebuffer.size(); ++i) {
-        const auto& color = palette[framebuffer[i]];
+        const auto& color = activePalette[framebuffer[i]];
         // ARGB8888 format
         pixelBuffer[i] = (color.a << 24) | (color.r << 16) | (color.g << 8) | color.b;
     }

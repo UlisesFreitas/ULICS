@@ -41,7 +41,19 @@ public:
         ARROW_DOWN = 12,
         FOLDER = 13,
         FILE = 14,
-        GEAR = 15
+        GEAR = 15,
+        // NEW: Sprite Editor utility icons
+        GRID = 16,
+        FILLED_RECT = 17,
+        FLIP_H = 18,        // Horizontal flip
+        FLIP_V = 19,        // Vertical flip
+        CLEAR = 20,         // Clear/trash icon
+        COPY = 21,          // Copy icon (2 overlapping squares)
+        PASTE = 22,         // Paste icon (clipboard)
+        
+        // Rotate icons (23-24)
+        ROTATE_LEFT = 23,   // Rotate 90° counter-clockwise
+        ROTATE_RIGHT = 24   // Rotate 90° clockwise
     };
     
 private:
@@ -63,6 +75,10 @@ private:
     void GeneratePlayStopIcons();
     void GenerateFolderFileIcons();
     void GenerateGearIcon();
+    
+    // NEW: Utility icon generators
+    void GenerateUtilityIcons();  // Generates all utility icons (16-22)
+    void GenerateRotateIcons();   // Generates rotate icons (23-24)
 };
 
 #endif // SYSTEM_SPRITES_H

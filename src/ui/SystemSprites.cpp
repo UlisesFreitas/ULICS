@@ -44,6 +44,8 @@ void SystemSprites::GenerateDefaultIcons() {
     GenerateArrowIcons();
     GenerateFolderFileIcons();
     GenerateGearIcon();
+    GenerateUtilityIcons();  // NEW: utility icons (16-22)
+    GenerateRotateIcons();   // Rotate Left/Right
 }
 
 // ===== ICON GENERATORS =====
@@ -276,4 +278,127 @@ void SystemSprites::GenerateGearIcon() {
         {0,0,7,7,7,7,0,0}
     };
     std::memcpy(sprites[static_cast<int>(Icon::GEAR)], gear, 64);
+}
+
+// ===== NEW UTILITY ICONS =====
+
+void SystemSprites::GenerateUtilityIcons() {
+    // Sprite 16: Grid icon (3x3 hash)
+    uint8_t grid[8][8] = {
+        {0,7,0,7,0,7,0,0},
+        {7,7,7,7,7,7,7,0},
+        {0,7,0,7,0,7,0,0},
+        {7,7,7,7,7,7,7,0},
+        {0,7,0,7,0,7,0,0},
+        {7,7,7,7,7,7,7,0},
+        {0,7,0,7,0,7,0,0},
+        {0,0,0,0,0,0,0,0}
+    };
+    std::memcpy(sprites[16], grid, 64);
+    
+    // Sprite 17: Filled rectangle
+    uint8_t filledRect[8][8] = {
+        {0,7,7,7,7,7,7,0},
+        {0,7,12,12,12,12,7,0},
+        {0,7,12,12,12,12,7,0},
+        {0,7,12,12,12,12,7,0},
+        {0,7,12,12,12,12,7,0},
+        {0,7,12,12,12,12,7,0},
+        {0,7,7,7,7,7,7,0},
+        {0,0,0,0,0,0,0,0}
+    };
+    std::memcpy(sprites[17], filledRect, 64);
+    
+    // Sprite 18: Flip horizontal (double arrow left-right)
+    uint8_t flipH[8][8] = {
+        {0,0,0,0,0,0,0,0},
+        {0,7,0,0,0,0,7,0},
+        {7,7,7,0,0,7,7,7},
+        {7,7,7,7,7,7,7,7},
+        {7,7,7,0,0,7,7,7},
+        {0,7,0,0,0,0,7,0},
+        {0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0}
+    };
+    std::memcpy(sprites[18], flipH, 64);
+    
+    // Sprite 19: Flip vertical (double arrow up-down)
+    uint8_t flipV[8][8] = {
+        {0,0,0,7,0,0,0,0},
+        {0,0,7,7,7,0,0,0},
+        {0,7,7,7,7,7,0,0},
+        {0,0,7,7,7,0,0,0},
+        {0,0,7,7,7,0,0,0},
+        {0,7,7,7,7,7,0,0},
+        {0,0,7,7,7,0,0,0},
+        {0,0,0,7,0,0,0,0}
+    };
+    std::memcpy(sprites[19], flipV, 64);
+    
+    // Sprite 20: Clear (big X)
+    uint8_t clear[8][8] = {
+        {7,0,0,0,0,0,0,7},
+        {0,7,0,0,0,0,7,0},
+        {0,0,7,0,0,7,0,0},
+        {0,0,0,7,7,0,0,0},
+        {0,0,0,7,7,0,0,0},
+        {0,0,7,0,0,7,0,0},
+        {0,7,0,0,0,0,7,0},
+        {7,0,0,0,0,0,0,7}
+    };
+    std::memcpy(sprites[20], clear, 64);
+    
+    // Sprite 21: Copy (two overlapping rectangles)
+    uint8_t copy[8][8] = {
+        {0,7,7,7,7,7,0,0},
+        {0,7,12,12,12,7,7,7},
+        {0,7,7,7,7,7,12,7},
+        {0,0,0,7,12,12,12,7},
+        {0,0,0,7,12,12,12,7},
+        {0,0,0,7,12,12,12,7},
+        {0,0,0,7,7,7,7,7},
+        {0,0,0,0,0,0,0,0}
+    };
+    std::memcpy(sprites[21], copy, 64);
+    
+    // Sprite 22: Paste (clipboard)
+    uint8_t paste[8][8] = {
+        {0,0,7,7,7,7,0,0},
+        {0,0,7,12,12,7,0,0},
+        {0,7,7,7,7,7,7,0},
+        {0,7,12,12,12,12,7,0},
+        {0,7,12,12,12,12,7,0},
+        {0,7,12,12,12,12,7,0},
+        {0,7,12,12,12,12,7,0},
+        {0,7,7,7,7,7,7,0}
+    };
+    std::memcpy(sprites[22], paste, 64);
+}
+
+void SystemSprites::GenerateRotateIcons() {
+    // Sprite 23: Rotate Left (counter-clockwise arrow)
+    uint8_t rotateLeft[8][8] = {
+        {0,0,7,7,7,0,0,0},
+        {0,7,0,0,0,0,0,0},
+        {7,0,0,0,0,0,7,0},
+        {7,0,0,0,0,7,7,0},
+        {7,0,0,0,0,0,7,0},
+        {0,7,0,0,0,0,7,0},
+        {0,0,7,7,7,7,0,0},
+        {0,0,0,0,0,0,0,0}
+    };
+    std::memcpy(sprites[23], rotateLeft, 64);
+    
+    // Sprite 24: Rotate Right (clockwise arrow)
+    uint8_t rotateRight[8][8] = {
+        {0,0,0,7,7,7,0,0},
+        {0,0,0,0,0,0,7,0},
+        {0,7,0,0,0,0,0,7},
+        {0,7,7,0,0,0,0,7},
+        {0,7,0,0,0,0,0,7},
+        {0,7,0,0,0,0,7,0},
+        {0,0,7,7,7,7,0,0},
+        {0,0,0,0,0,0,0,0}
+    };
+    std::memcpy(sprites[24], rotateRight, 64);
 }

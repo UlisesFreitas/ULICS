@@ -77,6 +77,8 @@ private:
     // UI state
     bool isActive;
     int zoom;  // Pixels per sprite pixel (16 = 128x128 display)
+    bool showGrid;  // Toggle grid visibility (hotkey: G)
+    bool filledRectMode;  // Toggle filled/outline rectangle (hotkey: X)
     
     // Drag state for line/rect tools
     bool isDragging;
@@ -90,6 +92,10 @@ private:
     static constexpr int MAX_UNDO_LEVELS = 50;
     std::vector<CanvasState> undoStack;  // States before each modification
     std::vector<CanvasState> redoStack;  // States that were undone
+    
+    // Clipboard for copy/paste (Ctrl+C / Ctrl+V)
+    uint8_t clipboard[8][8];
+    bool hasClipboardData;
     
     // Recent files tracking
     static constexpr int MAX_RECENT_FILES = 5;
@@ -106,16 +112,22 @@ private:
     static constexpr int CANVAS_ZOOM = 16;  // 16x zoom = 128x128 display
     static constexpr int CANVAS_SIZE = 8 * CANVAS_ZOOM;  // 128px
     
-    // Palette (right side, 4x4 square grid)
-    static constexpr int PALETTE_X = 152;
+    // Utility bar (vertical, right of canvas)
+    static constexpr int UTILITY_BAR_X = CANVAS_X + CANVAS_SIZE + 4;  // 148
+    static constexpr int UTILITY_BAR_Y = CANVAS_Y;
+    static constexpr int UTILITY_BUTTON_SIZE = 16;
+    static constexpr int UTILITY_BUTTON_SPACING = 4;
+    
+    // Palette (right side, 4x4 square grid) - moved right
+    static constexpr int PALETTE_X = 176;  // Was 152, moved +24 for utility bar
     static constexpr int PALETTE_Y = 30;  // Was 20, +10 for title bar
     static constexpr int PALETTE_COLS = 4;
     static constexpr int PALETTE_ROWS = 4;
     static constexpr int COLOR_BOX_SIZE = 12;
     
-    // Toolbar (below canvas, left side)
+    // Toolbar (below canvas, left side) - 4px gap from spritesheet
     static constexpr int TOOLBAR_X = 16;
-    static constexpr int TOOLBAR_Y = CANVAS_Y + CANVAS_SIZE + 8;  // 154 (18+128+8)
+    static constexpr int TOOLBAR_Y = CANVAS_Y + CANVAS_SIZE + 4;  // 150 (18+128+4) - was +5
     
     // Spritesheet grid (below toolbar, 16x8 = 128 visible sprites)
     static constexpr int SHEET_X = 8;
@@ -129,6 +141,7 @@ private:
     void RenderPalette(AestheticLayer& renderer);
     void RenderSpritesheet(AestheticLayer& renderer);
     void RenderToolbar(AestheticLayer& renderer);
+    void RenderUtilityBar(AestheticLayer& renderer);  // NEW: vertical icon bar
     void RenderHeader(AestheticLayer& renderer);
     void RenderCursorHighlight(AestheticLayer& renderer, InputManager& input);
     void RenderDragPreview(AestheticLayer& renderer, InputManager& input);
@@ -137,6 +150,7 @@ private:
     void HandleCanvasClick(int mouseX, int mouseY);
     void HandlePaletteClick(int mouseX, int mouseY);
     void HandleToolbarClick(int mouseX, int mouseY);
+    void HandleUtilityButtonClick(int index);  // Helper for utility bar clicks
     void HandleKeyboard(InputManager& input);
     
     // Drawing tools implementation
@@ -145,6 +159,12 @@ private:
     void UseLine(int x1, int y1, int x2, int y2);
     void UseRect(int x1, int y1, int x2, int y2, bool filled);
     void UsePicker(int x, int y);
+    
+    // Transform tools
+    void MirrorHorizontal();  // Flip sprite left-right
+    void MirrorVertical();    // Flip sprite top-bottom
+    void RotateLeft();   // Rotate 90° counter-clockwise
+    void RotateRight();  // Rotate 90° clockwise
     
     // Helper methods
     void ClearCanvas();

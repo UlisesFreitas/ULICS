@@ -19,12 +19,15 @@
 SpriteEditor::SpriteEditor()
     : currentSpriteIndex(0)
     , currentTool(Tool::PENCIL)
-    , selectedColor(7)  // Default to white
+    , selectedColor(7)  // White
     , isActive(false)
-    , zoom(16)  // PICO-8 style: 16x zoom = 128x128 display
+    , zoom(CANVAS_ZOOM)  // PICO-8 style: 16x zoom = 128x128 display
+    , showGrid(true)  // Grid visible by default
+    , filledRectMode(false)  // Outline by default
     , isDragging(false)
     , dragStartX(0)
     , dragStartY(0)
+    , hasClipboardData(false)  // No clipboard data initially
     , systemSprites(nullptr)
 {
     // Open log file
@@ -107,7 +110,7 @@ void SpriteEditor::Update(InputManager& input) {
             if (currentTool == Tool::LINE) {
                 UseLine(dragStartX, dragStartY, canvasX, canvasY);
             } else if (currentTool == Tool::RECT) {
-                UseRect(dragStartX, dragStartY, canvasX, canvasY, false);  // outline for now
+                UseRect(dragStartX, dragStartY, canvasX, canvasY, filledRectMode);  // Use toggle
             }
             isDragging = false;
         }
@@ -136,6 +139,11 @@ void SpriteEditor::Update(InputManager& input) {
                 if (newIndex >= 0 && newIndex < 256) {
                     SwitchSprite(newIndex);
                 }
+            }
+            // Check utility bar (vertical, right of canvas)
+            else if (mouseX >= UTILITY_BAR_X && mouseX < UTILITY_BAR_X + UTILITY_BUTTON_SIZE &&
+                     mouseY >= UTILITY_BAR_Y && mouseY < UTILITY_BAR_Y + (8 * UTILITY_BUTTON_SIZE)) {  // 8 botones
+                HandleToolbarClick(mouseX, mouseY);  // This handles both toolbar and utility bar
             }
             // Check toolbar area
             else if (mouseY >= TOOLBAR_Y) {
@@ -173,6 +181,7 @@ void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
     
     // === MAIN CONTENT ===
     RenderCanvas(renderer);        // Large sprite (left, 128x128)
+    RenderUtilityBar(renderer);    // Utility icons (vertical bar, right of canvas)
     RenderPalette(renderer);       // Palette (right, vertical)
     RenderSpritesheet(renderer);   // Spritesheet grid (bottom)
     RenderToolbar(renderer);       // Tools (bottom right)
@@ -222,15 +231,18 @@ void SpriteEditor::RenderCanvas(AestheticLayer& renderer) {
         }
     }
     
-    // Draw grid
-    for (int i = 0; i <= 8; i++) {
-        // Vertical lines
-        int x = CANVAS_X + (i * CANVAS_ZOOM);
-        renderer.Line(x, CANVAS_Y, x, CANVAS_Y + CANVAS_SIZE - 1, UISystem::COLOR_DARK_GRAY);
-        
-        // Horizontal lines
-        int y = CANVAS_Y + (i * CANVAS_ZOOM);
-        renderer.Line(CANVAS_X, y, CANVAS_X + CANVAS_SIZE - 1, y, UISystem::COLOR_DARK_GRAY);
+    
+    // Draw grid (toggle with 'G' key)
+    if (showGrid) {
+        for (int i = 0; i <= 8; i++) {
+            // Vertical lines
+            int x = CANVAS_X + (i * CANVAS_ZOOM);
+            renderer.Line(x, CANVAS_Y, x, CANVAS_Y + CANVAS_SIZE - 1, UISystem::COLOR_DARK_GRAY);
+            
+            // Horizontal lines
+            int y = CANVAS_Y + (i * CANVAS_ZOOM);
+            renderer.Line(CANVAS_X, y, CANVAS_X + CANVAS_SIZE - 1, y, UISystem::COLOR_DARK_GRAY);
+        }
     }
     
     // Canvas border
@@ -249,10 +261,16 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
             
             // Highlight selected color with white border
             if (colorIndex == selectedColor) {
-                renderer.Rect(x - 1, y - 1, COLOR_BOX_SIZE + 2, COLOR_BOX_SIZE + 2, UISystem::COLOR_WHITE);
+                renderer.Rect(x, y, COLOR_BOX_SIZE, COLOR_BOX_SIZE, UISystem::COLOR_WHITE);
             }
         }
     }
+    
+    // White border around entire palette (matching canvas style)
+    renderer.Rect(PALETTE_X - 1, PALETTE_Y - 1, 
+                 PALETTE_COLS * COLOR_BOX_SIZE + 2, 
+                 PALETTE_ROWS * COLOR_BOX_SIZE + 2, 
+                 UISystem::COLOR_WHITE);
 }
 
 void SpriteEditor::RenderSpritesheet(AestheticLayer& renderer) {
@@ -290,53 +308,63 @@ void SpriteEditor::RenderSpritesheet(AestheticLayer& renderer) {
 }
 
 void SpriteEditor::RenderToolbar(AestheticLayer& renderer) {
-    const int iconIds[] = { 0, 1, 2, 3, 4 };  // Tool icon indices
     const int BUTTON_SIZE = 16;
-    const int BUTTON_SPACING = 4;
     
-    // Draw tool buttons (Pencil, Fill, Line, Rect, Picker)
-    for (int i = 0; i < 5; i++) {
-        int x = CANVAS_X + (i * (BUTTON_SIZE + BUTTON_SPACING));
+    // 8 botones: Pencil, Fill, Line, Rect, FilledRect, Picker, Import, Export
+    const int toolIcons[] = { 0, 1, 2, 3, 17, 4, 6, 5 };
+    // Tool types: 0-5 are tools, 6-7 are file buttons
+    
+    for (int i = 0; i < 8; i++) {
+        int x = CANVAS_X + (i * BUTTON_SIZE);  // Sin spacing - pegados
         int y = TOOLBAR_Y;
         
-        // Square background (gray, yellow if selected)
-        uint8_t bgColor = (static_cast<int>(currentTool) == i) 
-            ? UISystem::COLOR_YELLOW 
-            : UISystem::COLOR_DARK_GRAY;
-        renderer.RectFill(x, y, BUTTON_SIZE, BUTTON_SIZE, bgColor);
+        // Fondo completo negro (16x16)
+        renderer.RectFill(x, y, BUTTON_SIZE, BUTTON_SIZE, 0);  // 0 = black
         
-        // Draw icon centered in button
+        // Determinar color de fondo
+        uint8_t bgColor = UISystem::COLOR_DARK_GRAY;
+        
+        // Resaltar tool seleccionado (solo para tools 0-5)
+        if (i < 6) {
+            // Los primeros 5 son tools normales (0-4)
+            // FilledRect (i=4) usa currentTool==3 (RECT) + filledRectMode
+            int toolIndex = i;
+            if (i == 4) toolIndex = 3;  // FilledRect usa RECT tool
+            if (i == 5) toolIndex = 4;  // Picker
+            
+            if (static_cast<int>(currentTool) == toolIndex) {
+                // Si es RECT, distinguir entre filled y outline
+                if (toolIndex == 3) {
+                    if ((i == 3 && !filledRectMode) || (i == 4 && filledRectMode)) {
+                        bgColor = UISystem::COLOR_GREEN;  // Verde = Seleccionado
+                    }
+                } else {
+                    bgColor = UISystem::COLOR_GREEN;  // Verde = Seleccionado
+                }
+            }
+        }
+        
+        renderer.RectFill(x + 1, y + 1, BUTTON_SIZE - 2, BUTTON_SIZE - 2, bgColor);
+        
+        // Borde lila/indigo: lado IZQUIERDO y SUPERIOR (efecto 3D - sombra)
+        renderer.Line(x + 1, y + 1, x + 1, y + 13, UISystem::COLOR_INDIGO);
+        renderer.Line(x + 1, y + 1, x + 13, y + 1, UISystem::COLOR_INDIGO);
+        
+        // Borde azul OSCURO: lado DERECHO e INFERIOR (efecto 3D - luz)
+        renderer.Line(x + 14, y + 1, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);
+        renderer.Line(x + 1, y + 14, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);
+        
+        // Icono blanco centrado
         if (systemSprites) {
-            systemSprites->DrawSprite(renderer, iconIds[i], x + 4, y + 4, 1);
-        } else {
-            const char* tools[] = { "P", "F", "L", "R", "C" };
-            uint8_t textColor = (static_cast<int>(currentTool) == i)
-                ? UISystem::COLOR_BACKGROUND
-                : UISystem::COLOR_WHITE;
-            renderer.Print(tools[i], x + 4, y + 4, textColor);
+            systemSprites->DrawSprite(renderer, toolIcons[i], x + 4, y + 4, 1);
         }
     }
     
-    // Separator (small gap)
-    int separatorX = CANVAS_X + (5 * (BUTTON_SIZE + BUTTON_SPACING)) + 4;
-    
-    // Import button (SystemSprites ID 6 - LOAD icon)
-    int importX = separatorX;
-    renderer.RectFill(importX, TOOLBAR_Y, BUTTON_SIZE, BUTTON_SIZE, UISystem::COLOR_DARK_GRAY);
-    if (systemSprites) {
-        systemSprites->DrawSprite(renderer, 6, importX + 4, TOOLBAR_Y + 4, 1);  // LOAD icon
-    } else {
-        renderer.Print("I", importX + 4, TOOLBAR_Y + 4, UISystem::COLOR_WHITE);
-    }
-    
-    // Export button (SystemSprites ID 5 - SAVE icon)
-    int exportX = importX + BUTTON_SIZE + BUTTON_SPACING;
-    renderer.RectFill(exportX, TOOLBAR_Y, BUTTON_SIZE, BUTTON_SIZE, UISystem::COLOR_DARK_GRAY);
-    if (systemSprites) {
-        systemSprites->DrawSprite(renderer, 5, exportX + 4, TOOLBAR_Y + 4, 1);  // SAVE icon
-    } else {
-        renderer.Print("E", exportX + 4, TOOLBAR_Y + 4, UISystem::COLOR_WHITE);
-    }
+    // White border around entire toolbar
+    const int TOOLBAR_WIDTH = 8 * BUTTON_SIZE;  // 8 buttons * 16px = 128px
+    renderer.Rect(CANVAS_X - 1, TOOLBAR_Y - 1, 
+                 TOOLBAR_WIDTH + 2, BUTTON_SIZE + 2, 
+                 UISystem::COLOR_WHITE);
 }
 
 // ===== Input Handling =====
@@ -416,37 +444,94 @@ void SpriteEditor::HandlePaletteClick(int mouseX, int mouseY) {
 
 void SpriteEditor::HandleToolbarClick(int mouseX, int mouseY) {
     const int BUTTON_SIZE = 16;
-    const int BUTTON_SPACING = 4;
     
-    // Check if within toolbar Y range
-    if (mouseY < TOOLBAR_Y || mouseY > TOOLBAR_Y + BUTTON_SIZE) return;
-    
-    // Check tool buttons (0-4)
-    for (int i = 0; i < 5; i++) {
-        int buttonX = CANVAS_X + (i * (BUTTON_SIZE + BUTTON_SPACING));
-        if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE) {
-            currentTool = static_cast<Tool>(i);
-            return;
+    // === HORIZONTAL TOOLBAR (bottom) - 8 botones pegados ===
+    if (mouseY >= TOOLBAR_Y && mouseY < TOOLBAR_Y + BUTTON_SIZE) {
+        for (int i = 0; i < 8; i++) {
+            int buttonX = CANVAS_X + (i * BUTTON_SIZE);
+            if (mouseX >= buttonX && mouseX < buttonX + BUTTON_SIZE) {
+                // Botones 0-5: Tools
+                if (i == 0) currentTool = Tool::PENCIL;
+                else if (i == 1) currentTool = Tool::FILL;
+                else if (i == 2) currentTool = Tool::LINE;
+                else if (i == 3) {
+                    currentTool = Tool::RECT;
+                    filledRectMode = false;  // Rect outline
+                }
+                else if (i == 4) {
+                    currentTool = Tool::RECT;
+                    filledRectMode = true;  // Rect filled
+                }
+                else if (i == 5) currentTool = Tool::PICKER;
+                // Botones 6-7: File
+                else if (i == 6) {
+                    Log("[HandleToolbarClick] Import button clicked");
+                    OnImportClicked();
+                }
+                else if (i == 7) {
+                    Log("[HandleToolbarClick] Export button clicked");
+                    OnExportClicked();
+                }
+                return;
+            }
         }
     }
     
-    // Check Import/Export buttons
-    int separatorX = CANVAS_X + (5 * (BUTTON_SIZE + BUTTON_SPACING)) + 4;
-    
-    // Import button
-    int importX = separatorX;
-    if (mouseX >= importX && mouseX < importX + BUTTON_SIZE) {
-        Log("[HandleToolbarClick] Import button clicked");
-        OnImportClicked();
-        return;
+    // === VERTICAL UTILITY BAR (right of canvas) ===
+    if (mouseX >= UTILITY_BAR_X && mouseX < UTILITY_BAR_X + UTILITY_BUTTON_SIZE) {
+        for (int i = 0; i < 8; i++) {  // 8 botones: Grid, FlipH, FlipV, Clear, Copy, Paste, RotLeft, RotRight
+            int buttonY = UTILITY_BAR_Y + (i * UTILITY_BUTTON_SIZE);  // Sin spacing
+            if (mouseY >= buttonY && mouseY < buttonY + UTILITY_BUTTON_SIZE) {
+                HandleUtilityButtonClick(i);
+                return;
+            }
+        }
     }
-    
-    // Export button
-    int exportX = importX + BUTTON_SIZE + BUTTON_SPACING;
-    if (mouseX >= exportX && mouseX < exportX + BUTTON_SIZE) {
-        Log("[HandleToolbarClick] Export button clicked");
-        OnExportClicked();
-        return;
+}
+
+void SpriteEditor::HandleUtilityButtonClick(int index) {
+    switch (index) {
+        case 0: // Grid toggle
+            showGrid = !showGrid;
+            Log(showGrid ? "[Grid] Enabled" : "[Grid] Disabled");
+            break;
+        case 1: // Flip horizontal (era caso 2, ahora 1)
+            SaveHistoryState();
+            MirrorHorizontal();
+            break;
+        case 2: // Flip vertical (era caso 3, ahora 2)
+            SaveHistoryState();
+            MirrorVertical();
+            break;
+        case 3: // Clear canvas (era caso 4, ahora 3)
+            SaveHistoryState();
+            ClearCanvas();
+            Log("[Clear] Canvas cleared");
+            break;
+        case 4: // Copy sprite (era caso 5, ahora 4)
+            std::memcpy(clipboard, canvas, sizeof(clipboard));
+            hasClipboardData = true;
+            Log("[Clipboard] Sprite copied");
+            break;
+        case 5: // Paste sprite (era caso 6, ahora 5)
+            if (hasClipboardData) {
+                SaveHistoryState();
+                std::memcpy(canvas, clipboard, sizeof(canvas));
+                Log("[Clipboard] Sprite pasted");
+            } else {
+                Log("[Clipboard] No data to paste");
+            }
+            break;
+        case 6: // Rotate Left (counter-clockwise)
+            SaveHistoryState();
+            RotateLeft();
+            Log("[Transform] Rotate left");
+            break;
+        case 7: // Rotate Right (clockwise)
+            SaveHistoryState();
+            RotateRight();
+            Log("[Transform] Rotate right");
+            break;
     }
 }
 
@@ -458,9 +543,32 @@ void SpriteEditor::HandleKeyboard(InputManager& input) {
     if (input.isKeyPressed(SDL_SCANCODE_R)) currentTool = Tool::RECT;
     if (input.isKeyPressed(SDL_SCANCODE_C)) currentTool = Tool::PICKER;
     
-    // Check for Ctrl key
+    // Grid toggle (G)
+    if (input.isKeyPressed(SDL_SCANCODE_G)) {
+        showGrid = !showGrid;
+        Log(showGrid ? "[Grid] Enabled" : "[Grid] Disabled");
+    }
+    
+    
+    // Check for modifier keys (used by multiple hotkeys)
     bool ctrlHeld = input.isKeyDown(SDL_SCANCODE_LCTRL) || input.isKeyDown(SDL_SCANCODE_RCTRL);
     bool shiftHeld = input.isKeyDown(SDL_SCANCODE_LSHIFT) || input.isKeyDown(SDL_SCANCODE_RSHIFT);
+    
+    // Filled rectangle mode toggle (X)
+    if (input.isKeyPressed(SDL_SCANCODE_X)) {
+        filledRectMode = !filledRectMode;
+        Log(filledRectMode ? "[Rect] Filled mode" : "[Rect] Outline mode");
+    }
+    
+    // Mirror/Flip tools (H = Horizontal, Shift+H = Vertical)
+    if (input.isKeyPressed(SDL_SCANCODE_H)) {
+        SaveHistoryState();  // Save before transforming
+        if (shiftHeld) {
+            MirrorVertical();
+        } else {
+            MirrorHorizontal();
+        }
+    }
     
     if (ctrlHeld) {
         // Undo (Ctrl+Z) or Redo (Ctrl+Shift+Z)
@@ -483,6 +591,12 @@ void SpriteEditor::HandleKeyboard(InputManager& input) {
             SaveSpritesheet();
             Log("[Save] Spritesheet saved");
         }
+        // Clear canvas (Ctrl+N)
+        if (input.isKeyPressed(SDL_SCANCODE_N)) {
+            SaveHistoryState();  // Save before clearing
+            ClearCanvas();
+            Log("[Clear] Canvas cleared");
+        }
         // Import spritesheet (Ctrl+O)
         if (input.isKeyPressed(SDL_SCANCODE_O)) {
             Log("[Hotkey] Ctrl+O - Import triggered");
@@ -496,6 +610,22 @@ void SpriteEditor::HandleKeyboard(InputManager& input) {
             } else {
                 Log("[Hotkey] Ctrl+E - Export triggered");
                 OnExportClicked();
+            }
+        }
+        // Copy sprite to clipboard (Ctrl+C)
+        if (input.isKeyPressed(SDL_SCANCODE_C)) {
+            std::memcpy(clipboard, canvas, sizeof(clipboard));
+            hasClipboardData = true;
+            Log("[Clipboard] Sprite copied");
+        }
+        // Paste sprite from clipboard (Ctrl+V)
+        if (input.isKeyPressed(SDL_SCANCODE_V)) {
+            if (hasClipboardData) {
+                SaveHistoryState();  // Save before pasting
+                std::memcpy(canvas, clipboard, sizeof(canvas));
+                Log("[Clipboard] Sprite pasted");
+            } else {
+                Log("[Clipboard] No data to paste");
             }
         }
     }
@@ -1249,4 +1379,100 @@ void SpriteEditor::RenderDragPreview(AestheticLayer& renderer, InputManager& inp
             renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
         }
     }
+}
+// Transform Tools Implementation
+
+void SpriteEditor::MirrorHorizontal() {
+    // Flip sprite left-right
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 4; x++) {  // Only need to swap half
+            uint8_t temp = canvas[y][x];
+            canvas[y][x] = canvas[y][7 - x];
+            canvas[y][7 - x] = temp;
+        }
+    }
+    Log("[Transform] Mirror horizontal");
+}
+
+void SpriteEditor::MirrorVertical() {
+    // Flip sprite top-bottom
+    for (int y = 0; y < 4; y++) {  // Only need to swap half
+        for (int x = 0; x < 8; x++) {
+            uint8_t temp = canvas[y][x];
+            canvas[y][x] = canvas[7 - y][x];
+            canvas[7 - y][x] = temp;
+        }
+    }
+    Log("[Transform] Mirror vertical");
+}
+
+void SpriteEditor::RotateLeft() {
+    // Rotate 90° counter-clockwise
+    uint8_t temp[8][8];
+    
+    // Copy to temp with rotation
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            temp[7 - x][y] = canvas[y][x];
+        }
+    }
+    
+    // Copy back
+    std::memcpy(canvas, temp, sizeof(canvas));
+    Log("[Transform] Rotate left");
+}
+
+void SpriteEditor::RotateRight() {
+    // Rotate 90° clockwise
+    uint8_t temp[8][8];
+    
+    // Copy to temp with rotation
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            temp[x][7 - y] = canvas[y][x];
+        }
+    }
+    
+    // Copy back
+    std::memcpy(canvas, temp, sizeof(canvas));
+    Log("[Transform] Rotate right");
+}
+
+void SpriteEditor::RenderUtilityBar(AestheticLayer& renderer) {
+    // 8 iconos: Grid, FlipH, FlipV, Clear, Copy, Paste, RotateLeft, RotateRight
+    const int utilityIcons[] = { 16, 18, 19, 20, 21, 22, 23, 24 };
+    
+    for (int i = 0; i < 8; i++) {  // 8 botones ahora
+        int x = UTILITY_BAR_X;
+        int y = UTILITY_BAR_Y + (i * UTILITY_BUTTON_SIZE);  // Sin spacing - pegados
+        
+        // Fondo completo negro (16x16)
+        renderer.RectFill(x, y, UTILITY_BUTTON_SIZE, UTILITY_BUTTON_SIZE, 0);  // 0 = black
+        
+        // Fondo gris interior (14x14, dejando 1px de cada lado)
+        uint8_t bgColor = UISystem::COLOR_DARK_GRAY;
+        if (i == 0 && showGrid) {
+            bgColor = UISystem::COLOR_GREEN;  // Verde si Grid activo
+        }
+        renderer.RectFill(x + 1, y + 1, UTILITY_BUTTON_SIZE - 2, UTILITY_BUTTON_SIZE - 2, bgColor);
+        
+        // Borde lila/indigo: lado IZQUIERDO y SUPERIOR (efecto 3D - sombra)
+        renderer.Line(x + 1, y + 1, x + 1, y + 13, UISystem::COLOR_INDIGO);  // Lado izquierdo
+        renderer.Line(x + 1, y + 1, x + 13, y + 1, UISystem::COLOR_INDIGO);  // Lado superior
+        
+        // Borde azul OSCURO: lado DERECHO e INFERIOR (efecto 3D - luz)
+        renderer.Line(x + 14, y + 1, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);  // Lado derecho
+        renderer.Line(x + 1, y + 14, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);  // Lado inferior
+        
+        // Icono blanco centrado
+        if (systemSprites) {
+            systemSprites->DrawSprite(renderer, utilityIcons[i], x + 4, y + 4, 1);
+        }
+    }
+    
+    // White border around entire utility bar
+    const int UTILITY_BAR_HEIGHT = 8 * UTILITY_BUTTON_SIZE;  // 8 buttons * 16px = 128px
+    renderer.Rect(UTILITY_BAR_X - 1, UTILITY_BAR_Y - 1, 
+                 UTILITY_BUTTON_SIZE + 2, UTILITY_BAR_HEIGHT + 2, 
+                 UISystem::COLOR_WHITE);
 }

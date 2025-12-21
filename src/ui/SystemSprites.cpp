@@ -1,4 +1,5 @@
 #include "ui/SystemSprites.h"
+#include "ui/SystemColors.h"  // Use system-wide fixed colors
 #include "rendering/AestheticLayer.h"
 #include <cstring>
 #include <iostream>
@@ -21,9 +22,11 @@ void SystemSprites::DrawSprite(AestheticLayer& renderer, int spriteId, int x, in
     
     for (int py = 0; py < 8; py++) {
         for (int px = 0; px < 8; px++) {
-            uint8_t color = sprites[spriteId][py][px];
-            if (color != 0) {  // 0 = transparent
-                renderer.RectFill(x + px * scale, y + py * scale, scale, scale, color);
+            uint8_t colorIndex = sprites[spriteId][py][px];
+            if (colorIndex != 0) {  // 0 = transparent
+                // Use fixed RGB colors from SystemColors (never affected by palette imports)
+                SDL_Color color = SystemColors::GetFixedColor(colorIndex);
+                renderer.RectFillRGB(x + px * scale, y + py * scale, scale, scale, color.r, color.g, color.b);
             }
         }
     }

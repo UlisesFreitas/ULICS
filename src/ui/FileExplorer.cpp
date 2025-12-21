@@ -1,5 +1,5 @@
 #include "ui/FileExplorer.h"
-#include "ui/UISystem.h"
+#include "ui/SystemColors.h"  // Fixed UI colors
 #include "rendering/AestheticLayer.h"
 #include "input/InputManager.h"
 #include "input/InputConstants.h"
@@ -50,11 +50,13 @@ void FileExplorer::Render(AestheticLayer& layer, UISystem& ui, int x, int y, int
         return;
     }
     
-    // Sidebar background
-    layer.RectFill(x, y, width, height, UISystem::COLOR_DARK_GRAY);
+    // Sidebar background (dark gray, RGB fixed)
+    layer.RectFillRGB(x, y, width, height,
+                     SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
     
-    // Border (right edge)
-    layer.Rect(x + width - 1, y, 1, height, UISystem::COLOR_LIGHT_GRAY);
+    // Border (right edge, light gray, RGB fixed)
+    layer.LineRGB(x + width - 1, y, x + width - 1, y + height - 1,
+                 SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
     
     const int CHAR_H = 8;
     const int LINE_H = 10;  // 8px font + 2px spacing
@@ -62,7 +64,8 @@ void FileExplorer::Render(AestheticLayer& layer, UISystem& ui, int x, int y, int
     
     // If no files, show message
     if (files.empty()) {
-        layer.Print("No files", x + 4, y + 12, UISystem::COLOR_LIGHT_GRAY);
+        layer.PrintRGB("No files", x + 4, y + 12,
+                      SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
         return;
     }
     
@@ -81,21 +84,22 @@ void FileExplorer::Render(AestheticLayer& layer, UISystem& ui, int x, int y, int
         bool isSelected = (static_cast<int>(i) == selectedIndex);
         bool isCurrent = (entry.fullPath == currentFile);
         
-        int bgColor = UISystem::COLOR_DARK_GRAY;
-        int textColor = UISystem::COLOR_WHITE;
-        int iconColor = UISystem::COLOR_YELLOW;
+        SDL_Color bgColor = SystemColors::DARK_GRAY;
+        SDL_Color textColor = SystemColors::WHITE;
+        SDL_Color iconColor = SystemColors::YELLOW;
         
         if (isSelected) {
-            bgColor = UISystem::COLOR_INDIGO;
-            textColor = UISystem::COLOR_WHITE;
+            bgColor = SystemColors::LAVENDER;
+            textColor = SystemColors::WHITE;
         } else if (isCurrent) {
-            bgColor = UISystem::COLOR_DARK_PURPLE;
-            textColor = UISystem::COLOR_WHITE;
+            bgColor = SystemColors::DARK_PURPLE;
+            textColor = SystemColors::WHITE;
         }
         
         // Draw background for this item
         if (isSelected || isCurrent) {
-            layer.RectFill(x, renderY - 1, width - 1, LINE_H, bgColor);
+            layer.RectFillRGB(x, renderY - 1, width - 1, LINE_H,
+                             bgColor.r, bgColor.g, bgColor.b);
         }
         
         // Indent for depth
@@ -103,7 +107,8 @@ void FileExplorer::Render(AestheticLayer& layer, UISystem& ui, int x, int y, int
         
         // Icon
         if (!entry.icon.empty()) {
-            layer.Print(entry.icon, indentX, renderY, iconColor);
+            layer.PrintRGB(entry.icon.c_str(), indentX, renderY,
+                          iconColor.r, iconColor.g, iconColor.b);
             indentX += 8;  // Move past icon
         }
         
@@ -117,7 +122,8 @@ void FileExplorer::Render(AestheticLayer& layer, UISystem& ui, int x, int y, int
             displayName = displayName.substr(0, maxChars - 1) + "~";
         }
         
-        layer.Print(displayName, indentX, renderY, textColor);
+        layer.PrintRGB(displayName.c_str(), indentX, renderY,
+                      textColor.r, textColor.g, textColor.b);
         
         renderY += LINE_H;
         itemIndex++;
@@ -125,12 +131,14 @@ void FileExplorer::Render(AestheticLayer& layer, UISystem& ui, int x, int y, int
     
     // Scroll indicators
     if (scrollOffset > 0) {
-        // Up arrow
-        layer.Print("^", x + width - 8, y + 2, UISystem::COLOR_YELLOW);
+        // Up arrow (yellow, RGB fixed)
+        layer.PrintRGB("^", x + width - 8, y + 2,
+                      SystemColors::YELLOW.r, SystemColors::YELLOW.g, SystemColors::YELLOW.b);
     }
     if (scrollOffset + VISIBLE_LINES < static_cast<int>(files.size())) {
-        // Down arrow
-        layer.Print("v", x + width - 8, y + height - 10, UISystem::COLOR_YELLOW);
+        // Down arrow (yellow, RGB fixed)
+        layer.PrintRGB("v", x + width - 8, y + height - 10,
+                      SystemColors::YELLOW.r, SystemColors::YELLOW.g, SystemColors::YELLOW.b);
     }
 }
 

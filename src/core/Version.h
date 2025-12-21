@@ -18,10 +18,10 @@ namespace ULICS {
 
     // Version String
     constexpr const char* VERSION_STRING = "1.1.0";
-    constexpr const char* VERSION_NAME = "Phoenix Rising";
+    constexpr const char* VERSION_NAME = "WTF!";
 
     // Full version string with name
-    constexpr const char* VERSION_FULL = "ULICS v1.1.0 - Phoenix Rising";
+    constexpr const char* VERSION_FULL = "ULICS v1.1.0 - WTF!";
 
     // Build Information
     constexpr const char* BUILD_DATE = __DATE__;

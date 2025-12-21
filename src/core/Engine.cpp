@@ -1,5 +1,6 @@
 #include "core/Engine.h"
 #include "core/HotReload.h"  // Hot reload system (v1.5.1)
+#include "core/Bootstrap.h"  // Bootstrap system
 #include "ui/DebugConsole.h"  // Debug overlay (v1.5.2)
 #include "ui/UISystem.h"      // Custom UI system (Phase 2.0.1)
 #include "ui/CodeEditor.h"    // Code editor (Phase 2.0.2-2.0.4)
@@ -101,6 +102,15 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
     catch (const std::exception& e) {
         std::cerr << "Warning: HotReload failed to initialize: " << e.what() << std::endl;
         // Continue without hot reload
+    }
+    
+    // Initialize Bootstrap system - ensures boot files exist in AppData
+    try {
+        Bootstrap::Initialize();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: Bootstrap failed: " << e.what() << std::endl;
+        // Continue without bootstrap
     }
 
     // Initialize DebugConsole (v1.5.2)
@@ -556,6 +566,39 @@ bool Engine::LoadCartridge(const std::string& cartridgePath) {
         try {
             aestheticLayer->SetPaletteSize(config.palette_size);
             std::cout << "Engine: Applied palette size: " << config.palette_size << std::endl;
+            
+            // Load custom palette.pal if it exists (RGB colors for sprites)
+            std::filesystem::path cartPath(cartridgePath);
+            std::filesystem::path palettePath = cartPath / "palette.pal";
+            
+            if (std::filesystem::exists(palettePath)) {
+                std::cout << "Engine: Found palette.pal, loading..." << std::endl;
+                
+                std::ifstream paletteFile(palettePath, std::ios::binary);
+                if (paletteFile.is_open()) {
+                    std::vector<SDL_Color> palette;
+                    for (int i = 0; i < 32; i++) {
+                        uint8_t r, g, b;
+                        paletteFile.read(reinterpret_cast<char*>(&r), 1);
+                        paletteFile.read(reinterpret_cast<char*>(&g), 1);
+                        paletteFile.read(reinterpret_cast<char*>(&b), 1);
+                        
+                        if (!paletteFile.fail()) {
+                            palette.push_back({r, g, b, 255});
+                        }
+                    }
+                    paletteFile.close();
+                    
+                    if (palette.size() == 32) {
+                        aestheticLayer->LoadPalette(palette);
+                        std::cout << "Engine: Loaded custom palette (32 colors)" << std::endl;
+                    } else {
+                        std::cout << "Engine: Invalid palette.pal, using default" << std::endl;
+                    }
+                }
+            } else {
+                std::cout << "Engine: No custom palette.pal found, using default" << std::endl;
+            }
         } catch (const std::exception& e) {
             std::cerr << "Warning: Could not set palette size: " << e.what() << std::endl;
             // Not fatal - continue with default palette

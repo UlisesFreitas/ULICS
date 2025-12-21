@@ -1,5 +1,6 @@
 #include "ui/CodeEditor.h"
 #include "ui/UISystem.h"
+#include "ui/SystemColors.h"  // Fixed UI colors
 #include "ui/LuaSyntax.h"
 #include "ui/FileExplorer.h"
 #include "rendering/AestheticLayer.h"
@@ -482,15 +483,11 @@ void CodeEditor::Update(InputManager& input) {
 }
 
 void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
-    // === Theme colors ===
-    const int THEME_BG = UISystem::COLOR_BACKGROUND;
-    const int THEME_LINE_NUM_BG = UISystem::COLOR_DARK_GRAY;
-    const int THEME_LINE_NUM_TEXT = UISystem::COLOR_LIGHT_GRAY;
-    const int THEME_BAR = UISystem::COLOR_LIGHT_GRAY;
-    const int THEME_BAR_TEXT = UISystem::COLOR_BACKGROUND;
+    // Colors now come from SystemColors RGB
     
-    // Clear screen
-    layer.Clear(THEME_BG);
+    // Clear screen with blue background (RGB fixed)
+    layer.RectFillRGB(0, 0, 256, 256,
+                      SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
     
     // === Font is 8x8 monospace ===
     const int CHAR_W = 8;
@@ -521,12 +518,15 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
     const int EDITOR_H = EDITOR_BOTTOM - EDITOR_TOP;
     
     // === Title bar ===
-    layer.RectFill(0, 0, SCREEN_W, TITLE_H, THEME_BAR);
-    layer.Print("CODE", 4, 1, THEME_BAR_TEXT);
+    layer.RectFillRGB(0, 0, SCREEN_W, TITLE_H,
+                     SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
+    layer.PrintRGB("CODE", 4, 1,
+                  SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
     
     // === Line number column ===
     // Start after sidebar if it's visible
-    layer.RectFill(SIDEBAR_OFFSET, EDITOR_TOP, LINE_NUM_W, EDITOR_H, THEME_LINE_NUM_BG);
+    layer.RectFillRGB(SIDEBAR_OFFSET, EDITOR_TOP, LINE_NUM_W, EDITOR_H,
+                     SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
     
     // === Render code lines ===
     int y = EDITOR_TOP + 2;  // Start with small top margin
@@ -540,7 +540,8 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
         // Line number (4 digits, right-aligned)
         char lineNum[8];
         sprintf(lineNum, "%4d", i + 1);
-        layer.Print(lineNum, LINE_NUM_X, y, THEME_LINE_NUM_TEXT);
+        layer.PrintRGB(lineNum, LINE_NUM_X, y,
+                      SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
         
         // Code text (with horizontal scroll)
         std::string lineText = lines[i];
@@ -579,7 +580,8 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
                 if (visSelEndCol > visSelStartCol && visSelStartCol < VISIBLE_COLS) {
                     int selX = TEXT_X + (visSelStartCol * CHAR_W);
                     int selW = (visSelEndCol - visSelStartCol) * CHAR_W;
-                    layer.RectFill(selX, y, selW, CHAR_H, UISystem::COLOR_INDIGO);
+                    layer.RectFillRGB(selX, y, selW, CHAR_H,
+                                     SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);
                 }
             }
         }
@@ -600,26 +602,31 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
             static int blink = 0;
             blink = (blink + 1) % 60;
             if (blink < 30) {
-                layer.RectFill(cursorX, cursorY, 2, CHAR_H, UISystem::COLOR_YELLOW);
+                layer.RectFillRGB(cursorX, cursorY, 2, CHAR_H,
+                                 SystemColors::YELLOW.r, SystemColors::YELLOW.g, SystemColors::YELLOW.b);
             }
         }
     }
     
     // === Status bar ===
     int statusY = EDITOR_BOTTOM;
-    layer.RectFill(0, statusY, SCREEN_W, STATUS_H, THEME_BAR);
+    layer.RectFillRGB(0, statusY, SCREEN_W, STATUS_H,
+                     SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
     
     char status[32];
     if (savedMessageTimer > 0) {
         sprintf(status, "Ln%d SAVED", cursorLine + 1);
-        layer.Print(status, 2, statusY + 1, UISystem::COLOR_GREEN);
+        layer.PrintRGB(status, 2, statusY + 1,
+                      SystemColors::GREEN.r, SystemColors::GREEN.g, SystemColors::GREEN.b);
     } else if (reloadedMessageTimer > 0) {
         sprintf(status, "Ln%d RELOAD", cursorLine + 1);
-        layer.Print(status, 2, statusY + 1, UISystem::COLOR_YELLOW);
+        layer.PrintRGB(status, 2, statusY + 1,
+                      SystemColors::YELLOW.r, SystemColors::YELLOW.g, SystemColors::YELLOW.b);
     } else {
         sprintf(status, "Ln%d:%d%s", cursorLine + 1, cursorCol + 1, 
                 modified ? "*" : "");
-        layer.Print(status, 2, statusY + 1, THEME_BAR_TEXT);
+        layer.PrintRGB(status, 2, statusY + 1,
+                      SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
     }
     
     // Filename
@@ -631,7 +638,8 @@ void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
         
         int nameW = displayName.length() * CHAR_W;
         if (nameW < SCREEN_W - 80) {
-            layer.Print(displayName, SCREEN_W - nameW - 2, statusY + 1, THEME_BAR_TEXT);
+            layer.PrintRGB(displayName.c_str(), SCREEN_W - nameW - 2, statusY + 1,
+                          SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
         }
     }
     

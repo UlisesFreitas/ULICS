@@ -25,7 +25,7 @@ AestheticLayer::AestheticLayer(SDL_Renderer* renderer) : renderer(renderer) {
     pixelBuffer.resize(FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT, 0);
 
     // Define the default 32-color palette (PICO-8 + TIC-80 extended).
-    std::vector<SDL_Color> defaultPalette = {
+    palette = {
         // First 16 colors (PICO-8 compatible)
         {0, 0, 0, 255},       // 0: Black
         {29, 43, 83, 255},    // 1: Dark Blue
@@ -62,14 +62,6 @@ AestheticLayer::AestheticLayer(SDL_Renderer* renderer) : renderer(renderer) {
         {86, 108, 134, 255},  // 30: Blue-gray
         {51, 60, 87, 255}     // 31: Dark blue-gray
     };
-    
-    // Initialize both palettes with the same default
-    uiPalette = defaultPalette;      // UI palette (FIXED, never changes)
-    spritePalette = defaultPalette;  // Sprite palette (editable)
-    
-    // Start in UI mode
-    currentPaletteMode = PaletteMode::UI;
-    palette = uiPalette;  // Legacy compatibility
 }
 
 AestheticLayer::~AestheticLayer() {
@@ -135,50 +127,6 @@ SDL_Color AestheticLayer::GetPaletteColor(int index) const {
         return {0, 0, 0, 255};  // Return black for out of range
     }
     return palette[index];
-}
-
-// === Palette Mode System Implementation ===
-
-void AestheticLayer::SetPaletteMode(PaletteMode mode) {
-    currentPaletteMode = mode;
-    
-    // Update legacy palette pointer
-    if (mode == PaletteMode::UI) {
-        palette = uiPalette;
-    } else {
-        palette = spritePalette;
-    }
-}
-
-void AestheticLayer::LoadSpritePalette(const std::vector<SDL_Color>& newPalette) {
-    if (newPalette.empty()) {
-        throw std::invalid_argument("Cannot load an empty sprite palette.");
-    }
-    
-    int size = static_cast<int>(newPalette.size());
-    if (size != 16 && size != 32 && size != 64 && size != 128) {
-        throw std::invalid_argument("Sprite palette size must be 16, 32, 64, or 128.");
-    }
-    
-    // Only update spritePalette, NOT uiPalette
-    spritePalette = newPalette;
-    
-    // IMPORTANT: Always update active palette if in SPRITE mode
-    // This ensures the palette updates immediately
-    if (currentPaletteMode == PaletteMode::SPRITE) {
-        palette = spritePalette;
-    }
-}
-
-SDL_Color AestheticLayer::GetSpritePaletteColor(int index) const {
-    if (index < 0 || index >= static_cast<int>(spritePalette.size())) {
-        return {0, 0, 0, 255};
-    }
-    return spritePalette[index];
-}
-
-int AestheticLayer::GetSpritePaletteSize() const {
-    return static_cast<int>(spritePalette.size());
 }
 
 void AestheticLayer::ResetToDefaultPalette() {
@@ -300,30 +248,99 @@ void AestheticLayer::RectFill(int x, int y, int w, int h, uint8_t colorIndex) {
     }
 }
 
-void AestheticLayer::RectFillRGB(int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_t b) {
-    x -= cameraX;
-    y -= cameraY;
-
-    int x2 = x + w;
-    int y2 = y + h;
-
-    // Clip the rectangle to the screen boundaries
-    int startX = std::max(x, 0);
-    int startY = std::max(y, 0);
-    int endX = std::min(x2, FRAMEBUFFER_WIDTH);
-    int endY = std::min(y2, FRAMEBUFFER_HEIGHT);
-
-    // Calculate ARGB8888 color
-    uint32_t argb = (255 << 24) | (r << 16) | (g << 8) | b;
-
+void AestheticLayer::RectFillRGB(int x, int y, int width, int height, uint8_t r, uint8_t g, uint8_t b) {
+    // Convert RGB to ARGB8888
+    uint32_t argb = (0xFF << 24) | (r << 16) | (g << 8) | b;
+    
+    // Calculate bounds
+    int startX = std::max(0, x);
+    int startY = std::max(0, y);
+    int endX = std::min(FRAMEBUFFER_WIDTH, x + width);
+    int endY = std::min(FRAMEBUFFER_HEIGHT, y + height);
+    
     // Write directly to pixelBuffer, bypassing framebuffer and palette
     for (int j = startY; j < endY; ++j) {
         for (int i = startX; i < endX; ++i) {
             pixelBuffer[j * FRAMEBUFFER_WIDTH + i] = argb;
-            // Also update framebuffer with black to avoid artifacts
-            framebuffer[j * FRAMEBUFFER_WIDTH + i] = 0;
+            // Mark as RGB pixel (255 = skip in Present())
+            framebuffer[j * FRAMEBUFFER_WIDTH + i] = 255;
         }
     }
+}
+
+// === RGB Drawing Functions (for fixed-color UI) ===
+
+void AestheticLayer::PrintRGB(const char* text, int x, int y, uint8_t r, uint8_t g, uint8_t b) {
+    if (!text) return;
+    
+    int cursorX = x;
+    int cursorY = y;
+    
+    while (*text) {
+        char c = *text++;
+        
+        // Handle newline
+        if (c == '\n') {
+            cursorX = x;
+            cursorY += 8;  // Font height is typically 8
+            continue;
+        }
+        
+        // Only render printable ASCII characters
+        if (c >= 32 && c <= 126) {
+            // Calculate the starting index for the character's glyph data
+            int charIndex = (c - 32) * EmbeddedFont::FONT_HEIGHT;
+            
+            // Iterate through the 8 rows of the character's glyph
+            for (int row = 0; row < EmbeddedFont::FONT_HEIGHT; ++row) {
+                uint8_t rowData = EmbeddedFont::FONT_DATA[charIndex + row];
+                
+                // Iterate through the 8 bits of the row data (representing columns)
+                for (int col = 0; col < EmbeddedFont::FONT_WIDTH; ++col) {
+                    // If the bit is set, draw a pixel
+                    if (rowData & (1 << (7 - col))) {
+                        RectFillRGB(cursorX + col, cursorY + row, 1, 1, r, g, b);
+                    }
+                }
+            }
+        }
+        
+        // Move cursor to next character position
+        cursorX += EmbeddedFont::FONT_WIDTH;
+    }
+}
+
+void AestheticLayer::LineRGB(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
+    // Bresenham's line algorithm with RGB
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int err = dx - dy;
+    
+    while (true) {
+        RectFillRGB(x0, y0, 1, 1, r, g, b);  // Draw pixel
+        
+        if (x0 == x1 && y0 == y1) break;
+        
+        int e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
+void AestheticLayer::RectRGB(int x, int y, int width, int height, uint8_t r, uint8_t g, uint8_t b) {
+    // Draw rectangle outline with RGB
+    LineRGB(x, y, x + width - 1, y, r, g, b);                           // Top
+    LineRGB(x + width - 1, y, x + width - 1, y + height - 1, r, g, b); // Right
+    LineRGB(x + width - 1, y + height - 1, x, y + height - 1, r, g, b); // Bottom
+    LineRGB(x, y + height - 1, x, y, r, g, b);                          // Left
 }
 
 void AestheticLayer::Circ(int centerX, int centerY, int radius, uint8_t colorIndex) {
@@ -519,13 +536,16 @@ void AestheticLayer::DrawMap(Map* map, int mx, int my, int sx, int sy, int w, in
 }
 
 void AestheticLayer::Present() {
-    // Select the correct palette based on current mode
-    const std::vector<SDL_Color>& activePalette = 
-        (currentPaletteMode == PaletteMode::SPRITE) ? spritePalette : uiPalette;
-    
-    // 1. Translate our color-indexed framebuffer to a 32-bit pixel buffer.
+    // Translate our color-indexed framebuffer to a 32-bit pixel buffer.
     for (size_t i = 0; i < framebuffer.size(); ++i) {
-        const auto& color = activePalette[framebuffer[i]];
+        uint8_t colorIndex = framebuffer[i];
+        
+        // Skip pixels marked as RGB (written by RectFillRGB)
+        if (colorIndex == 255) {
+            continue;  // Keep existing RGB value in pixelBuffer
+        }
+        
+        const auto& color = palette[colorIndex];
         // ARGB8888 format
         pixelBuffer[i] = (color.a << 24) | (color.r << 16) | (color.g << 8) | color.b;
     }

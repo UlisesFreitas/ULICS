@@ -1,0 +1,32 @@
+=== SPRITE EDITOR LOG ===
+SpriteEditor initialized
+[RecentFiles] Loaded 1 recent files
+[Update] Not active, skipping update. Count: 60
+[Update] Not active, skipping update. Count: 120
+[Update] Not active, skipping update. Count: 180
+[Update] Not active, skipping update. Count: 240
+[RecentFiles] Saved 1 recent files
+SpriteEditor destroyed
+
+[Engine] Calling SpriteEditor::Update() frame: 1
+[Engine] F2 pressed, current mode: 2
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] F1 pressed, current mode: 0
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] F1 pressed, current mode: 1
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] F2 pressed, current mode: 0
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] Calling SpriteEditor::Update() frame: 61
+[Engine] F2 pressed, current mode: 2
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] F2 pressed, current mode: 0
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] Calling SpriteEditor::Update() frame: 121
+[Engine] Calling SpriteEditor::Update() frame: 181
+[Engine] F1 pressed, current mode: 2
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] F2 pressed, current mode: 1
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] Calling SpriteEditor::Update() frame: 241
+[Engine::SetMode] Deactivating Sprite Editor

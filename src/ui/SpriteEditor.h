@@ -71,7 +71,14 @@ private:
     int currentSpriteIndex;          // 0-255
     
     SystemSprites* systemSprites;    // Pointer to system sprites for icons
-    AestheticLayer* aestheticLayer;  // Pointer to renderer (for palette access)
+    AestheticLayer* aestheticLayer;  // Reference to renderer, set in Render()
+    
+    // Helper: Draw UI rectangle with fixed RGB color (not affected by palette imports)
+    void DrawUIRect(AestheticLayer& renderer, int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_t b);
+    void DrawUIRectFill(AestheticLayer& renderer, int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_t b);
+    
+    // Mouse state
+    int lastMouseX = -1;
     
     // Tool and color state
     Tool currentTool;

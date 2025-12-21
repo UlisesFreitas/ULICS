@@ -3,6 +3,7 @@
 #include "input/InputManager.h"
 #include "ui/UISystem.h"
 #include "ui/SystemSprites.h"
+#include "ui/SystemColors.h"  // Fixed UI colors
 #include "utils/FileDialog.h"
 #include <iostream>
 #include <fstream>
@@ -174,40 +175,37 @@ void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
     // === Constants ===
     const int SCREEN_W = 256;
     const int SCREEN_H = 256;
-    const int THEME_BAR = UISystem::COLOR_LIGHT_GRAY;
-    const int THEME_BAR_TEXT = UISystem::COLOR_BACKGROUND;
+    // Colors now come from SystemColors RGB
     
     // Bar heights (from class constants)
     const int TITLE_BAR_H = SpriteEditor::TITLE_BAR_H;
     const int STATUS_BAR_H = SpriteEditor::STATUS_BAR_H;
     
-    // Clear screen
-    renderer.Clear(UISystem::COLOR_DARK_BLUE);
+    // Clear screen with blue background (RGB fixed)
+    renderer.RectFillRGB(0, 0, SCREEN_W, SCREEN_H,
+                         SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
     
-    // === TITLE BAR (matching CodeEditor style) ===
-    renderer.RectFill(0, 0, SCREEN_W, TITLE_BAR_H, THEME_BAR);
-    renderer.Print("SPRITES", 4, 1, THEME_BAR_TEXT);
+    // === TOP BAR (LIGHT GRAY background, BLACK text - RGB fixed) ===
+    renderer.RectFillRGB(0, 0, SCREEN_W, TITLE_BAR_H,
+                         SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
     
-    // Sprite number (right side)
+    renderer.PrintRGB("SPRITES", 4, 1,
+                     SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
+    
     char spriteNum[16];
     sprintf(spriteNum, "#%03d", currentSpriteIndex);
     int numX = SCREEN_W - (strlen(spriteNum) * 8) - 4;
-    renderer.Print(spriteNum, numX, 1, THEME_BAR_TEXT);
+    renderer.PrintRGB(spriteNum, numX, 1,
+                     SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
     
-    // === IMPORTANT: Switch to SPRITE mode for user content ===
-    renderer.SetPaletteMode(AestheticLayer::PaletteMode::SPRITE);
-    
-    // Render palette (shows SPRITE palette - can be edited via Import)
+    // Render palette (uses RectFillRGB for colors)
     RenderPalette(renderer);
     
-    // Render main canvas (uses SPRITE palette)
+    // Render main canvas
     RenderCanvas(renderer);
     
-    // Render spritesheet grid (uses SPRITE palette)
+    // Render spritesheet grid
     RenderSpritesheet(renderer);
-    
-    // === IMPORTANT: Back to UI mode for interface elements ===
-    renderer.SetPaletteMode(AestheticLayer::PaletteMode::UI);
     
     // Render toolbar
     RenderToolbar(renderer);
@@ -223,32 +221,36 @@ void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
         RenderDragPreview(renderer, input);
     }
     
-    // === STATUS BAR (matching CodeEditor style) ===
+    // === STATUS BAR (LIGHT GRAY background, BLACK text - RGB fixed) ===
     int statusY = SCREEN_H - STATUS_BAR_H;
-    renderer.RectFill(0, statusY, SCREEN_W, STATUS_BAR_H, THEME_BAR);
+    renderer.RectFillRGB(0, statusY, SCREEN_W, STATUS_BAR_H,
+                         SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
     
     // Tool name + selected color (left side)
     const char* toolNames[] = { "PENCIL", "FILL", "LINE", "RECT", "PICKER" };
     char status[64];
     sprintf(status, "%s C:%d", toolNames[static_cast<int>(currentTool)], selectedColor);
-    renderer.Print(status, 2, statusY + 1, THEME_BAR_TEXT);
+    renderer.PrintRGB(status, 2, statusY + 1,
+                     SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
     
     // Undo stack info (right side)
     if (!undoStack.empty()) {
         char undoInfo[16];
         sprintf(undoInfo, "U:%d", static_cast<int>(undoStack.size()));
         int undoX = SCREEN_W - (strlen(undoInfo) * 8) - 2;
-        renderer.Print(undoInfo, undoX, statusY + 1, THEME_BAR_TEXT);
+        renderer.PrintRGB(undoInfo, undoX, statusY + 1,
+                         SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
     }
 }
 
 // ===== Rendering Methods =====
 
 void SpriteEditor::RenderCanvas(AestheticLayer& renderer) {
-    // Draw canvas background
-    renderer.RectFill(CANVAS_X, CANVAS_Y, CANVAS_SIZE, CANVAS_SIZE, UISystem::COLOR_BACKGROUND);
+    // Canvas background (black, RGB fixed - not affected by palette)
+    renderer.RectFillRGB(CANVAS_X, CANVAS_Y, CANVAS_SIZE, CANVAS_SIZE,
+                         SystemColors::UI_CANVAS_BG.r, SystemColors::UI_CANVAS_BG.g, SystemColors::UI_CANVAS_BG.b);
     
-    // Draw pixels with 16x zoom
+    // Draw pixels with 16x zoom (uses editable palette for sprites)
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
             uint8_t color = canvas[y][x];
@@ -260,22 +262,24 @@ void SpriteEditor::RenderCanvas(AestheticLayer& renderer) {
         }
     }
     
-    
-    // Draw grid (toggle with 'G' key)
+    // Draw grid (toggle with 'G' key) - gray, RGB fixed
     if (showGrid) {
         for (int i = 0; i <= 8; i++) {
             // Vertical lines
             int x = CANVAS_X + (i * CANVAS_ZOOM);
-            renderer.Line(x, CANVAS_Y, x, CANVAS_Y + CANVAS_SIZE - 1, UISystem::COLOR_DARK_GRAY);
+            renderer.LineRGB(x, CANVAS_Y, x, CANVAS_Y + CANVAS_SIZE - 1,
+                           SystemColors::UI_GRID.r, SystemColors::UI_GRID.g, SystemColors::UI_GRID.b);
             
             // Horizontal lines
             int y = CANVAS_Y + (i * CANVAS_ZOOM);
-            renderer.Line(CANVAS_X, y, CANVAS_X + CANVAS_SIZE - 1, y, UISystem::COLOR_DARK_GRAY);
+            renderer.LineRGB(CANVAS_X, y, CANVAS_X + CANVAS_SIZE - 1, y,
+                           SystemColors::UI_GRID.r, SystemColors::UI_GRID.g, SystemColors::UI_GRID.b);
         }
     }
     
-    // Canvas border
-    renderer.Rect(CANVAS_X - 1, CANVAS_Y - 1, CANVAS_SIZE + 2, CANVAS_SIZE + 2, UISystem::COLOR_WHITE);
+    // Canvas border (white, RGB fixed)
+    renderer.RectRGB(CANVAS_X - 1, CANVAS_Y - 1, CANVAS_SIZE + 2, CANVAS_SIZE + 2,
+                    SystemColors::UI_BORDER_LIGHT.r, SystemColors::UI_BORDER_LIGHT.g, SystemColors::UI_BORDER_LIGHT.b);
 }
 
 void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
@@ -285,21 +289,29 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
             int x = PALETTE_X + (col * COLOR_BOX_SIZE);
             int y = PALETTE_Y + (row * COLOR_BOX_SIZE);
             
-            // Draw color box (uses active sprite palette)
-            renderer.RectFill(x, y, COLOR_BOX_SIZE, COLOR_BOX_SIZE, colorIndex);
+            // Draw color box with RGB directly from palette
+            // This bypasses the palette system so it always shows the correct colors
+            if (aestheticLayer) {
+                SDL_Color color = aestheticLayer->GetPaletteColor(colorIndex);
+                renderer.RectFillRGB(x, y, COLOR_BOX_SIZE, COLOR_BOX_SIZE, color.r, color.g, color.b);
+            } else {
+                // Fallback: draw with indexed color (will use current palette mode)
+                renderer.RectFill(x, y, COLOR_BOX_SIZE, COLOR_BOX_SIZE, colorIndex);
+            }
             
             // Highlight selected color with white border
             if (colorIndex == selectedColor) {
-                renderer.Rect(x, y, COLOR_BOX_SIZE, COLOR_BOX_SIZE, UISystem::COLOR_WHITE);
+                renderer.RectRGB(x, y, COLOR_BOX_SIZE, COLOR_BOX_SIZE,
+                                SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
             }
         }
     }
     
     // White border around entire palette (matching canvas style)
-    renderer.Rect(PALETTE_X - 1, PALETTE_Y - 1, 
-                 PALETTE_COLS * COLOR_BOX_SIZE + 2, 
-                 PALETTE_ROWS * COLOR_BOX_SIZE + 2, 
-                 UISystem::COLOR_WHITE);
+    renderer.RectRGB(PALETTE_X - 1, PALETTE_Y - 1, 
+                    (PALETTE_COLS * COLOR_BOX_SIZE) + 2, 
+                    (PALETTE_ROWS * COLOR_BOX_SIZE) + 2,
+                    SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
     
     // === Palette Import/Export Buttons (vertical, right of palette) ===
     const int buttonIcons[] = { 6, 5 };  // 6 = Import (Load), 5 = Export (Save)
@@ -311,14 +323,15 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
         // Fondo negro
         renderer.RectFill(x, y, PALETTE_BUTTON_SIZE, PALETTE_BUTTON_SIZE, 0);
         
-        // Fondo gris interior
-        renderer.RectFill(x + 1, y + 1, PALETTE_BUTTON_SIZE - 2, PALETTE_BUTTON_SIZE - 2, UISystem::COLOR_DARK_GRAY);
+        // Fondo gris interior (RGB fixed)
+        renderer.RectFillRGB(x + 1, y + 1, PALETTE_BUTTON_SIZE - 2, PALETTE_BUTTON_SIZE - 2,
+                            SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
         
-        // Bordes 3D
-        renderer.Line(x + 1, y + 1, x + 1, y + 13, UISystem::COLOR_INDIGO);
-        renderer.Line(x + 1, y + 1, x + 13, y + 1, UISystem::COLOR_INDIGO);
-        renderer.Line(x + 14, y + 1, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);
-        renderer.Line(x + 1, y + 14, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);
+        // Bordes 3D (RGB fixed)
+        renderer.LineRGB(x + 1, y + 1, x + 1, y + 13, SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);
+        renderer.LineRGB(x + 1, y + 1, x + 13, y + 1, SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);
+        renderer.LineRGB(x + 14, y + 1, x + 14, y + 14, SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
+        renderer.LineRGB(x + 1, y + 14, x + 14, y + 14, SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
         
         // Icono
         if (systemSprites) {
@@ -326,44 +339,45 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
         }
     }
     
-    // White border around both buttons
-    renderer.Rect(PALETTE_BUTTON_X - 1, PALETTE_BUTTON_Y - 1, 
-                 PALETTE_BUTTON_SIZE + 2, (2 * PALETTE_BUTTON_SIZE) + 2, 
-                 UISystem::COLOR_WHITE);
+    // White border around both buttons (RGB fixed)
+    renderer.RectRGB(PALETTE_BUTTON_X - 1, PALETTE_BUTTON_Y - 1, 
+                    PALETTE_BUTTON_SIZE + 2, (2 * PALETTE_BUTTON_SIZE) + 2,
+                    SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
 }
 
 void SpriteEditor::RenderSpritesheet(AestheticLayer& renderer) {
-    // Render 16x8 grid of sprites (128 sprites visible)
+    // Background (black, RGB fixed)
+    int sheetW = SHEET_COLS * 8;  // 16 * 8 = 128
+    int sheetH = SHEET_ROWS * 8;  // 8 * 8 = 64
+    renderer.RectFillRGB(SHEET_X, SHEET_Y, sheetW, sheetH,
+                         SystemColors::UI_CANVAS_BG.r, SystemColors::UI_CANVAS_BG.g, SystemColors::UI_CANVAS_BG.b);
+    
+    // Draw all visible sprites (uses editable palette)
     for (int row = 0; row < SHEET_ROWS; row++) {
         for (int col = 0; col < SHEET_COLS; col++) {
             int spriteIndex = row * SHEET_COLS + col;
-            int sheetX = SHEET_X + (col * SHEET_SPRITE_SIZE);
-            int sheetY = SHEET_Y + (row * SHEET_SPRITE_SIZE);
+            int screenX = SHEET_X + (col * 8);
+            int screenY = SHEET_Y + (row * 8);
             
-            // Draw each sprite at 8x8 size (1:1, no zoom)
+            // Draw sprite pixels (all colors including 0)
             for (int py = 0; py < 8; py++) {
                 for (int px = 0; px < 8; px++) {
-                    uint8_t color = spriteSheet[spriteIndex][py][px];
-                    if (color != 0) {  // Skip transparent
-                        renderer.RectFill(sheetX + px, sheetY + py, 1, 1, color);
-                    }
+                    uint8_t colorIndex = spriteSheet[spriteIndex][py][px];
+                    renderer.RectFill(screenX + px, screenY + py, 1, 1, colorIndex);
                 }
             }
             
-            // Highlight currently selected sprite
+            // Highlight currently selected sprite (yellow, RGB fixed)
             if (spriteIndex == currentSpriteIndex) {
-                renderer.Rect(sheetX - 1, sheetY - 1, 
-                             SHEET_SPRITE_SIZE + 2, SHEET_SPRITE_SIZE + 2, 
-                             UISystem::COLOR_YELLOW);
+                renderer.RectRGB(screenX - 1, screenY - 1, 10, 10,
+                                SystemColors::UI_HIGHLIGHT.r, SystemColors::UI_HIGHLIGHT.g, SystemColors::UI_HIGHLIGHT.b);
             }
         }
     }
     
-    // Draw grid lines
-    renderer.Rect(SHEET_X - 1, SHEET_Y - 1, 
-                 SHEET_COLS * SHEET_SPRITE_SIZE + 2, 
-                 SHEET_ROWS * SHEET_SPRITE_SIZE + 2, 
-                 UISystem::COLOR_DARK_GRAY);
+    // Draw grid outline (gray, RGB fixed)
+    renderer.RectRGB(SHEET_X - 1, SHEET_Y - 1, sheetW + 2, sheetH + 2,
+                    SystemColors::UI_BORDER_MEDIUM.r, SystemColors::UI_BORDER_MEDIUM.g, SystemColors::UI_BORDER_MEDIUM.b);
 }
 
 void SpriteEditor::RenderToolbar(AestheticLayer& renderer) {
@@ -380,8 +394,8 @@ void SpriteEditor::RenderToolbar(AestheticLayer& renderer) {
         // Fondo completo negro (16x16)
         renderer.RectFill(x, y, BUTTON_SIZE, BUTTON_SIZE, 0);  // 0 = black
         
-        // Determinar color de fondo
-        uint8_t bgColor = UISystem::COLOR_DARK_GRAY;
+        // Determinar color de fondo RGB
+        SDL_Color bgColor = SystemColors::DARK_GRAY;
         
         // Resaltar tool seleccionado (solo para tools 0-5)
         if (i < 6) {
@@ -395,23 +409,23 @@ void SpriteEditor::RenderToolbar(AestheticLayer& renderer) {
                 // Si es RECT, distinguir entre filled y outline
                 if (toolIndex == 3) {
                     if ((i == 3 && !filledRectMode) || (i == 4 && filledRectMode)) {
-                        bgColor = UISystem::COLOR_GREEN;  // Verde = Seleccionado
+                        bgColor = SystemColors::GREEN;  // Verde = Seleccionado
                     }
                 } else {
-                    bgColor = UISystem::COLOR_GREEN;  // Verde = Seleccionado
+                    bgColor = SystemColors::GREEN;  // Verde = Seleccionado
                 }
             }
         }
         
-        renderer.RectFill(x + 1, y + 1, BUTTON_SIZE - 2, BUTTON_SIZE - 2, bgColor);
+        renderer.RectFillRGB(x + 1, y + 1, BUTTON_SIZE - 2, BUTTON_SIZE - 2, bgColor.r, bgColor.g, bgColor.b);
         
         // Borde lila/indigo: lado IZQUIERDO y SUPERIOR (efecto 3D - sombra)
-        renderer.Line(x + 1, y + 1, x + 1, y + 13, UISystem::COLOR_INDIGO);
-        renderer.Line(x + 1, y + 1, x + 13, y + 1, UISystem::COLOR_INDIGO);
+        renderer.LineRGB(x + 1, y + 1, x + 1, y + 13, SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);
+        renderer.LineRGB(x + 1, y + 1, x + 13, y + 1, SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);
         
-        // Borde azul OSCURO: lado DERECHO e INFERIOR (efecto 3D - luz)
-        renderer.Line(x + 14, y + 1, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);
-        renderer.Line(x + 1, y + 14, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);
+        // Sombra inferior y derecha (más oscuro)
+        renderer.LineRGB(x + 14, y + 1, x + 14, y + 14, SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
+        renderer.LineRGB(x + 1, y + 14, x + 14, y + 14, SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
         
         // Icono blanco centrado
         if (systemSprites) {
@@ -421,9 +435,9 @@ void SpriteEditor::RenderToolbar(AestheticLayer& renderer) {
     
     // White border around entire toolbar
     const int TOOLBAR_WIDTH = 8 * BUTTON_SIZE;  // 8 buttons * 16px = 128px
-    renderer.Rect(CANVAS_X - 1, TOOLBAR_Y - 1, 
-                 TOOLBAR_WIDTH + 2, BUTTON_SIZE + 2, 
-                 UISystem::COLOR_WHITE);
+    renderer.RectRGB(CANVAS_X - 1, TOOLBAR_Y - 1, 
+                    TOOLBAR_WIDTH + 2, BUTTON_SIZE + 2, 
+                    SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
 }
 
 // ===== Input Handling =====
@@ -1356,21 +1370,19 @@ void SpriteEditor::RenderCursorHighlight(AestheticLayer& renderer, InputManager&
     int mouseX = input.getMouseX();
     int mouseY = input.getMouseY();
     
-    // Check if mouse is over canvas
+    // Only highlight if mouse is over canvas
     if (mouseX >= CANVAS_X && mouseX < CANVAS_X + CANVAS_SIZE &&
         mouseY >= CANVAS_Y && mouseY < CANVAS_Y + CANVAS_SIZE) {
         
-        int canvasX = ScreenToCanvasX(mouseX);
-        int canvasY = ScreenToCanvasY(mouseY);
+        // Calculate which pixel the mouse is over
+        int canvasX = (mouseX - CANVAS_X) / CANVAS_ZOOM;
+        int canvasY = (mouseY - CANVAS_Y) / CANVAS_ZOOM;
         
-        if (IsInCanvas(canvasX, canvasY)) {
-            // Draw highlight border around the pixel under the cursor
+        if (canvasX >= 0 && canvasX < 8 && canvasY >= 0 && canvasY < 8) {
             int screenX = CANVAS_X + (canvasX * CANVAS_ZOOM);
             int screenY = CANVAS_Y + (canvasY * CANVAS_ZOOM);
-            
-            //  Border blanco alrededor del pixel
-            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, 
-                         UISystem::COLOR_WHITE);
+            renderer.RectRGB(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM,
+                           SystemColors::UI_BORDER_LIGHT.r, SystemColors::UI_BORDER_LIGHT.g, SystemColors::UI_BORDER_LIGHT.b);
         }
     }
 }
@@ -1386,7 +1398,8 @@ void SpriteEditor::RenderDragPreview(AestheticLayer& renderer, InputManager& inp
     
     if (!IsInCanvas(endCanvasX, endCanvasY)) return;
     
-    const int PREVIEW_COLOR = UISystem::COLOR_YELLOW;  // Color amarillo para preview
+    // Preview color from SystemColors
+    SDL_Color previewColor = SystemColors::YELLOW;
     
     if (currentTool == Tool::LINE) {
         //  Preview de línea usando Bresenham
@@ -1405,7 +1418,8 @@ void SpriteEditor::RenderDragPreview(AestheticLayer& renderer, InputManager& inp
             // Draw preview pixel (no fill, just outline)
             int screenX = CANVAS_X + (x * CANVAS_ZOOM);
             int screenY = CANVAS_Y + (y * CANVAS_ZOOM);
-            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+            renderer.RectRGB(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM,
+                            previewColor.r, previewColor.g, previewColor.b);
             
             if (x == x2 && y == y2) break;
             
@@ -1426,22 +1440,26 @@ void SpriteEditor::RenderDragPreview(AestheticLayer& renderer, InputManager& inp
             // Top edge
             int screenX = CANVAS_X + (x * CANVAS_ZOOM);
             int screenY = CANVAS_Y + (minY * CANVAS_ZOOM);
-            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+            renderer.RectRGB(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM,
+                            previewColor.r, previewColor.g, previewColor.b);
             
             // Bottom edge
             screenY = CANVAS_Y + (maxY * CANVAS_ZOOM);
-            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+            renderer.RectRGB(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM,
+                            previewColor.r, previewColor.g, previewColor.b);
         }
         
         for (int y = minY + 1; y < maxY; y++) {
             // Left edge
             int screenX = CANVAS_X + (minX * CANVAS_ZOOM);
             int screenY = CANVAS_Y + (y * CANVAS_ZOOM);
-            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+            renderer.RectRGB(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM,
+                            previewColor.r, previewColor.g, previewColor.b);
             
             // Right edge
             screenX = CANVAS_X + (maxX * CANVAS_ZOOM);
-            renderer.Rect(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM, PREVIEW_COLOR);
+            renderer.RectRGB(screenX, screenY, CANVAS_ZOOM, CANVAS_ZOOM,
+                            previewColor.r, previewColor.g, previewColor.b);
         }
     }
 }
@@ -1515,19 +1533,19 @@ void SpriteEditor::RenderUtilityBar(AestheticLayer& renderer) {
         renderer.RectFill(x, y, UTILITY_BUTTON_SIZE, UTILITY_BUTTON_SIZE, 0);  // 0 = black
         
         // Fondo gris interior (14x14, dejando 1px de cada lado)
-        uint8_t bgColor = UISystem::COLOR_DARK_GRAY;
-        if (i == 0 && showGrid) {
-            bgColor = UISystem::COLOR_GREEN;  // Verde si Grid activo
+        SDL_Color bgColor = SystemColors::DARK_GRAY;
+        if (i == 0) {  // Grid toggle button
+            bgColor = showGrid ? SystemColors::GREEN : SystemColors::DARK_GRAY;  // Verde si Grid activo
         }
-        renderer.RectFill(x + 1, y + 1, UTILITY_BUTTON_SIZE - 2, UTILITY_BUTTON_SIZE - 2, bgColor);
+        renderer.RectFillRGB(x + 1, y + 1, UTILITY_BUTTON_SIZE - 2, UTILITY_BUTTON_SIZE - 2, bgColor.r, bgColor.g, bgColor.b);
         
         // Borde lila/indigo: lado IZQUIERDO y SUPERIOR (efecto 3D - sombra)
-        renderer.Line(x + 1, y + 1, x + 1, y + 13, UISystem::COLOR_INDIGO);  // Lado izquierdo
-        renderer.Line(x + 1, y + 1, x + 13, y + 1, UISystem::COLOR_INDIGO);  // Lado superior
+        renderer.LineRGB(x + 1, y + 1, x + 1, y + 13, SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);  // Lado izquierdo
+        renderer.LineRGB(x + 1, y + 1, x + 13, y + 1, SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);  // Lado superior
         
-        // Borde azul OSCURO: lado DERECHO e INFERIOR (efecto 3D - luz)
-        renderer.Line(x + 14, y + 1, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);  // Lado derecho
-        renderer.Line(x + 1, y + 14, x + 14, y + 14, UISystem::COLOR_DARK_BLUE);  // Lado inferior
+        // Sombra (lado derecho e inferior)
+        renderer.LineRGB(x + 14, y + 1, x + 14, y + 14, SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);  // Lado derecho
+        renderer.LineRGB(x + 1, y + 14, x + 14, y + 14, SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);  // Lado inferior
         
         // Icono blanco centrado
         if (systemSprites) {
@@ -1537,9 +1555,9 @@ void SpriteEditor::RenderUtilityBar(AestheticLayer& renderer) {
     
     // White border around entire utility bar
     const int UTILITY_BAR_HEIGHT = 8 * UTILITY_BUTTON_SIZE;  // 8 buttons * 16px = 128px
-    renderer.Rect(UTILITY_BAR_X - 1, UTILITY_BAR_Y - 1, 
-                 UTILITY_BUTTON_SIZE + 2, UTILITY_BAR_HEIGHT + 2, 
-                 UISystem::COLOR_WHITE);
+    renderer.RectRGB(UTILITY_BAR_X - 1, UTILITY_BAR_Y - 1, 
+                    UTILITY_BUTTON_SIZE + 2, UTILITY_BAR_HEIGHT + 2,
+                    SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
 }
 
 void SpriteEditor::HandlePaletteButtonClick(int buttonIndex) {
@@ -1592,14 +1610,13 @@ void SpriteEditor::ImportPalette() {
     
     file.close();
     
-    // Apply palette to AestheticLayer (ONLY sprite palette, NOT UI)
+    // Apply ALL 32 colors from imported palette
     if (aestheticLayer) {
-        aestheticLayer->LoadSpritePalette(newPalette);
+        aestheticLayer->LoadPalette(newPalette);
+        Log("[Palette] Successfully imported 32 colors");
         
-        // Force palette update by switching to SPRITE mode
-        aestheticLayer->SetPaletteMode(AestheticLayer::PaletteMode::SPRITE);
-        
-        Log("[Palette] Successfully imported 32 colors to SPRITE palette");
+        // Auto-save to cartridge's palette.pal
+        SaveCartridgePalette();
     }
 }
 
@@ -1635,12 +1652,12 @@ void SpriteEditor::ExportPalette() {
         return;
     }
     
-    int paletteSize = aestheticLayer->GetSpritePaletteSize();
-    Log("[Palette] Current sprite palette size: " + std::to_string(paletteSize));
+    int paletteSize = aestheticLayer->GetPaletteSize();
+    Log("[Palette] Current palette size: " + std::to_string(paletteSize));
     
     // Write palette data (always export 32 colors, pad with black if needed)
     for (int i = 0; i < 32; i++) {
-        SDL_Color color = aestheticLayer->GetSpritePaletteColor(i);
+        SDL_Color color = aestheticLayer->GetPaletteColor(i);
         
         file.write(reinterpret_cast<const char*>(&color.r), 1);
         file.write(reinterpret_cast<const char*>(&color.g), 1);
@@ -1698,10 +1715,27 @@ void SpriteEditor::LoadCartridgePalette() {
     
     file.close();
     
+    // === VALIDATE: Check if palette is empty (all or mostly black) ===
+    int nonBlackColors = 0;
+    for (const auto& color : newPalette) {
+        if (color.r > 10 || color.g > 10 || color.b > 10) {
+            nonBlackColors++;
+        }
+    }
+    
+    if (nonBlackColors < 4) {
+        Log("[Palette] WARN: Palette appears empty (" + std::to_string(nonBlackColors) + " non-black colors), recreating");
+        std::filesystem::remove(palettePath);
+        SaveCartridgePalette();
+        
+        // Reload the newly created default palette
+        LoadCartridgePalette();
+        return;
+    }
+    
     // Apply palette to AestheticLayer
     if (aestheticLayer) {
-        aestheticLayer->LoadSpritePalette(newPalette);
-        aestheticLayer->SetPaletteMode(AestheticLayer::PaletteMode::SPRITE);
+        aestheticLayer->LoadPalette(newPalette);
         Log("[Palette] Loaded palette.pal successfully (32 colors)");
     }
 }
@@ -1728,7 +1762,7 @@ void SpriteEditor::SaveCartridgePalette() {
     // Write palette data (always export 32 colors)
     if (aestheticLayer) {
         for (int i = 0; i < 32; i++) {
-            SDL_Color color = aestheticLayer->GetSpritePaletteColor(i);
+            SDL_Color color = aestheticLayer->GetPaletteColor(i);
             file.write(reinterpret_cast<const char*>(&color.r), 1);
             file.write(reinterpret_cast<const char*>(&color.g), 1);
             file.write(reinterpret_cast<const char*>(&color.b), 1);
@@ -1736,15 +1770,27 @@ void SpriteEditor::SaveCartridgePalette() {
         file.close();
         Log("[Palette] Saved palette.pal successfully");
     } else {
-        // Write default palette if no aestheticLayer
+        // Write default 32-color palette (PICO-8 + TIC-80)
+        const uint8_t defaultPalette[32][3] = {
+            // First 16 colors (PICO-8)
+            {0, 0, 0}, {29, 43, 83}, {126, 37, 83}, {0, 135, 81},
+            {171, 82, 54}, {95, 87, 79}, {194, 195, 199}, {255, 241, 232},
+            {255, 0, 77}, {255, 163, 0}, {255, 236, 39}, {0, 228, 54},
+            {41, 173, 255}, {131, 118, 156}, {255, 119, 168}, {255, 204, 170},
+            // Extended 16 colors (TIC-80)
+            {26, 28, 44}, {93, 39, 93}, {177, 62, 83}, {239, 125, 87},
+            {255, 205, 117}, {167, 240, 112}, {56, 183, 100}, {37, 113, 121},
+            {41, 54, 111}, {59, 93, 201}, {65, 166, 246}, {115, 239, 247},
+            {244, 244, 244}, {148, 176, 194}, {86, 108, 134}, {51, 60, 87}
+        };
+        
         for (int i = 0; i < 32; i++) {
-            uint8_t r = 0, g = 0, b = 0;
-            file.write(reinterpret_cast<const char*>(&r), 1);
-            file.write(reinterpret_cast<const char*>(&g), 1);
-            file.write(reinterpret_cast<const char*>(&b), 1);
+            file.write(reinterpret_cast<const char*>(&defaultPalette[i][0]), 1);
+            file.write(reinterpret_cast<const char*>(&defaultPalette[i][1]), 1);
+            file.write(reinterpret_cast<const char*>(&defaultPalette[i][2]), 1);
         }
         file.close();
-        Log("[Palette] Saved default (empty) palette.pal");
+        Log("[Palette] Saved default 32-color palette.pal");
     }
 }
 

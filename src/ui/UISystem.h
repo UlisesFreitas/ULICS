@@ -118,37 +118,6 @@ public:
      */
     int GetTextWidth(const std::string& text) const;
 
-    // ============================================
-    // COLOR SCHEME (PICO-8 inspired)
-    // ============================================
-    
-    static constexpr int COLOR_BACKGROUND = 0;      // Black
-    static constexpr int COLOR_DARK_BLUE = 1;       // Dark blue
-    static constexpr int COLOR_DARK_PURPLE = 2;     // Dark purple
-    static constexpr int COLOR_DARK_GREEN = 3;      // Dark green
-    static constexpr int COLOR_BROWN = 4;           // Brown
-    static constexpr int COLOR_DARK_GRAY = 5;       // Dark gray
-    static constexpr int COLOR_LIGHT_GRAY = 6;      // Light gray
-    static constexpr int COLOR_WHITE = 7;           // White
-    static constexpr int COLOR_RED = 8;             // Red
-    static constexpr int COLOR_ORANGE = 9;          // Orange
-    static constexpr int COLOR_YELLOW = 10;         // Yellow
-    static constexpr int COLOR_GREEN = 11;          // Green
-    static constexpr int COLOR_BLUE = 12;           // Blue
-    static constexpr int COLOR_INDIGO = 13;         // Indigo (purple)
-    static constexpr int COLOR_PINK = 14;           // Pink
-    static constexpr int COLOR_PEACH = 15;          // Peach
-
-    // UI Theme colors
-    static constexpr int COLOR_PANEL_BG = COLOR_DARK_BLUE;
-    static constexpr int COLOR_PANEL_BORDER = COLOR_LIGHT_GRAY;
-    static constexpr int COLOR_TITLE_BG = COLOR_INDIGO;
-    static constexpr int COLOR_TITLE_TEXT = COLOR_WHITE;
-    static constexpr int COLOR_TEXT = COLOR_WHITE;
-    static constexpr int COLOR_BUTTON = COLOR_DARK_PURPLE;
-    static constexpr int COLOR_BUTTON_HOVER = COLOR_INDIGO;
-    static constexpr int COLOR_BUTTON_PRESSED = COLOR_DARK_GREEN;
-
 private:
     // Helper: Word wrap text
     std::vector<std::string> WrapText(const std::string& text, int maxWidth);

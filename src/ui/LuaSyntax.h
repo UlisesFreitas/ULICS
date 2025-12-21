@@ -4,7 +4,8 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include "ui/UISystem.h"
+#include "ui/SystemColors.h"  // Fixed UI colors
+#include <SDL.h>  // For SDL_Color
 
 /**
  * @brief LuaSyntax - Lua syntax highlighting definitions
@@ -80,24 +81,24 @@ enum class TokenType {
 // TOKEN COLORS
 // ============================================
 
-inline int GetColorForToken(TokenType type) {
+inline SDL_Color GetColorForToken(TokenType type) {
     switch (type) {
         case TokenType::KEYWORD:
-            return UISystem::COLOR_BLUE;      // Blue (12) - Keywords stand out
+            return SystemColors::BLUE;      // Blue - Keywords stand out
         case TokenType::BUILTIN:
-            return UISystem::COLOR_GREEN;     // Green (11) - ULICS/Lua functions
+            return SystemColors::GREEN;     // Green - ULICS/Lua functions
         case TokenType::STRING:
-            return UISystem::COLOR_PINK;      // Pink (14) - Strings
+            return SystemColors::PINK;      // Pink - Strings
         case TokenType::NUMBER:
-            return UISystem::COLOR_ORANGE;    // Orange (9) - Numbers
+            return SystemColors::ORANGE;    // Orange - Numbers
         case TokenType::COMMENT:
-            return UISystem::COLOR_DARK_GRAY; // Gray (5) - Comments
+            return SystemColors::DARK_GRAY; // Gray - Comments
         case TokenType::OPERATOR:
-            return UISystem::COLOR_PEACH;     // Peach (15) - Operators
+            return SystemColors::PEACH;     // Peach - Operators
         case TokenType::IDENTIFIER:
         case TokenType::DEFAULT:
         default:
-            return UISystem::COLOR_WHITE;     // White (7) - Default
+            return SystemColors::WHITE;     // White - Default
     }
 }
 

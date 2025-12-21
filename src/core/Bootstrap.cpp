@@ -1,5 +1,4 @@
 #include "core/Bootstrap.h"
-#include "scripting/SystemScripts.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -12,7 +11,7 @@ std::string GetBootPath() {
     char path[MAX_PATH];
     if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path))) {
         std::string appData(path);
-        return appData + "\\ULICS\\.ulics_boot";
+        return appData + "\\com.ulics.dev\\ULICS\\.ulics_boot";
     }
     
     // Fallback to local directory if SHGetFolderPath fails
@@ -37,8 +36,19 @@ void EnsureBootFiles() {
         std::cout << "[Bootstrap] Creating default main.lua..." << std::endl;
         std::ofstream mainLua(mainLuaPath);
         if (mainLua.is_open()) {
-            // Use embedded boot script from SystemScripts
-            mainLua << EmbeddedScripts:: bootMainLua;
+            // Simple boot script
+            mainLua << "-- ULICS Boot Script\n";
+            mainLua << "-- This is the default boot cartridge\n\n";
+            mainLua << "function _init()\n";
+            mainLua << "    print(\"ULICS System Ready\", 10, 10, 7)\n";
+            mainLua << "end\n\n";
+            mainLua << "function _update()\n";
+            mainLua << "end\n\n";
+            mainLua << "function _draw()\n";
+            mainLua << "    cls(1)\n";
+            mainLua << "    print(\"ULICS FANTASY CONSOLE\", 60, 100, 7)\n";
+            mainLua << "    print(\"Press F1 for Code Editor\", 50, 120, 6)\n";
+            mainLua << "end\n";
             mainLua.close();
             std::cout << "[Bootstrap] Created: " << mainLuaPath << std::endl;
         } else {

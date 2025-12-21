@@ -27,7 +27,8 @@ void SyntaxHighlighter::RenderLine(const std::string& line, int x, int y, Aesthe
         // Comments (-- to end of line)
         if (c == '-' && i + 1 < line.length() && line[i + 1] == '-') {
             std::string comment = line.substr(i);
-            layer.Print(comment, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::COMMENT));
+            SDL_Color color = LuaSyntax::GetColorForToken(LuaSyntax::TokenType::COMMENT);
+            layer.PrintRGB(comment.c_str(), currentX, y, color.r, color.g, color.b);
             break;
         }
         
@@ -45,7 +46,8 @@ void SyntaxHighlighter::RenderLine(const std::string& line, int x, int y, Aesthe
             }
             
             std::string str = line.substr(i, endQuote - i);
-            layer.Print(str, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::STRING));
+            SDL_Color color = LuaSyntax::GetColorForToken(LuaSyntax::TokenType::STRING);
+            layer.PrintRGB(str.c_str(), currentX, y, color.r, color.g, color.b);
             currentX += str.length() * CHAR_W;
             i = endQuote;
             continue;
@@ -62,7 +64,8 @@ void SyntaxHighlighter::RenderLine(const std::string& line, int x, int y, Aesthe
             }
             
             std::string num = line.substr(i, numEnd - i);
-            layer.Print(num, currentX, y, LuaSyntax::GetColorForToken(LuaSyntax::TokenType::NUMBER));
+            SDL_Color color = LuaSyntax::GetColorForToken(LuaSyntax::TokenType::NUMBER);
+            layer.PrintRGB(num.c_str(), currentX, y, color.r, color.g, color.b);
             currentX += num.length() * CHAR_W;
             i = numEnd;
             continue;
@@ -78,7 +81,8 @@ void SyntaxHighlighter::RenderLine(const std::string& line, int x, int y, Aesthe
             std::string ident = line.substr(i, identEnd - i);
             LuaSyntax::TokenType tokenType = LuaSyntax::GetTokenType(ident);
             
-            layer.Print(ident, currentX, y, LuaSyntax::GetColorForToken(tokenType));
+            SDL_Color color = LuaSyntax::GetColorForToken(tokenType);
+            layer.PrintRGB(ident.c_str(), currentX, y, color.r, color.g, color.b);
             currentX += ident.length() * CHAR_W;
             i = identEnd;
             continue;
@@ -86,7 +90,7 @@ void SyntaxHighlighter::RenderLine(const std::string& line, int x, int y, Aesthe
         
         // Single character (operators, punctuation) - Peach color
         std::string ch(1, c);
-        layer.Print(ch, currentX, y, 15);  // UISystem::COLOR_PEACH
+        layer.PrintRGB(ch.c_str(), currentX, y, SystemColors::PEACH.r, SystemColors::PEACH.g, SystemColors::PEACH.b);
         currentX += CHAR_W;
         i++;
     }

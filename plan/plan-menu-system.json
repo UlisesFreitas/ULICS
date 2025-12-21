@@ -1,0 +1,233 @@
+{
+    "plan_name": "App Menu & State System",
+    "objective": "Diseñar e implementar un sistema completo de menús y estados para ULICS, incluyendo menú principal, pausa, configuración, y transiciones suaves entre estados",
+    "status": "planning",
+    "created_date": "2025-12-21T01:07:00Z",
+    "priority": "HIGH",
+    "phases": [
+        {
+            "id": "PHASE1",
+            "name": "Análisis y Diseño",
+            "status": "pending",
+            "tasks": [
+                {
+                    "id": "P1.T1",
+                    "name": "Mapear estados actuales del Engine",
+                    "details": "Documentar EngineState (BOOT, MENU, LOADING_CARTRIDGE, RUNNING_CARTRIDGE, ERROR) y EngineMode (GAME, CODE_EDITOR, SPRITE_EDITOR, etc.)",
+                    "status": "pending"
+                },
+                {
+                    "id": "P1.T2",
+                    "name": "Diseñar nuevos estados necesarios",
+                    "details": "PAUSE_MENU, SETTINGS, CONFIRM_QUIT, etc.",
+                    "status": "pending"
+                },
+                {
+                    "id": "P1.T3",
+                    "name": "Diseñar UI de menús con estética retro",
+                    "details": "Bocetos de: Main Menu, Pause Menu, Settings Menu, Confirm Dialogs",
+                    "status": "pending"
+                },
+                {
+                    "id": "P1.T4",
+                    "name": "Definir flujo de navegación completo",
+                    "details": "Diagramas de estados y transiciones (ESC, SELECT, BACK, etc.)",
+                    "status": "pending"
+                }
+            ]
+        },
+        {
+            "id": "PHASE2",
+            "name": "Sistema de Estados Base",
+            "status": "pending",
+            "tasks": [
+                {
+                    "id": "P2.T1",
+                    "name": "Extender EngineState con nuevos estados",
+                    "file": "src/core/Engine.h",
+                    "details": "Agregar PAUSE_MENU, SETTINGS, etc.",
+                    "status": "pending"
+                },
+                {
+                    "id": "P2.T2",
+                    "name": "Implementar máquina de estados mejorada",
+                    "file": "src/core/Engine.cpp",
+                    "details": "SetState() con validación de transiciones y callbacks",
+                    "status": "pending"
+                },
+                {
+                    "id": "P2.T3",
+                    "name": "Crear StateManager class (opcional)",
+                    "details": "Clase dedicada para gestionar stack de estados (opcional si se complica)",
+                    "status": "pending"
+                }
+            ]
+        },
+        {
+            "id": "PHASE3",
+            "name": "MenuSystem Base",
+            "status": "pending",
+            "tasks": [
+                {
+                    "id": "P3.T1",
+                    "name": "Crear MenuSystem class base",
+                    "file": "src/ui/MenuSystem.h/.cpp",
+                    "details": "Sistema genérico para menús con selección, navegación, rendering",
+                    "status": "pending"
+                },
+                {
+                    "id": "P3.T2",
+                    "name": "Implementar MenuItem struct",
+                    "details": "text, action callback, enabled, submenu, etc.",
+                    "status": "pending"
+                },
+                {
+                    "id": "P3.T3",
+                    "name": "Rendering con SystemColors RGB",
+                    "details": "Usar RectFillRGB, PrintRGB para UI consistente",
+                    "status": "pending"
+                },
+                {
+                    "id": "P3.T4",
+                    "name": "Input handling (UP/DOWN/ENTER/ESC)",
+                    "details": "Navegación con teclado + gamepad preparado",
+                    "status": "pending"
+                }
+            ]
+        },
+        {
+            "id": "PHASE4",
+            "name": "Main Menu",
+            "status": "pending",
+            "tasks": [
+                {
+                    "id": "P4.T1",
+                    "name": "Diseñar Main Menu UI",
+                    "details": "Logo ULICS, opciones: SELECT CARTRIDGE, SETTINGS, QUIT",
+                    "status": "pending"
+                },
+                {
+                    "id": "P4.T2",
+                    "name": "Implementar navegación de cartridges",
+                    "details": "Lista scrolleable con preview (opcional)",
+                    "status": "pending"
+                },
+                {
+                    "id": "P4.T3",
+                    "name": "Transición a LOADING_CARTRIDGE",
+                    "details": "Animación de carga (opcional)",
+                    "status": "pending"
+                }
+            ]
+        },
+        {
+            "id": "PHASE5",
+            "name": "Pause Menu",
+            "status": "pending",
+            "tasks": [
+                {
+                    "id": "P5.T1",
+                    "name": "Implementar detección de ESC en modo GAME",
+                    "details": "ESC pausa juego → PAUSE_MENU state",
+                    "status": "pending"
+                },
+                {
+                    "id": "P5.T2",
+                    "name": "Diseñar Pause Menu UI",
+                    "details": "RESUME, RESTART, SETTINGS, QUIT TO MENU",
+                    "status": "pending"
+                },
+                {
+                    "id": "P5.T3",
+                    "name": "Implementar opciones de pausa",
+                    "details": "Resume, Restart cartridge, Quit to menu",
+                    "status": "pending"
+                },
+                {
+                    "id": "P5.T4",
+                    "name": "Preservar estado del juego al pausar",
+                    "details": "No destruir activeGame, solo pausar update",
+                    "status": "pending"
+                }
+            ]
+        },
+        {
+            "id": "PHASE6",
+            "name": "Settings Menu",
+            "status": "pending",
+            "tasks": [
+                {
+                    "id": "P6.T1",
+                    "name": "Definir settings disponibles",
+                    "details": "Volume, Fullscreen, Key bindings, Debug mode, etc.",
+                    "status": "pending"
+                },
+                {
+                    "id": "P6.T2",
+                    "name": "Implementar Settings class",
+                    "file": "src/core/Settings.h/.cpp",
+                    "details": "Guardar/cargar settings.json",
+                    "status": "pending"
+                },
+                {
+                    "id": "P6.T3",
+                    "name": "UI de settings con controles",
+                    "details": "Sliders, toggles, key rebinding",
+                    "status": "pending"
+                }
+            ]
+        },
+        {
+            "id": "PHASE7",
+            "name": "Transiciones y Polish",
+            "status": "pending",
+            "tasks": [
+                {
+                    "id": "P7.T1",
+                    "name": "Implementar fade in/out entre estados",
+                    "details": "Transiciones suaves RGB",
+                    "status": "pending"
+                },
+                {
+                    "id": "P7.T2",
+                    "name": "Sonidos de menú (opcional)",
+                    "details": "Select, back, error sounds",
+                    "status": "pending"
+                },
+                {
+                    "id": "P7.T3",
+                    "name": "Animaciones de menú (opcional)",
+                    "details": "Bounce, slide, etc.",
+                    "status": "pending"
+                }
+            ]
+        }
+    ],
+    "current_issues": [
+        "❌ ESC desde GAME no hace nada (debe abrir pause menu)",
+        "❌ No hay forma de volver al menu principal sin cerrar app",
+        "❌ No hay settings persistentes",
+        "❌ Transiciones bruscas entre estados"
+    ],
+    "design_notes": {
+        "ui_colors": "Usar SystemColors RGB para toda la UI de menús",
+        "font": "EmbeddedFont 8x8 existente",
+        "style": "PICO-8/TIC-80 retro aesthetic",
+        "input": "Keyboard primero, gamepad preparado",
+        "persistence": "settings.json en AppData/Roaming/ULICS/"
+    },
+    "files_to_modify": [
+        "src/core/Engine.h (agregar estados)",
+        "src/core/Engine.cpp (state machine)",
+        "src/ui/MenuSystem.h (NEW)",
+        "src/ui/MenuSystem.cpp (NEW)",
+        "src/core/Settings.h (NEW)",
+        "src/core/Settings.cpp (NEW)"
+    ],
+    "estimated_time": "4-6 hours",
+    "dependencies": [
+        "✅ SystemColors.h ya existe",
+        "✅ PrintRGB, RectRGB ya implementados",
+        "✅ InputManager funcional"
+    ]
+}

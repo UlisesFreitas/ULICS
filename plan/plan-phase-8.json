@@ -1,0 +1,171 @@
+{
+    "phase": 8,
+    "title": "Lua Console / REPL",
+    "description": "Interactive Lua command line - Execute commands, display results/errors, command history with up/down arrows. Toggle with backtick (`) key for quick testing and debugging.",
+    "priority": "LOW",
+    "estimatedTime": "2-3 hours",
+    "status": "pending",
+    "philosophy": "Essential dev tool for rapid prototyping. PICO-8's most loved feature for experimentation and debugging.",
+    "objectives": [
+        "Create interactive Lua console/REPL",
+        "Execute Lua code on Enter key",
+        "Display results and errors clearly",
+        "Implement command history (up/down arrows)",
+        "Support multi-line input (Shift+Enter)",
+        "Auto-complete common functions",
+        "Toggle visibility with backtick (`) key",
+        "Integrate with DebugConsole or create standalone"
+    ],
+    "tasks": [
+        {
+            "id": "8.1",
+            "description": "Create LuaConsole class structure",
+            "status": "pending",
+            "files": [
+                "src/ui/LuaConsole.h",
+                "src/ui/LuaConsole.cpp"
+            ],
+            "estimatedTime": "30 min",
+            "notes": "Class structure, command buffer, history array"
+        },
+        {
+            "id": "8.2",
+            "description": "Implement text input buffer",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Current command line, cursor position, editing"
+        },
+        {
+            "id": "8.3",
+            "description": "Add command execution",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Execute via ScriptingManager, capture stdout/return value"
+        },
+        {
+            "id": "8.4",
+            "description": "Display output history",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Scrollable output, show commands and results"
+        },
+        {
+            "id": "8.5",
+            "description": "Implement command history (up/down)",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Store last 100 commands, navigate with arrows"
+        },
+        {
+            "id": "8.6",
+            "description": "Add error display",
+            "status": "pending",
+            "estimatedTime": "20 min",
+            "notes": "Show Lua errors in red, with line numbers"
+        },
+        {
+            "id": "8.7",
+            "description": "Implement multi-line support",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Shift+Enter for newline, execute on Enter"
+        },
+        {
+            "id": "8.8",
+            "description": "Add auto-complete suggestions",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Tab to complete common functions (print, cls, etc)"
+        },
+        {
+            "id": "8.9",
+            "description": "Implement toggle with backtick key",
+            "status": "pending",
+            "estimatedTime": "15 min",
+            "notes": "Show/hide console, maintain state"
+        },
+        {
+            "id": "8.10",
+            "description": "Add clear console command",
+            "status": "pending",
+            "estimatedTime": "10 min",
+            "notes": "Command 'clear' to reset output"
+        },
+        {
+            "id": "8.11",
+            "description": "Integration testing and polish",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Edge cases, UTF-8 input, performance"
+        }
+    ],
+    "technical_specs": {
+        "max_history": 100,
+        "max_output_lines": 500,
+        "input_buffer_size": 1024,
+        "toggle_key": "Backtick (`)",
+        "special_commands": [
+            "clear",
+            "help",
+            "exit"
+        ],
+        "auto_complete_sources": [
+            "Lua globals",
+            "ULICS API",
+            "recent commands"
+        ]
+    },
+    "ui_layout": {
+        "position": "Overlay at bottom of screen",
+        "height": "50% of screen (128 pixels)",
+        "output_area": "Scrollable text area, most recent at bottom",
+        "input_line": "Bottom, with > prompt",
+        "colors": {
+            "background": "COLOR_DARK_BLUE (semi-transparent)",
+            "output_text": "COLOR_WHITE",
+            "error_text": "COLOR_RED",
+            "input_text": "COLOR_YELLOW",
+            "prompt": "COLOR_GREEN",
+            "cursor": "COLOR_WHITE (blinking)"
+        }
+    },
+    "command_examples": {
+        "simple": "print('hello')",
+        "math": "2 + 2",
+        "api_test": "cls(1); print('test', 10, 10, 7)",
+        "multi_line": "function test()\n  print('multi')\nend\ntest()",
+        "inspect": "print(_G)"
+    },
+    "output_format": {
+        "command_echo": "> print('hello')",
+        "result": "hello",
+        "return_value": "= nil",
+        "error": "Error: attempt to call nil value"
+    },
+    "special_features": {
+        "inspect_tables": "Pretty-print Lua tables",
+        "help_command": "Show available functions",
+        "syntax_highlighting": "Color code Lua keywords (optional)",
+        "copy_paste": "Ctrl+C/V support"
+    },
+    "dependencies": [
+        "ScriptingManager (Lua execution)",
+        "InputManager (text input)",
+        "AestheticLayer (rendering)",
+        "TextBuffer (from CodeEditor - optional reuse)"
+    ],
+    "testing_checklist": [
+        "Toggle with backtick",
+        "Execute simple command",
+        "See result output",
+        "Execute command with error",
+        "See error in red",
+        "Navigate history with up/down",
+        "Auto-complete function name",
+        "Multi-line input (Shift+Enter)",
+        "Clear console",
+        "Copy/paste text",
+        "Verify doesn't interfere with game",
+        "Performance with 500+ output lines"
+    ]
+}

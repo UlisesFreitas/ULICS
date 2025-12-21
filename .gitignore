@@ -2,6 +2,9 @@
 external/
 build/
 sdl/
+docs/*
+plan/*
+
 
 #Files
 build_log.txt

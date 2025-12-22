@@ -131,6 +131,10 @@ private:
     
     // Draw sprite sheet section (advanced)
     static int Lua_Sspr(lua_State* L);
+    
+    // Sprite flags (PICO-8 style)
+    static int Lua_Fget(lua_State* L);  // Get sprite flag(s)
+    static int Lua_Fset(lua_State* L);  // Set sprite flag
 
     // --- Map Functions (Phase 5.9) ---
     // Draw map

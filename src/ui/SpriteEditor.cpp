@@ -44,6 +44,7 @@ SpriteEditor::SpriteEditor()
     
     // Initialize all sprites in spritesheet to transparent
     std::memset(spriteSheet, 0, sizeof(spriteSheet));
+    std::memset(spriteFlags, 0, sizeof(spriteFlags));  // Initialize all sprite flags to 0
     
     // Load recent files list
     LoadRecentFiles();
@@ -147,6 +148,11 @@ void SpriteEditor::Update(InputManager& input) {
                     HandlePaletteButtonClick(2);  // Export
                 }
             }
+            // Check flag panel clicks (debajo de la paleta)
+            else if (mouseX >= FLAG_PANEL_X && mouseX < FLAG_PANEL_X + FLAG_PANEL_W &&
+                     mouseY >= FLAG_PANEL_Y && mouseY < FLAG_PANEL_Y + FLAG_PANEL_H) {
+                HandleFlagClick(mouseX, mouseY);
+            }
             // Check spritesheet area
             else if (mouseX >= SHEET_X && mouseX < SHEET_X + (SHEET_COLS * SHEET_SPRITE_SIZE) &&
                      mouseY >= SHEET_Y && mouseY < SHEET_Y + (SHEET_ROWS * SHEET_SPRITE_SIZE)) {
@@ -204,6 +210,9 @@ void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
     
     // Render palette (uses RectFillRGB for colors)
     RenderPalette(renderer);
+    
+    // Render flag panel (debajo de la paleta)
+    RenderFlagPanel(renderer);
     
     // Render main canvas
     RenderCanvas(renderer);
@@ -1821,4 +1830,135 @@ void SpriteEditor::ResetPaletteToDefault() {
     SaveCartridgePalette();
     
     Log("[Palette] Reset to default and saved successfully");
+}
+
+// ============================================
+// SPRITE FLAGS IMPLEMENTATION
+// ============================================
+
+void SpriteEditor::SetSpriteFlag(int spriteIndex, int flagBit, bool value) {
+    if (spriteIndex < 0 || spriteIndex >= 256) return;
+    if (flagBit < 0 || flagBit >= 8) return;
+    
+    if (value) {
+        spriteFlags[spriteIndex] |= (1 << flagBit);  // Set bit
+    } else {
+        spriteFlags[spriteIndex] &= ~(1 << flagBit); // Clear bit
+    }
+}
+
+bool SpriteEditor::GetSpriteFlag(int spriteIndex, int flagBit) const {
+    if (spriteIndex < 0 || spriteIndex >= 256) return false;
+    if (flagBit < 0 || flagBit >= 8) return false;
+    
+    return (spriteFlags[spriteIndex] & (1 << flagBit)) != 0;
+}
+
+uint8_t SpriteEditor::GetSpriteFlagsAll(int spriteIndex) const {
+    if (spriteIndex < 0 || spriteIndex >= 256) return 0;
+    return spriteFlags[spriteIndex];
+}
+
+void SpriteEditor::SetSpriteFlagsAll(int spriteIndex, uint8_t flags) {
+    if (spriteIndex < 0 || spriteIndex >= 256) return;
+    spriteFlags[spriteIndex] = flags;
+}
+
+void SpriteEditor::SaveSpriteFlags(const std::string& flagsPath) {
+    std::ofstream file(flagsPath, std::ios::binary);
+    if (!file.is_open()) {
+        Log("[Flags] ERROR: Could not open file for writing: " + flagsPath);
+        return;
+    }
+    
+    // Write all 256 bytes (one per sprite)
+    file.write(reinterpret_cast<const char*>(spriteFlags), 256);
+    file.close();
+    
+    Log("[Flags] Saved sprite flags to " + flagsPath);
+}
+
+void SpriteEditor::LoadSpriteFlags(const std::string& flagsPath) {
+    std::ifstream file(flagsPath, std::ios::binary);
+    if (!file.is_open()) {
+        Log("[Flags] No flags file found, using defaults (all 0)");
+        std::memset(spriteFlags, 0, sizeof(spriteFlags));
+        return;
+    }
+    
+    // Read all 256 bytes
+    file.read(reinterpret_cast<char*>(spriteFlags), 256);
+    file.close();
+    
+    Log("[Flags] Loaded sprite flags from " + flagsPath);
+}
+
+void SpriteEditor::RenderFlagPanel(AestheticLayer& renderer) {
+    // Panel background (dark blue)
+    renderer.RectFillRGB(FLAG_PANEL_X, FLAG_PANEL_Y, FLAG_PANEL_W, FLAG_PANEL_H,
+                        SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
+    
+    // Border (white)
+    renderer.RectRGB(FLAG_PANEL_X - 1, FLAG_PANEL_Y - 1, FLAG_PANEL_W + 2, FLAG_PANEL_H + 2,
+                    SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+    
+    // Label "FLAGS" alineado a la izquierda (mismo borde que la caja)
+    renderer.PrintRGB("FLAGS", FLAG_PANEL_X, FLAG_PANEL_Y + 2,
+                     SystemColors::YELLOW.r, SystemColors::YELLOW.g, SystemColors::YELLOW.b);
+    
+    // Draw 8 flag checkboxes en 2 FILAS x 4 COLUMNAS
+    int startX = FLAG_PANEL_X + 2;
+    int startY = FLAG_PANEL_Y + 12;  // Debajo del label
+    
+    for (int i = 0; i < 8; i++) {
+        int col = i % 4;  // 0-3
+        int row = i / 4;  // 0-1
+        
+        int x = startX + (col * (FLAG_BOX_SIZE + FLAG_BOX_SPACING));
+        int y = startY + (row * (FLAG_BOX_SIZE + FLAG_BOX_SPACING));
+        
+        // Checkbox background
+        renderer.RectFillRGB(x, y, FLAG_BOX_SIZE, FLAG_BOX_SIZE,
+                           SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
+        
+        // Checkbox border
+        renderer.RectRGB(x, y, FLAG_BOX_SIZE, FLAG_BOX_SIZE,
+                        SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
+        
+        // If flag is set, draw checkmark
+        if (GetSpriteFlag(currentSpriteIndex, i)) {
+            // Simple X mark
+            renderer.LineRGB(x + 1, y + 1, x + 6, y + 6,
+                           SystemColors::YELLOW.r, SystemColors::YELLOW.g, SystemColors::YELLOW.b);
+            renderer.LineRGB(x + 6, y + 1, x + 1, y + 6,
+                           SystemColors::YELLOW.r, SystemColors::YELLOW.g, SystemColors::YELLOW.b);
+        }
+    }
+}
+
+void SpriteEditor::HandleFlagClick(int mouseX, int mouseY) {
+    // Check if click is in flag panel
+    if (mouseY < FLAG_PANEL_Y || mouseY >= FLAG_PANEL_Y + FLAG_PANEL_H) return;
+    
+    int startX = FLAG_PANEL_X + 2;
+    int startY = FLAG_PANEL_Y + 12;
+    
+    // Check each flag box (2 FILAS x 4 COLUMNAS)
+    for (int i = 0; i < 8; i++) {
+        int col = i % 4;
+        int row = i / 4;
+        
+        int x = startX + (col * (FLAG_BOX_SIZE + FLAG_BOX_SPACING));
+        int y = startY + (row * (FLAG_BOX_SIZE + FLAG_BOX_SPACING));
+        
+        if (mouseX >= x && mouseX < x + FLAG_BOX_SIZE &&
+            mouseY >= y && mouseY < y + FLAG_BOX_SIZE) {
+            // Toggle flag
+            bool current = GetSpriteFlag(currentSpriteIndex, i);
+            SetSpriteFlag(currentSpriteIndex, i, !current);
+            Log("[Flags] Toggled sprite " + std::to_string(currentSpriteIndex) + 
+                " flag " + std::to_string(i) + " to " + (current ? "OFF" : "ON"));
+            break;
+        }
+    }
 }

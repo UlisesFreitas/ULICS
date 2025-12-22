@@ -8,6 +8,7 @@
 #include "core/Engine.h"
 #include "cartridge/CartridgeLoader.h"
 #include "audio/AudioManager.h"  // For sfx() Lua binding
+#include "ui/SpriteEditor.h"  // For sprite flags API
 #include <iostream>
 #include <string> // Required for std::string
 #include <array>
@@ -148,6 +149,8 @@ void ScriptingManager::RegisterAPI() {
     // --- Sprite Functions (Phase 5.5) ---
     RegisterFunction("spr", &ScriptingManager::Lua_Spr);
     RegisterFunction("sspr", &ScriptingManager::Lua_Sspr);
+    RegisterFunction("fget", &ScriptingManager::Lua_Fget);  // Sprite flags
+    RegisterFunction("fset", &ScriptingManager::Lua_Fset);  // Sprite flags
     
     // --- Map Functions (Phase 5.9) ---
     RegisterFunction("map", &ScriptingManager::Lua_Map);
@@ -1028,4 +1031,56 @@ int ScriptingManager::Lua_MouseY(lua_State* L) {
     
     lua_pushinteger(L, input->getMouseY());
     return 1;
+}
+
+// === SPRITE FLAGS API (PICO-8 style) ===
+
+int ScriptingManager::Lua_Fget(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    SpriteEditor* spriteEditor = sm->engineInstance->getSpriteEditor();
+    
+    if (!spriteEditor) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    int spriteIndex = luaL_checkinteger(L, 1);
+    
+    // If only sprite index provided, return all 8 flags as bitmask
+    if (lua_gettop(L) == 1) {
+        uint8_t flags = spriteEditor->GetSpriteFlagsAll(spriteIndex);
+        lua_pushinteger(L, flags);
+        return 1;
+    }
+    
+    // If flag bit specified, return boolean
+    int flagBit = luaL_checkinteger(L, 2);
+    bool value = spriteEditor->GetSpriteFlag(spriteIndex, flagBit);
+    lua_pushboolean(L, value);
+    return 1;
+}
+
+int ScriptingManager::Lua_Fset(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    SpriteEditor* spriteEditor = sm->engineInstance->getSpriteEditor();
+    
+    if (!spriteEditor) {
+        return 0;
+    }
+    
+    int spriteIndex = luaL_checkinteger(L, 1);
+    
+    // If 2 args: fset(sprite, bitmask) - set all 8 flags
+    if (lua_gettop(L) == 2) {
+        int bitmask = luaL_checkinteger(L, 2);
+        spriteEditor->SetSpriteFlagsAll(spriteIndex, static_cast<uint8_t>(bitmask));
+        return 0;
+    }
+    
+    // If 3 args: fset(sprite, flag, value) - set single flag
+    int flagBit = luaL_checkinteger(L, 2);
+    bool value = lua_toboolean(L, 3);
+    spriteEditor->SetSpriteFlag(spriteIndex, flagBit, value);
+    
+    return 0;
 }

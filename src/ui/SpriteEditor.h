@@ -56,6 +56,15 @@ public:
     void OnFileDropped(const char* filepath);  // Drag & drop handler
     void ResetPaletteToDefault();  // Reset palette to default and save
     
+    // === SPRITE FLAGS API ===
+    void SetSpriteFlag(int spriteIndex, int flagBit, bool value);
+    bool GetSpriteFlag(int spriteIndex, int flagBit) const;
+    uint8_t GetSpriteFlagsAll(int spriteIndex) const;
+    void SetSpriteFlagsAll(int spriteIndex, uint8_t flags);
+    
+    void SaveSpriteFlags(const std::string& flagsPath);
+    void LoadSpriteFlags(const std::string& flagsPath);
+    
 private:
     // Tool types
     enum class Tool {
@@ -69,6 +78,7 @@ private:
     // Canvas state
     uint8_t canvas[8][8];           // Current sprite being edited (8x8 pixels)
     uint8_t spriteSheet[256][8][8]; // All 256 sprites (256 x 8x8)
+    uint8_t spriteFlags[256];        // 8 bits per sprite (flags 0-7)
     int currentSpriteIndex;          // 0-255
     
     SystemSprites* systemSprites;    // Pointer to system sprites for icons
@@ -218,6 +228,18 @@ private:
     
     // Spritesheet path
     std::string spritesheetPath;
+    
+    // === SPRITE FLAGS RENDERING ===
+    void RenderFlagPanel(AestheticLayer& renderer);
+    void HandleFlagClick(int mouseX, int mouseY);
+    
+    // === FLAG PANEL LAYOUT (debajo de la paleta) ===
+    static constexpr int FLAG_PANEL_X = PALETTE_X;
+    static constexpr int FLAG_PANEL_Y = PALETTE_Y + (PALETTE_ROWS * COLOR_BOX_SIZE) + 4;  // Debajo de la paleta
+    static constexpr int FLAG_PANEL_W = PALETTE_COLS * COLOR_BOX_SIZE;
+    static constexpr int FLAG_PANEL_H = 30;  // 12 (label) + 2*(8+2) = 30px (2 rows x 4 cols)
+    static constexpr int FLAG_BOX_SIZE = 8;
+    static constexpr int FLAG_BOX_SPACING = 2;
 };
 
 #endif // SPRITE_EDITOR_H

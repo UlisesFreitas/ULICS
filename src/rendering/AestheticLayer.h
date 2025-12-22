@@ -87,8 +87,8 @@ public:
     
     // Gets a specific color from the palette.
     SDL_Color GetPaletteColor(int index) const;
-
-    // Resets the palette to the default PICO-8 16-color palette.
+    
+    // Resets palette to PICO-8/TIC-80 default
     void ResetToDefaultPalette();
 
     // Renders the framebuffer to the main window.

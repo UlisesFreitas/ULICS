@@ -1,0 +1,198 @@
+{
+    "phase": 6,
+    "title": "Music Tracker",
+    "description": "Pattern-based music editor - 4-8 channel tracker, pattern grid (rows=notes, cols=channels), note input (C-4, D#5), tempo controls, pattern sequencer.",
+    "priority": "MEDIUM",
+    "estimatedTime": "4-5 hours",
+    "status": "pending",
+    "philosophy": "PICO-8 style tracker for chiptune composition. Familiar workflow for retro music creation with modern conveniences.",
+    "objectives": [
+        "Build 4-8 channel tracker interface",
+        "Create pattern grid system (rows=notes, columns=channels)",
+        "Implement note input system (C-4, D#5, OFF, etc)",
+        "Add tempo (BPM) and speed controls",
+        "Create pattern sequencer for song arrangement",
+        "Implement playback engine",
+        "Save/load to music.json",
+        "Integrate with F5 toggle key"
+    ],
+    "tasks": [
+        {
+            "id": "6.1",
+            "description": "Create MusicTracker class structure",
+            "status": "pending",
+            "files": [
+                "src/ui/MusicTracker.h",
+                "src/ui/MusicTracker.cpp"
+            ],
+            "estimatedTime": "45 min",
+            "notes": "Class structure, pattern data, sequencer state"
+        },
+        {
+            "id": "6.2",
+            "description": "Implement pattern grid rendering",
+            "status": "pending",
+            "estimatedTime": "1 hour",
+            "notes": "Rows (64 per pattern), columns (4-8 channels), scrollable"
+        },
+        {
+            "id": "6.3",
+            "description": "Add note input system",
+            "status": "pending",
+            "estimatedTime": "1.5 hours",
+            "notes": "Keyboard input (ZSXDCV=notes), octave control, note names"
+        },
+        {
+            "id": "6.4",
+            "description": "Implement cursor navigation",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Arrow keys move cursor, Tab=next channel, Enter=advance"
+        },
+        {
+            "id": "6.5",
+            "description": "Add SFX/instrument selector per note",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Reference SFX slots (0-63) for each note"
+        },
+        {
+            "id": "6.6",
+            "description": "Implement tempo and speed controls",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "BPM slider (60-240), speed setting (rows per beat)"
+        },
+        {
+            "id": "6.7",
+            "description": "Create pattern sequencer",
+            "status": "pending",
+            "estimatedTime": "1 hour",
+            "notes": "Chain patterns, song position, pattern numbers"
+        },
+        {
+            "id": "6.8",
+            "description": "Implement playback engine",
+            "status": "pending",
+            "estimatedTime": "1.5 hours",
+            "notes": "Play from cursor, loop, timing sync with AudioManager"
+        },
+        {
+            "id": "6.9",
+            "description": "Add pattern operations (copy/paste/clear)",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "notes": "Ctrl+C/V for patterns, Del to clear"
+        },
+        {
+            "id": "6.10",
+            "description": "Implement save to music.json",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "notes": "Export all patterns and song sequence"
+        },
+        {
+            "id": "6.11",
+            "description": "Implement load from music.json",
+            "status": "pending",
+            "estimatedTime": "20 min",
+            "notes": "Parse and populate tracker"
+        },
+        {
+            "id": "6.12",
+            "description": "Integrate with Engine F5 toggle",
+            "status": "pending",
+            "estimatedTime": "15 min",
+            "notes": "Wire into Engine mode switching"
+        }
+    ],
+    "technical_specs": {
+        "channels": "4-8 (configurable)",
+        "rows_per_pattern": 64,
+        "patterns": "0-63 (64 patterns max)",
+        "notes": "C-0 to B-8 (9 octaves)",
+        "tempo_range": "60-240 BPM",
+        "song_length": "0-255 pattern slots",
+        "note_format": "NOTE-OCTAVE-SFX (e.g., C#4-03)",
+        "file_format": "JSON (music.json)"
+    },
+    "ui_layout": {
+        "pattern_grid": "Main area, scrollable rows/columns",
+        "channel_headers": "Top, channel numbers (0-7)",
+        "row_numbers": "Left, pattern row (00-63)",
+        "sequencer": "Bottom, pattern chain view",
+        "controls": "Right sidebar, BPM/speed/octave",
+        "playback_controls": "Play/Stop/Loop buttons",
+        "colors": {
+            "background": "COLOR_DARK_BLUE",
+            "grid_lines": "COLOR_DARK_GRAY",
+            "cursor": "COLOR_YELLOW",
+            "current_row": "COLOR_INDIGO (highlight)",
+            "note_text": "COLOR_WHITE"
+        }
+    },
+    "note_input_keyboard": {
+        "layout": "Piano keyboard mapping",
+        "lower_octave": "Z X C V B N M (C D E F G A B)",
+        "upper_octave": "Q 2 W 3 E R 5 T 6 Y 7 U (C C# D D# E F F# G G# A A# B)",
+        "modifiers": {
+            "octave_up": "* (multiply key)",
+            "octave_down": "/ (divide key)",
+            "delete_note": "Delete or Backspace"
+        }
+    },
+    "music_data_format": {
+        "format": "JSON",
+        "structure": {
+            "tempo": 120,
+            "speed": 4,
+            "patterns": [
+                {
+                    "id": 0,
+                    "rows": [
+                        {
+                            "row": 0,
+                            "channels": [
+                                {
+                                    "note": "C-4",
+                                    "sfx": 0
+                                },
+                                {
+                                    "note": "---",
+                                    "sfx": 0
+                                },
+                                null,
+                                null
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "song": [
+                0,
+                1,
+                2,
+                0
+            ]
+        }
+    },
+    "dependencies": [
+        "AudioManager (playback)",
+        "SFX data (instrument source)",
+        "AestheticLayer (rendering)",
+        "InputManager (keyboard/mouse)"
+    ],
+    "testing_checklist": [
+        "Enter notes with keyboard",
+        "Navigate with arrow keys",
+        "Change octaves",
+        "Assign SFX to notes",
+        "Set tempo and speed",
+        "Play pattern from cursor",
+        "Build song in sequencer",
+        "Copy/paste patterns",
+        "Save music.json",
+        "Load music.json",
+        "Toggle with F5"
+    ]
+}

@@ -49,6 +49,7 @@ void SystemSprites::GenerateDefaultIcons() {
     GenerateGearIcon();
     GenerateUtilityIcons();  // NEW: utility icons (16-22)
     GenerateRotateIcons();   // Rotate Left/Right
+    GenerateResetIcon();     // Reset icon (25)
 }
 
 // ===== ICON GENERATORS =====
@@ -404,4 +405,19 @@ void SystemSprites::GenerateRotateIcons() {
         {0,0,0,0,0,0,0,0}
     };
     std::memcpy(sprites[24], rotateRight, 64);
+}
+
+void SystemSprites::GenerateResetIcon() {
+    // Sprite 25: Reset (circular arrows - refresh)
+    uint8_t reset[8][8] = {
+        {0,0,7,7,7,0,0,0},
+        {0,7,0,0,0,7,7,0},
+        {7,0,0,0,0,0,7,7},
+        {7,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,7},
+        {7,7,0,0,0,0,0,7},
+        {0,7,7,0,0,0,7,0},
+        {0,0,0,7,7,7,0,0}
+    };
+    std::memcpy(sprites[25], reset, 64);
 }

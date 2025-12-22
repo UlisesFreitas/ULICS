@@ -1,11 +1,13 @@
 #include "core/Engine.h"
 #include "core/HotReload.h"  // Hot reload system (v1.5.1)
 #include "core/Bootstrap.h"  // Bootstrap system
+#include "core/Settings.h"   // Settings manager
 #include "ui/DebugConsole.h"  // Debug overlay (v1.5.2)
 #include "ui/UISystem.h"      // Custom UI system (Phase 2.0.1)
 #include "ui/CodeEditor.h"    // Code editor (Phase 2.0.2-2.0.4)
 #include "ui/SpriteEditor.h"  // Sprite editor (Phase 3)
 #include "ui/SystemSprites.h" // System UI icons
+#include "ui/MenuSystem.h"     // Menu system
 #include "capture/Screenshot.h"  // Screenshot system (v1.5.3)
 #include "capture/GifRecorder.h"  // GIF recording system (v1.5.4)
 #include "audio/AudioManager.h"  // Audio system (Phase 5.12 + Bug 1.1.3 fix)
@@ -179,6 +181,118 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         std::cerr << "Warning: CodeEditor failed to initialize: " << e.what() << std::endl;
         // Continue without Code Editor
     }
+    
+    // Initialize Pause Menu
+    try {
+        pauseMenu = std::make_unique<MenuSystem>();
+        pauseMenu->SetTitle("PAUSED");
+        pauseMenu->SetVisible(false);  // Hidden by default
+        
+        // Add menu options
+        pauseMenu->AddItem("RESUME", [this]() {
+            SetState(EngineState::RUNNING_CARTRIDGE);
+            pauseMenu->SetVisible(false);
+        });
+        
+        pauseMenu->AddItem("RESTART", [this]() {
+            ReloadCurrentCartridge();
+            SetState(EngineState::RUNNING_CARTRIDGE);
+            pauseMenu->SetVisible(false);
+        });
+        
+        pauseMenu->AddItem("SETTINGS", [this]() {
+            pauseMenu->SetVisible(false);
+            SetState(EngineState::SETTINGS_MENU);
+            if (settingsMenu) {
+                settingsMenu->SetVisible(true);
+            }
+        });
+        
+        pauseMenu->AddItem("QUIT TO MENU", [this]() {
+            UnloadCartridge();
+            SetState(EngineState::MAIN_MENU);
+            pauseMenu->SetVisible(false);
+            
+            // Reset palette to default before loading menu
+            if (aestheticLayer) {
+                aestheticLayer->ResetToDefaultPalette();
+            }
+            
+            // Load menu script
+            if (scriptingManager) {
+                bool scriptLoaded = scriptingManager->LoadAndRunScript(SystemScripts::MENU_SCRIPT.c_str());
+                if (scriptLoaded) {
+                    try {
+                        activeGame = std::make_unique<LuaGame>(scriptingManager.get());
+                        std::cout << "[Engine] Menu loaded successfully" << std::endl;
+                    } catch (const std::exception& e) {
+                        std::cerr << "[Engine] Failed to create menu game: " << e.what() << std::endl;
+                    }
+                }
+            }
+        });
+        
+        std::cout << "Pause Menu initialized" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: PauseMenu failed to initialize: " << e.what() << std::endl;
+        // Continue without Pause Menu
+    }
+    
+    // Initialize Settings
+    try {
+        settings = std::make_unique<Settings>();
+        settings->Load();  // Load from AppData or use defaults
+        std::cout << "Settings loaded" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: Settings failed to initialize: " << e.what() << std::endl;
+        // Continue with default settings
+    }
+    
+    // Initialize Settings Menu
+    try {
+        settingsMenu = std::make_unique<MenuSystem>();
+        settingsMenu->SetTitle("SETTINGS");
+        settingsMenu->SetVisible(false);
+        
+        if (settings) {
+            // Add settings controls
+            settingsMenu->AddSlider("VOLUME", settings->GetVolumePtr(), 0, 100, "%");
+            settingsMenu->AddToggle("FULLSCREEN", settings->GetFullscreenPtr());
+            settingsMenu->AddToggle("DEBUG MODE", settings->GetDebugModePtr());
+            settingsMenu->AddToggle("VSYNC", settings->GetVSyncPtr());
+            
+            settingsMenu->AddSeparator();
+            
+            settingsMenu->AddItem("RESET TO DEFAULTS", [this]() {
+                if (settings) {
+                    settings->ResetToDefaults();
+                    settings->Save();
+                    std::cout << "[Settings] Reset to defaults" << std::endl;
+                }
+            });
+            
+            settingsMenu->AddItem("BACK", [this]() {
+                // Auto-save settings on back
+                if (settings) {
+                    settings->Save();
+                }
+                settingsMenu->SetVisible(false);
+                // Return to pause menu
+                if (currentState == EngineState::SETTINGS_MENU) {
+                    SetState(EngineState::PAUSE_MENU);
+                    pauseMenu->SetVisible(true);
+                }
+            });
+        }
+        
+        std::cout << "Settings Menu initialized" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: SettingsMenu failed to initialize: " << e.what() << std::endl;
+        // Continue without Settings Menu
+    }
 
     // Initialize Sprite Editor (Phase 3)
     try {
@@ -222,7 +336,7 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         if (cartridgePath.empty()) {
             // No cartridge specified - load system menu
             std::cout << "No cartridge specified. Loading system menu..." << std::endl;
-            SetState(EngineState::MENU);
+            SetState(EngineState::MAIN_MENU);
             scriptLoaded = scriptingManager->LoadAndRunScript(SystemScripts::MENU_SCRIPT.c_str());
             if (!scriptLoaded) {
                 std::cerr << "Could not load the system menu." << std::endl;
@@ -404,10 +518,46 @@ void Engine::Run() {
             }
         }
 
-        // STEP 4: Update game logic OR editor (Phase 2.0.5)
-        if (currentMode == EngineMode::GAME) {
-            // Game mode - run normal update
-            if (activeGame && !inErrorState) {
+        //  STEP 4: Update game logic OR editor OR pause menu (Phase 2.0.5)
+        if (currentState == EngineState::PAUSE_MENU) {
+            // Pause menu active - update menu
+            if (pauseMenu && inputManager) {
+                bool menuActive = pauseMenu->Update(*inputManager);
+                if (!menuActive) {
+                    // ESC pressed in menu - resume game
+                    SetState(EngineState::RUNNING_CARTRIDGE);
+                    pauseMenu->SetVisible(false);
+                }
+            }
+        } else if (currentState == EngineState::SETTINGS_MENU) {
+            // Settings menu active - update menu
+            if (settingsMenu && inputManager) {
+                bool menuActive = settingsMenu->Update(*inputManager);
+                if (!menuActive) {
+                    // ESC pressed in settings - auto-save and back to pause menu
+                    if (settings) {
+                        settings->Save();
+                    }
+                    SetState(EngineState::PAUSE_MENU);
+                    settingsMenu->SetVisible(false);
+                    if (pauseMenu) {
+                        pauseMenu->SetVisible(true);
+                    }
+                }
+            }
+        } else if (currentMode == EngineMode::GAME) {
+            // Check for ESC to pause
+            if (inputManager->isKeyPressed(SDL_SCANCODE_ESCAPE) && 
+                currentState == EngineState::RUNNING_CARTRIDGE) {
+                std::cout << "[Engine] ESC pressed - pausing game" << std::endl;
+                SetState(EngineState::PAUSE_MENU);
+                if (pauseMenu) {
+                    pauseMenu->SetVisible(true);
+                }
+            }
+            
+            // Game mode - run normal update (only if not paused)
+            if (activeGame && !inErrorState && currentState != EngineState::PAUSE_MENU) {
                 if (!activeGame->_update()) {
                     enterErrorState(scriptingManager->GetLastLuaError());
                 }
@@ -445,6 +595,24 @@ void Engine::Run() {
         // STEP 5: Render (Phase 2.0.5)
         if (inErrorState) {
             drawErrorScreen();
+        } else if (currentState == EngineState::PAUSE_MENU) {
+            // Pause menu - render game frozen in background
+            if (activeGame) {
+                activeGame->_draw(*aestheticLayer);
+            }
+            // Render pause menu on top
+            if (pauseMenu) {
+                pauseMenu->Render(*aestheticLayer);
+            }
+        } else if (currentState == EngineState::SETTINGS_MENU) {
+            // Settings menu - render game frozen in background
+            if (activeGame) {
+                activeGame->_draw(*aestheticLayer);
+            }
+            // Render settings menu on top
+            if (settingsMenu) {
+                settingsMenu->Render(*aestheticLayer);
+            }
         } else if (currentMode == EngineMode::GAME) {
             // Game mode - render game
             if (activeGame) {
@@ -507,7 +675,9 @@ void Engine::SetState(EngineState newState) {
     auto stateToString = [](EngineState state) -> const char* {
         switch (state) {
             case EngineState::BOOT: return "BOOT";
-            case EngineState::MENU: return "MENU";
+            case EngineState::MAIN_MENU: return "MAIN_MENU";
+            case EngineState::PAUSE_MENU: return "PAUSE_MENU";
+            case EngineState::SETTINGS_MENU: return "SETTINGS_MENU";
             case EngineState::LOADING_CARTRIDGE: return "LOADING_CARTRIDGE";
             case EngineState::RUNNING_CARTRIDGE: return "RUNNING_CARTRIDGE";
             case EngineState::ERROR: return "ERROR";

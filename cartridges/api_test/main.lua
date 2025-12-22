@@ -1,7 +1,5 @@
 -- ULICS API Test Suite
 -- Systematically tests all implemented API functions
-local var = 22
-local var2 = 23
 
 local test_idx = 1
 local test_results = {}

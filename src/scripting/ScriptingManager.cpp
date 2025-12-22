@@ -693,8 +693,8 @@ int ScriptingManager::Lua_GotoMenu(lua_State* L) {
         // Unload current cartridge
         sm->engineInstance->UnloadCartridge();
         
-        // Set state to MENU
-        sm->engineInstance->SetState(Engine::EngineState::MENU);
+        // Set state to MAIN_MENU
+        sm->engineInstance->SetState(Engine::EngineState::MAIN_MENU);
         
         // Load the menu script
         bool success = sm->LoadAndRunScript(SystemScripts::MENU_SCRIPT.c_str());

@@ -20,6 +20,8 @@ class UISystem;      // Custom UI system (Phase 2.0.1)
 class CodeEditor;    // Code editor (Phase 2.0.2)
 class SpriteEditor;  // Sprite editor (Phase 3)
 class SystemSprites; // System icon sprites
+class MenuSystem;    // Menu system
+class Settings;      // Settings manager
 
 class Engine {
 public:
@@ -32,7 +34,9 @@ public:
     // === Engine State Machine ===
     enum class EngineState {
         BOOT,                // Initial boot state
-        MENU,                // Showing cartridge selection menu
+        MAIN_MENU,           // Main menu (native C++)
+        PAUSE_MENU,          // Pause menu (during cartridge)
+        SETTINGS_MENU,       // Settings/config menu
         LOADING_CARTRIDGE,   // Loading a cartridge
         RUNNING_CARTRIDGE,   // Running a cartridge
         ERROR                // Error state
@@ -106,6 +110,11 @@ private:
     std::unique_ptr<CodeEditor> codeEditor;  // Code editor (2.0.2-2.0.4)
     std::unique_ptr<SpriteEditor> spriteEditor;  // Sprite editor (Phase 3)
     std::unique_ptr<SystemSprites> systemSprites; // System UI icons
+
+    // Menu Systems
+    std::unique_ptr<MenuSystem> pauseMenu;      // Pause menu
+    std::unique_ptr<MenuSystem> settingsMenu;   // Settings menu
+    std::unique_ptr<Settings> settings;         // Global settings
 
     // State machine
     EngineState currentState;

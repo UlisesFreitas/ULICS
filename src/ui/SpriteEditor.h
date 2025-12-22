@@ -54,6 +54,7 @@ public:
     void OnExportClicked();
     void OnExportCurrentSprite();  // Export only current sprite
     void OnFileDropped(const char* filepath);  // Drag & drop handler
+    void ResetPaletteToDefault();  // Reset palette to default and save
     
 private:
     // Tool types

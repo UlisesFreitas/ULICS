@@ -118,6 +118,7 @@ add_executable(UliCS WIN32
     src/main.cpp
     src/core/Engine.cpp src/core/Engine.h
     src/core/Bootstrap.cpp src/core/Bootstrap.h
+    src/core/Settings.cpp src/core/Settings.h
     src/core/HotReload.cpp src/core/HotReload.h
     src/ui/DebugConsole.cpp src/ui/DebugConsole.h
     src/ui/UISystem.cpp src/ui/UISystem.h
@@ -125,6 +126,7 @@ add_executable(UliCS WIN32
     src/ui/SpriteEditor.cpp src/ui/SpriteEditor.h
     src/ui/SystemSprites.cpp src/ui/SystemSprites.h
     src/ui/FileExplorer.cpp src/ui/FileExplorer.h
+    src/ui/MenuSystem.cpp src/ui/MenuSystem.h
     src/utils/FileDialog.cpp src/utils/FileDialog.h
     src/editor/text/UndoRedoManager.cpp src/editor/text/UndoRedoManager.h
     src/editor/text/TextBuffer.cpp src/editor/text/TextBuffer.h

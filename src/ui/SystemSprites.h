@@ -53,7 +53,10 @@ public:
         
         // Rotate icons (23-24)
         ROTATE_LEFT = 23,   // Rotate 90° counter-clockwise
-        ROTATE_RIGHT = 24   // Rotate 90° clockwise
+        ROTATE_RIGHT = 24,  // Rotate 90° clockwise
+        
+        // Reset icon (25)
+        RESET = 25          // Reset icon (circular arrows)
     };
     
 private:
@@ -79,6 +82,7 @@ private:
     // NEW: Utility icon generators
     void GenerateUtilityIcons();  // Generates all utility icons (16-22)
     void GenerateRotateIcons();   // Generates rotate icons (23-24)
+    void GenerateResetIcon();     // Generates reset icon (25)
 };
 
 #endif // SYSTEM_SPRITES_H

@@ -132,15 +132,19 @@ void SpriteEditor::Update(InputManager& input) {
                      mouseY >= PALETTE_Y && mouseY < PALETTE_Y + (PALETTE_ROWS * COLOR_BOX_SIZE)) {
                  HandlePaletteClick(mouseX, mouseY);
             }
-            // Check palette Import/Export buttons
+            // Check palette Reset/Import/Export buttons
             else if (mouseX >= PALETTE_BUTTON_X && mouseX < PALETTE_BUTTON_X + PALETTE_BUTTON_SIZE) {
-                // Button 0: Import (Y: PALETTE_BUTTON_Y to PALETTE_BUTTON_Y + 16)
-                // Button 1: Export (Y: PALETTE_BUTTON_Y + 16 to PALETTE_BUTTON_Y + 32)
+                // Button 0: Reset (Y: PALETTE_BUTTON_Y to PALETTE_BUTTON_Y + 16)
+                // Button 1: Import (Y: PALETTE_BUTTON_Y + 16 to PALETTE_BUTTON_Y + 32)
+                // Button 2: Export (Y: PALETTE_BUTTON_Y + 32 to PALETTE_BUTTON_Y + 48)
                 if (mouseY >= PALETTE_BUTTON_Y && mouseY < PALETTE_BUTTON_Y + PALETTE_BUTTON_SIZE) {
-                    HandlePaletteButtonClick(0);  // Import
+                    HandlePaletteButtonClick(0);  // Reset
                 }
                 else if (mouseY >= PALETTE_BUTTON_Y + PALETTE_BUTTON_SIZE && mouseY < PALETTE_BUTTON_Y + (2 * PALETTE_BUTTON_SIZE)) {
-                    HandlePaletteButtonClick(1);  // Export
+                    HandlePaletteButtonClick(1);  // Import
+                }
+                else if (mouseY >= PALETTE_BUTTON_Y + (2 * PALETTE_BUTTON_SIZE) && mouseY < PALETTE_BUTTON_Y + (3 * PALETTE_BUTTON_SIZE)) {
+                    HandlePaletteButtonClick(2);  // Export
                 }
             }
             // Check spritesheet area
@@ -313,10 +317,10 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
                     (PALETTE_ROWS * COLOR_BOX_SIZE) + 2,
                     SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
     
-    // === Palette Import/Export Buttons (vertical, right of palette) ===
-    const int buttonIcons[] = { 6, 5 };  // 6 = Import (Load), 5 = Export (Save)
+    // === Palette Reset/Import/Export Buttons (vertical, right of palette) ===
+    const int buttonIcons[] = { 25, 6, 5 };  // 25 = Reset, 6 = Import, 5 = Export
     
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
         int x = PALETTE_BUTTON_X;
         int y = PALETTE_BUTTON_Y + (i * PALETTE_BUTTON_SIZE);  // Sin spacing - pegados
         
@@ -339,9 +343,9 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
         }
     }
     
-    // White border around both buttons (RGB fixed)
+    // White border around all three buttons (RGB fixed)
     renderer.RectRGB(PALETTE_BUTTON_X - 1, PALETTE_BUTTON_Y - 1, 
-                    PALETTE_BUTTON_SIZE + 2, (2 * PALETTE_BUTTON_SIZE) + 2,
+                    PALETTE_BUTTON_SIZE + 2, (3 * PALETTE_BUTTON_SIZE) + 2,
                     SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
 }
 
@@ -1562,12 +1566,20 @@ void SpriteEditor::RenderUtilityBar(AestheticLayer& renderer) {
 
 void SpriteEditor::HandlePaletteButtonClick(int buttonIndex) {
     Log("[Palette] Button clicked: " + std::to_string(buttonIndex));
-    if (buttonIndex == 0) {
-        // Import palette
-        ImportPalette();
-    } else if (buttonIndex == 1) {
-        // Export palette
-        ExportPalette();
+    
+    switch (buttonIndex) {
+        case 0:
+            // Reset palette to default
+            ResetPaletteToDefault();
+            break;
+        case 1:
+            // Import palette
+            ImportPalette();
+            break;
+        case 2:
+            // Export palette
+            ExportPalette();
+            break;
     }
 }
 
@@ -1794,3 +1806,19 @@ void SpriteEditor::SaveCartridgePalette() {
     }
 }
 
+void SpriteEditor::ResetPaletteToDefault() {
+    Log("[Palette] Resetting to default palette...");
+    
+    if (!aestheticLayer) {
+        Log("[Palette] ERROR: aestheticLayer is null");
+        return;
+    }
+    
+    // Reset palette to PICO-8/TIC-80 default
+    aestheticLayer->ResetToDefaultPalette();
+    
+    // Save the default palette to the cartridge's palette.pal file
+    SaveCartridgePalette();
+    
+    Log("[Palette] Reset to default and saved successfully");
+}

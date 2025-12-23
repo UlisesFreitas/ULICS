@@ -5,6 +5,8 @@
 #include "ui/SystemSprites.h"
 #include "ui/SystemColors.h"  // Fixed UI colors
 #include "utils/FileDialog.h"
+#include "core/Engine.h"  // For animation access
+#include "animation/AnimationManager.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -31,6 +33,7 @@ SpriteEditor::SpriteEditor()
     , hasClipboardData(false)  // No clipboard data initially
     , systemSprites(nullptr)
     , aestheticLayer(nullptr)  // Will be set in Render
+    , engineInstance(nullptr)  // Will be set by Engine
 {
     // Open log file
     logFile.open("sprite_editor_log.txt", std::ios::out | std::ios::trunc);
@@ -153,6 +156,11 @@ void SpriteEditor::Update(InputManager& input) {
                      mouseY >= FLAG_PANEL_Y && mouseY < FLAG_PANEL_Y + FLAG_PANEL_H) {
                 HandleFlagClick(mouseX, mouseY);
             }
+            // Check animation panel clicks (debajo del flag panel)
+            else if (mouseX >= ANIM_PANEL_X && mouseX < ANIM_PANEL_X + ANIM_PANEL_W &&
+                     mouseY >= ANIM_PANEL_Y && mouseY < ANIM_PANEL_Y + ANIM_PANEL_H) {
+                HandleAnimationClick(mouseX, mouseY);
+            }
             // Check spritesheet area
             else if (mouseX >= SHEET_X && mouseX < SHEET_X + (SHEET_COLS * SHEET_SPRITE_SIZE) &&
                      mouseY >= SHEET_Y && mouseY < SHEET_Y + (SHEET_ROWS * SHEET_SPRITE_SIZE)) {
@@ -214,6 +222,9 @@ void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
     // Render flag panel (debajo de la paleta)
     RenderFlagPanel(renderer);
     
+    // Render animation panel (debajo del flag panel)
+    RenderAnimationPanel(renderer);
+    
     // Render main canvas
     RenderCanvas(renderer);
     
@@ -254,6 +265,9 @@ void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
         renderer.PrintRGB(undoInfo, undoX, statusY + 1,
                          SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
     }
+    
+    // Render animation modal (on top of everything if open)
+    RenderAnimationModal(renderer);
 }
 
 // ===== Rendering Methods =====
@@ -622,6 +636,43 @@ void SpriteEditor::HandleUtilityButtonClick(int index) {
 }
 
 void SpriteEditor::HandleKeyboard(InputManager& input) {
+    // If animation modal is open, handle modal-specific keys first
+    if (animEditorOpen) {
+        if (input.isKeyPressed(SDL_SCANCODE_X)) {  // X to close, not ESC (conflicts with editor close)
+            animEditorOpen = false;
+            selectedAnimIndex = -1;
+            std::cout << "[AnimModal] Closed" << std::endl;
+            return;  // Don't process other keys
+        }
+        
+        // Modal actions (P, R, S)
+        if (engineInstance && selectedAnimIndex >= 0) {
+            AnimationManager* animMgr = engineInstance->getAnimationManager();
+            if (animMgr) {
+                const auto& animations = animMgr->GetAllAnimations();
+                if (selectedAnimIndex < animations.size()) {
+                    const std::string& animName = animations[selectedAnimIndex].name;
+                    
+                    if (input.isKeyPressed(SDL_SCANCODE_P)) {
+                        // Toggle play/pause
+                        if (animMgr->IsPlaying(animName)) {
+                            animMgr->Pause(animName);
+                        } else {
+                            animMgr->Play(animName);
+                        }
+                    }
+                    else if (input.isKeyPressed(SDL_SCANCODE_R)) {
+                        animMgr->Reset(animName);
+                    }
+                    else if (input.isKeyPressed(SDL_SCANCODE_S)) {
+                        animMgr->Stop(animName);
+                    }
+                }
+            }
+        }
+        return;  // Don't process sprite editor keys while modal is open
+    }
+    
     // Tool shortcuts
     if (input.isKeyPressed(SDL_SCANCODE_P)) currentTool = Tool::PENCIL;
     if (input.isKeyPressed(SDL_SCANCODE_F)) currentTool = Tool::FILL;

@@ -9,6 +9,7 @@
 #include "cartridge/CartridgeLoader.h"
 #include "audio/AudioManager.h"  // For sfx() Lua binding
 #include "ui/SpriteEditor.h"  // For sprite flags API
+#include "animation/AnimationManager.h"  // For animation API
 #include <iostream>
 #include <string> // Required for std::string
 #include <array>
@@ -19,7 +20,15 @@
 constexpr double PI = 3.14159265358979323846;
 
 ScriptingManager::ScriptingManager(Engine* engine)
-    : L(nullptr), engineInstance(engine), codeLineCount(0) {
+    : engineInstance(engine), debugConsole(nullptr) {
+    
+    // Open Lua error log
+    logFile.open("lua_log.txt", std::ios::out | std::ios::trunc);
+    if (logFile.is_open()) {
+        logFile << "=== LUA ERROR LOG ===" << std::endl;
+        logFile << "Session started" << std::endl << std::endl;
+    }
+    
     // 1. Create a new Lua state.
     L = luaL_newstate();
     if (L) {
@@ -37,6 +46,11 @@ ScriptingManager::ScriptingManager(Engine* engine)
 }
 
 ScriptingManager::~ScriptingManager() {
+    if (logFile.is_open()) {
+        logFile << std::endl << "Session ended" << std::endl;
+        logFile.close();
+    }
+    
     if (L) {
         lua_close(L);
         std::cout << "ScriptingManager: Lua state closed." << std::endl;
@@ -45,12 +59,29 @@ ScriptingManager::~ScriptingManager() {
 
 // Loads and runs a Lua script from the given filepath.
 bool ScriptingManager::LoadAndRunScript(const char* scriptBuffer) {
-    // luaL_dostring loads and runs a script from a string.
-    if (luaL_dostring(L, scriptBuffer) != LUA_OK) {
-        // If there was an error, it's on top of the stack.
+    // luaL_loadstring loads the script but doesn't run it.
+    if (luaL_loadstring(L, scriptBuffer) != LUA_OK) {
         const char* error = lua_tostring(L, -1);
-        std::cerr << "Error running embedded script: " << error << std::endl;
+        std::cerr << "Error loading embedded script: " << error << std::endl;
+        LogError(std::string("Error loading embedded script: ") + error);
         lua_pop(L, 1); // Pop the error message from the stack.
+        return false;
+    }
+
+    // Execute the loaded chunk (run the script)
+    if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
+        const char* error = lua_tostring(L, -1);
+        std::string fullError = std::string("Error executing embedded script: ") + error;
+        std::cerr << "ScriptingManager: " << fullError << std::endl;
+        LogError(fullError);
+        
+        // Send error to debug console if available
+        // TODO: Fix DebugConsole::MessageType reference
+        //if (debugConsole) {
+        //    debugConsole->AddMessage(fullError, DebugConsole::MessageType::ERROR);
+        //}
+        
+        lua_pop(L, 1); // Pop error message
         return false;
     }
     std::cout << "ScriptingManager: Successfully loaded and executed embedded script." << std::endl;
@@ -151,6 +182,20 @@ void ScriptingManager::RegisterAPI() {
     RegisterFunction("sspr", &ScriptingManager::Lua_Sspr);
     RegisterFunction("fget", &ScriptingManager::Lua_Fget);  // Sprite flags
     RegisterFunction("fset", &ScriptingManager::Lua_Fset);  // Sprite flags
+    
+    // --- Animation Functions ---
+    RegisterFunction("anim_play", &ScriptingManager::Lua_AnimPlay);
+    RegisterFunction("anim_draw", &ScriptingManager::Lua_AnimDraw);
+    RegisterFunction("anim_start", &ScriptingManager::Lua_AnimStart);
+    RegisterFunction("anim_stop", &ScriptingManager::Lua_AnimStop);
+    RegisterFunction("anim_pause", &ScriptingManager::Lua_AnimPause);
+    RegisterFunction("anim_reset", &ScriptingManager::Lua_AnimReset);
+    RegisterFunction("anim_get_frame", &ScriptingManager::Lua_AnimGetFrame);
+    RegisterFunction("anim_is_playing", &ScriptingManager::Lua_AnimIsPlaying);
+    RegisterFunction("anim_is_finished", &ScriptingManager::Lua_AnimIsFinished);
+    RegisterFunction("anim_exists", &ScriptingManager::Lua_AnimExists);
+    RegisterFunction("anim_get_length", &ScriptingManager::Lua_AnimGetLength);
+    RegisterFunction("anim_get_duration", &ScriptingManager::Lua_AnimGetDuration);
     
     // --- Map Functions (Phase 5.9) ---
     RegisterFunction("map", &ScriptingManager::Lua_Map);
@@ -363,13 +408,17 @@ int ScriptingManager::Lua_Print(lua_State* L) {
     auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
     AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
 
-    // Get arguments from Lua.
+    int argc = lua_gettop(L);
+    
+    // Get text (required)
     const char* text = luaL_checkstring(L, 1);
-    int x = luaL_checkinteger(L, 2);
-    int y = luaL_checkinteger(L, 3);
-    int colorIndex = luaL_checkinteger(L, 4);
+    
+    // Get optional x, y, color (default to 0, 0, 7=white)
+    int x = (argc >= 2) ? luaL_checkinteger(L, 2) : 0;
+    int y = (argc >= 3) ? luaL_checkinteger(L, 3) : 0;
+    int colorIndex = (argc >= 4) ? luaL_checkinteger(L, 4) : 7;
 
-    // Call the C++ function.
+    // Call the C++ function
     layer->Print(text, x, y, colorIndex);
     
     // Also send to debug console (v1.5.2)
@@ -579,6 +628,9 @@ bool ScriptingManager::CallLuaFunction(const char* functionName) {
             std::cerr << "\n=== ULICS Lua Error ===" << std::endl;
             std::cerr << "Function: " << functionName << std::endl;
             std::cerr << "Error: " << lastError << std::endl;
+            
+            // Log to file
+            LogError(std::string("In ") + functionName + "(): " + lastError);
             
             // Try to get stack trace
             lua_getglobal(L, "debug");
@@ -1083,4 +1135,211 @@ int ScriptingManager::Lua_Fset(lua_State* L) {
     spriteEditor->SetSpriteFlag(spriteIndex, flagBit, value);
     
     return 0;
+}
+
+// ============================================
+// ANIMATION API (PICO-8/TIC-80 style)
+// ============================================
+
+int ScriptingManager::Lua_AnimPlay(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
+    
+    if (!animMgr || !layer) {
+        std::cout << "[anim_play] ERROR: AnimationManager or AestheticLayer is null" << std::endl;
+        return 0;
+    }
+    
+    const char* name = luaL_checkstring(L, 1);
+    int x = luaL_checkinteger(L, 2);
+    int y = luaL_checkinteger(L, 3);
+    bool flip_x = (lua_gettop(L) >= 4) ? lua_toboolean(L, 4) : false;
+    bool flip_y = (lua_gettop(L) >= 5) ? lua_toboolean(L, 5) : false;
+    
+    std::cout << "[anim_play] Called with: name=" << name << " x=" << x << " y=" << y << std::endl;
+    
+    // Start animation if not playing
+    if (!animMgr->IsPlaying(name)) {
+        std::cout << "[anim_play] Starting animation '" << name << "'" << std::endl;
+        animMgr->Play(name);
+    }
+    
+    // Get current sprite ID
+    int spriteId = animMgr->GetCurrentSpriteId(name);
+    std::cout << "[anim_play] Current sprite ID: " << spriteId << std::endl;
+    
+    if (spriteId != -1) {
+        std::cout << "[anim_play] Drawing sprite " << spriteId << " at (" << x << "," << y << ")" << std::endl;
+        layer->DrawSprite(spriteId, x, y, 1, 1, flip_x, flip_y);
+    } else {
+        std::cout << "[anim_play] WARNING: Invalid sprite ID (-1) for animation '" << name << "'" << std::endl;
+    }
+    
+    return 0;
+}
+
+int ScriptingManager::Lua_AnimDraw(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr =sm->engineInstance->getAnimationManager();
+    AestheticLayer* layer = sm->engineInstance->getAestheticLayer();
+    
+    if (!animMgr || !layer) return 0;
+    
+    const char* name = luaL_checkstring(L, 1);
+    int x = luaL_checkinteger(L, 2);
+    int y = luaL_checkinteger(L, 3);
+    bool flip_x = lua_toboolean(L, 4);
+    bool flip_y = lua_toboolean(L, 5);
+    
+    int spriteId = animMgr->GetCurrentSpriteId(name);
+    if (spriteId != -1) {
+        layer->DrawSprite(spriteId, x, y, 1, 1, flip_x, flip_y);
+    }
+    
+    return 0;
+}
+
+int ScriptingManager::Lua_AnimStart(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    if (!animMgr) return 0;
+    
+    const char* name = luaL_checkstring(L, 1);
+    animMgr->Play(name);
+    return 0;
+}
+
+int ScriptingManager::Lua_AnimStop(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    if (!animMgr) return 0;
+    
+    const char* name = luaL_checkstring(L, 1);
+    animMgr->Stop(name);
+    return 0;
+}
+
+int ScriptingManager::Lua_AnimPause(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    if (!animMgr) return 0;
+    
+    const char* name = luaL_checkstring(L, 1);
+    animMgr->Pause(name);
+    return 0;
+}
+
+int ScriptingManager::Lua_AnimReset(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    if (!animMgr) return 0;
+    
+    const char* name = luaL_checkstring(L, 1);
+    animMgr->Reset(name);
+    return 0;
+}
+
+int ScriptingManager::Lua_AnimGetFrame(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    
+    if (!animMgr) {
+        lua_pushinteger(L, -1);
+        return 1;
+    }
+    
+    const char* name = luaL_checkstring(L, 1);
+    int spriteId = animMgr->GetCurrentSpriteId(name);
+    lua_pushinteger(L, spriteId);
+    return 1;
+}
+
+int ScriptingManager::Lua_AnimIsPlaying(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    
+    if (!animMgr) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    const char* name = luaL_checkstring(L, 1);
+    bool playing = animMgr->IsPlaying(name);
+    lua_pushboolean(L, playing);
+    return 1;
+}
+
+int ScriptingManager::Lua_AnimIsFinished(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    
+    if (!animMgr) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    const char* name = luaL_checkstring(L, 1);
+    bool finished = animMgr->IsFinished(name);
+    lua_pushboolean(L, finished);
+    return 1;
+}
+
+int ScriptingManager::Lua_AnimExists(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    
+    if (!animMgr) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    const char* name = luaL_checkstring(L, 1);
+    bool exists = animMgr->Exists(name);
+    lua_pushboolean(L, exists);
+    return 1;
+}
+
+int ScriptingManager::Lua_AnimGetLength(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    
+    if (!animMgr) {
+        lua_pushinteger(L, 0);
+        return 1;
+    }
+    
+    const char* name = luaL_checkstring(L, 1);
+    int length = animMgr->GetFrameCount(name);
+    lua_pushinteger(L, length);
+    return 1;
+}
+
+int ScriptingManager::Lua_AnimGetDuration(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    AnimationManager* animMgr = sm->engineInstance->getAnimationManager();
+    
+    if (!animMgr) {
+        lua_pushinteger(L, 0);
+        return 1;
+    }
+    
+    const char* name = luaL_checkstring(L, 1);
+    int duration = animMgr->GetTotalDuration(name);
+    lua_pushinteger(L, duration);
+    return 1;
+}
+
+// === Helper function to log Lua errors ===
+void ScriptingManager::LogError(const std::string& error) {
+    if (logFile.is_open()) {
+        // Get current time
+        auto now = std::chrono::system_clock::now();
+        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+        char timeStr[100];
+        std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", std::localtime(&time_t_now));
+        
+        logFile << "[" << timeStr << "] " << error << std::endl;
+        logFile.flush();  // Ensure it's written immediately
+    }
 }

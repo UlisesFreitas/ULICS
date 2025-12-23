@@ -1,0 +1,5 @@
+=== LUA ERROR LOG ===
+Session started
+
+
+Session ended

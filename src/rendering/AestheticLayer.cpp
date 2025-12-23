@@ -3,6 +3,7 @@
 #include "rendering/Map.h"
 #include "capture/Screenshot.h"  // For screenshot capture (v1.5.3)
 #include <stdexcept>
+#include <iostream>  // For debug logging
 
 AestheticLayer::AestheticLayer(SDL_Renderer* renderer) : renderer(renderer) {
     if (!renderer) {
@@ -425,9 +426,20 @@ void AestheticLayer::Print(const std::string& text, int x, int y, uint8_t colorI
 
 // === Sprite Rendering Implementation (Phase 5) ===
 
+void AestheticLayer::LoadSpriteSheet(const std::string& filepath) {
+    spriteSheet = std::make_unique<SpriteSheet>();
+    if (spriteSheet->LoadFromPNG(filepath, 8)) {  // 8x8 tile size
+        std::cout << "[AestheticLayer] Spritesheet loaded successfully: " << filepath << std::endl;
+    } else {
+        std::cout << "[AestheticLayer] Failed to load spritesheet: " << filepath << std::endl;
+        spriteSheet.reset();  // Clear if loading failed
+    }
+}
+
 void AestheticLayer::DrawSprite(int spriteId, int x, int y, int w, int h, bool flipX, bool flipY) {
     if (!spriteSheet || !spriteSheet->IsLoaded()) {
-        return; // No sprite sheet loaded
+        // Spritesheet not loaded - silently skip (common in early initialization)
+        return;
     }
     
     int tileSize = spriteSheet->GetTileSize();

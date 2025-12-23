@@ -18,7 +18,8 @@ class GifRecorder;
 class AudioManager;  // Audio system (Phase 5.12)
 class UISystem;      // Custom UI system (Phase 2.0.1)
 class CodeEditor;    // Code editor (Phase 2.0.2)
-class SpriteEditor;  // Sprite editor (Phase 3)
+class SpriteEditor;  // Forward declaration
+class AnimationManager;  // Forward declarationr (Phase 3)
 class SystemSprites; // System icon sprites
 class MenuSystem;    // Menu system
 class Settings;      // Settings manager
@@ -79,6 +80,7 @@ public:
     DebugConsole* getDebugConsole() const { return debugConsole.get(); }
     SystemSprites* getSystemSprites() const { return systemSprites.get(); }
     SpriteEditor* getSpriteEditor() const { return spriteEditor.get(); }
+    AnimationManager* getAnimationManager() const { return animationManager.get(); }
     double getElapsedTime() const;
 
 private:
@@ -102,6 +104,8 @@ private:
     std::unique_ptr<CartridgeLoader> cartridgeLoader;
     std::unique_ptr<Map> currentMap;  // Global map instance
     std::unique_ptr<HotReload> hotReload;  // File watching for hot reload (v1.5.1)
+    std::unique_ptr<SpriteEditor> spriteEditor;  // Sprite editor (Phase 3)
+    std::unique_ptr<AnimationManager> animationManager;  // Animation system
     std::unique_ptr<DebugConsole> debugConsole;  // On-screen debug overlay (v1.5.2)
     std::unique_ptr<GifRecorder> gifRecorder;  // GIF recording (v1.5.4)
     AudioManager* audioManager;  // Audio subsystem (singleton, Phase 5.12 + 1.1.3 fix)
@@ -109,7 +113,6 @@ private:
     // UI Systems (Phase 2.0)
     std::unique_ptr<UISystem> uiSystem;      // Custom UI rendering (2.0.1)
     std::unique_ptr<CodeEditor> codeEditor;  // Code editor (2.0.2-2.0.4)
-    std::unique_ptr<SpriteEditor> spriteEditor;  // Sprite editor (Phase 3)
     std::unique_ptr<SystemSprites> systemSprites; // System UI icons
 
     // Menu Systems

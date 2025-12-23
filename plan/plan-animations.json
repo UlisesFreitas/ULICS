@@ -1,0 +1,420 @@
+{
+    "plan_name": "Sprite Editor - Animation System",
+    "objective": "Implementar sistema completo de animaciones de sprites con editor visual y API Lua para crear, guardar y reproducir animaciones frame-by-frame",
+    "status": "in_progress",
+    "start_date": "2025-12-22T12:14:00Z",
+    "priority": "high",
+    "estimated_time": "6-8 hours",
+    "phases": [
+        {
+            "id": "PHASE_1",
+            "name": "Backend - Data Structures & File I/O",
+            "status": "completed",
+            "estimated_time": "2-3 hours",
+            "tasks": [
+                {
+                    "id": "T1.1",
+                    "name": "Create Animation.h with data structures",
+                    "status": "completed",
+                    "details": "Define AnimationFrame struct (spriteId, duration) and Animation struct (name, frames[], loop, runtime state)",
+                    "files": [
+                        "src/animation/Animation.h"
+                    ]
+                },
+                {
+                    "id": "T1.2",
+                    "name": "Create AnimationManager class",
+                    "status": "completed",
+                    "details": "Manager for loading, saving, adding, removing, and updating animations. Handles runtime state.",
+                    "files": [
+                        "src/animation/AnimationManager.h",
+                        "src/animation/AnimationManager.cpp"
+                    ]
+                },
+                {
+                    "id": "T1.3",
+                    "name": "Implement JSON serialization",
+                    "status": "completed",
+                    "details": "Load/Save animations to cartridge/animations.json. Manual JSON parsing (no external libs).",
+                    "files": [
+                        "src/animation/AnimationManager.cpp"
+                    ]
+                },
+                {
+                    "id": "T1.4",
+                    "name": "Integrate AnimationManager into Engine",
+                    "status": "completed",
+                    "details": "Add unique_ptr<AnimationManager> to Engine, initialize, update each frame, auto-load on cartridge load",
+                    "files": [
+                        "src/core/Engine.h",
+                        "src/core/Engine.cpp"
+                    ]
+                },
+                {
+                    "id": "T1.5",
+                    "name": "Add to CMakeLists.txt",
+                    "status": "completed",
+                    "details": "Add Animation.h, AnimationManager.h/cpp to build system",
+                    "files": [
+                        "CMakeLists.txt"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "PHASE_2",
+            "name": "Lua API - Scripting Interface",
+            "status": "completed",
+            "estimated_time": "1-2 hours",
+            "depends_on": [
+                "PHASE_1"
+            ],
+            "tasks": [
+                {
+                    "id": "T2.1",
+                    "name": "Implement anim_play()",
+                    "status": "completed",
+                    "details": "All-in-one function: anim_play(name, x, y, flip_x, flip_y) - starts animation and draws current frame",
+                    "files": [
+                        "src/scripting/ScriptingManager.cpp",
+                        "src/scripting/ScriptingManager.h"
+                    ]
+                },
+                {
+                    "id": "T2.2",
+                    "name": "Implement anim_draw()",
+                    "status": "completed",
+                    "details": "anim_draw(name, x, y, flip_x, flip_y) - draws current frame without starting",
+                    "files": [
+                        "src/scripting/ScriptingManager.cpp"
+                    ]
+                },
+                {
+                    "id": "T2.3",
+                    "name": "Implement control functions",
+                    "status": "completed",
+                    "details": "anim_start(), anim_stop(), anim_pause(), anim_reset()",
+                    "files": [
+                        "src/scripting/ScriptingManager.cpp"
+                    ]
+                },
+                {
+                    "id": "T2.4",
+                    "name": "Implement getter functions",
+                    "status": "completed",
+                    "details": "anim_get_frame(), anim_is_playing(), anim_is_finished(), anim_exists()",
+                    "files": [
+                        "src/scripting/ScriptingManager.cpp"
+                    ]
+                },
+                {
+                    "id": "T2.5",
+                    "name": "Register all Lua functions",
+                    "status": "completed",
+                    "details": "Add all anim_* functions to RegisterAPI()",
+                    "files": [
+                        "src/scripting/ScriptingManager.cpp"
+                    ]
+                },
+                {
+                    "id": "T2.6",
+                    "name": "Create test cartridge",
+                    "status": "completed",
+                    "details": "Create test_animations cartridge with animations.json and Lua script to test API",
+                    "files": [
+                        "cartridges/test_animations/main.lua",
+                        "cartridges/test_animations/animations.json"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "PHASE_3",
+            "name": "UI - Animation Panel & Editor",
+            "status": "in_progress",
+            "estimated_time": "2-3 hours",
+            "depends_on": [
+                "PHASE_1"
+            ],
+            "tasks": [
+                {
+                    "id": "T3.1",
+                    "name": "Design AnimationPanel layout",
+                    "status": "completed",
+                    "details": "Panel below FLAGS showing list of animations. Buttons: New, Play, Stop. Each anim: name, frames preview, edit, delete",
+                    "files": [
+                        "src/ui/SpriteEditor.h"
+                    ]
+                },
+                {
+                    "id": "T3.2",
+                    "name": "Implement RenderAnimationPanel()",
+                    "status": "completed",
+                    "details": "Render animation list, buttons, and current state indicators",
+                    "files": [
+                        "src/ui/SpriteEditor.cpp"
+                    ]
+                },
+                {
+                    "id": "T3.3",
+                    "name": "Implement animation editor modal",
+                    "status": "completed",
+                    "details": "Modal for editing: name input, frame list (click sprites to add), speed per frame, loop toggle, preview",
+                    "files": [
+                        "src/ui/SpriteEditor.cpp",
+                        "src/ui/SpriteEditor.h"
+                    ]
+                },
+                {
+                    "id": "T3.4",
+                    "name": "Handle mouse clicks in animation panel",
+                    "status": "completed",
+                    "details": "Detect clicks on New, Edit, Delete, Play buttons. Handle frame selection from spritesheet.",
+                    "files": [
+                        "src/ui/SpriteEditor.cpp"
+                    ]
+                },
+                {
+                    "id": "T3.5",
+                    "name": "Implement animation preview",
+                    "status": "pending",
+                    "details": "Real-time preview of animation playing in editor (play button toggles preview)",
+                    "files": [
+                        "src/ui/SpriteEditor.cpp"
+                    ]
+                },
+                {
+                    "id": "T3.6",
+                    "name": "Add hotkeys",
+                    "status": "pending",
+                    "details": "Ctrl+Shift+A for new animation, Delete for remove selected",
+                    "files": [
+                        "src/ui/SpriteEditor.cpp"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "PHASE_4",
+            "name": "Integration & Polish",
+            "status": "pending",
+            "estimated_time": "1 hour",
+            "depends_on": [
+                "PHASE_2",
+                "PHASE_3"
+            ],
+            "tasks": [
+                {
+                    "id": "T4.1",
+                    "name": "Auto-load animations.json on cartridge load",
+                    "status": "pending",
+                    "details": "When Engine loads cartridge, automatically load animations.json if it exists",
+                    "files": [
+                        "src/core/Engine.cpp"
+                    ]
+                },
+                {
+                    "id": "T4.2",
+                    "name": "Auto-save on Sprite Editor save",
+                    "status": "pending",
+                    "details": "When user saves spritesheet, also save animations.json",
+                    "files": [
+                        "src/ui/SpriteEditor.cpp"
+                    ]
+                },
+                {
+                    "id": "T4.3",
+                    "name": "Add getter for AnimationManager",
+                    "status": "pending",
+                    "details": "Engine::getAnimationManager() for access from SpriteEditor and Lua",
+                    "files": [
+                        "src/core/Engine.h"
+                    ]
+                },
+                {
+                    "id": "T4.4",
+                    "name": "Error handling",
+                    "status": "pending",
+                    "details": "Handle missing animations.json, invalid JSON, missing sprites, empty animations",
+                    "files": [
+                        "src/animation/AnimationManager.cpp",
+                        "src/scripting/ScriptingManager.cpp"
+                    ]
+                },
+                {
+                    "id": "T4.5",
+                    "name": "Logging and debug output",
+                    "status": "pending",
+                    "details": "Add proper logging for load/save/play/stop events",
+                    "files": [
+                        "src/animation/AnimationManager.cpp"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "PHASE_5",
+            "name": "Testing & Documentation",
+            "status": "pending",
+            "estimated_time": "1 hour",
+            "depends_on": [
+                "PHASE_4"
+            ],
+            "tasks": [
+                {
+                    "id": "T5.1",
+                    "name": "Create example animations",
+                    "status": "pending",
+                    "details": "Create 3-4 example animations: player_walk, player_jump, enemy_idle, coin_spin",
+                    "files": [
+                        "cartridges/test_animations/animations.json"
+                    ]
+                },
+                {
+                    "id": "T5.2",
+                    "name": "Test all Lua API functions",
+                    "status": "pending",
+                    "details": "Verify all anim_* functions work correctly in Lua",
+                    "files": [
+                        "cartridges/test_animations/main.lua"
+                    ]
+                },
+                {
+                    "id": "T5.3",
+                    "name": "Test UI workflow",
+                    "status": "pending",
+                    "details": "Create, edit, delete animations from UI. Verify save/load works.",
+                    "files": []
+                },
+                {
+                    "id": "T5.4",
+                    "name": "Write API documentation",
+                    "status": "pending",
+                    "details": "Complete SPRITE_EDITOR_ANIMATIONS.md with examples and API reference",
+                    "files": [
+                        "docs/app/SPRITE_EDITOR_ANIMATIONS.md"
+                    ]
+                },
+                {
+                    "id": "T5.5",
+                    "name": "Update LUA_API.md",
+                    "status": "pending",
+                    "details": "Add animation functions to main Lua API documentation",
+                    "files": [
+                        "docs/app/LUA_API.md"
+                    ]
+                }
+            ]
+        }
+    ],
+    "file_structure": {
+        "new_files": [
+            "src/animation/Animation.h",
+            "src/animation/AnimationManager.h",
+            "src/animation/AnimationManager.cpp",
+            "docs/app/SPRITE_EDITOR_ANIMATIONS.md",
+            "cartridges/test_animations/main.lua",
+            "cartridges/test_animations/animations.json",
+            "cartridges/test_animations/spritesheet.png"
+        ],
+        "modified_files": [
+            "src/core/Engine.h",
+            "src/core/Engine.cpp",
+            "src/ui/SpriteEditor.h",
+            "src/ui/SpriteEditor.cpp",
+            "src/scripting/ScriptingManager.h",
+            "src/scripting/ScriptingManager.cpp",
+            "CMakeLists.txt",
+            "docs/app/LUA_API.md"
+        ]
+    },
+    "technical_decisions": {
+        "file_format": "JSON (animations.json in cartridge folder)",
+        "update_frequency": "60 FPS (matches engine update rate)",
+        "max_frames_per_animation": "256 (no hard limit, practical)",
+        "frame_duration_unit": "frames @60fps (8 frames = ~133ms)",
+        "default_frame_duration": "8 frames (~133ms)",
+        "animation_storage": "AnimationManager in Engine (global, persistent)",
+        "ui_location": "Below FLAGS panel in Sprite Editor",
+        "json_parser": "Manual (no external dependencies)"
+    },
+    "api_design": {
+        "lua_functions": [
+            "anim_play(name, x, y, [flip_x], [flip_y]) - All-in-one play and draw",
+            "anim_draw(name, x, y, [flip_x], [flip_y]) - Draw current frame",
+            "anim_start(name) - Start/resume animation",
+            "anim_stop(name) - Stop animation",
+            "anim_pause(name) - Pause animation",
+            "anim_reset(name) - Reset to frame 0",
+            "anim_get_frame(name) - Get current sprite ID",
+            "anim_is_playing(name) - Check if playing",
+            "anim_is_finished(name) - Check if finished (non-loop)",
+            "anim_exists(name) - Check if animation exists",
+            "anim_get_length(name) - Get total frames",
+            "anim_get_duration(name) - Get total duration in engine frames"
+        ]
+    },
+    "testing_checklist": [
+        "[X] AnimationManager loads animations.json correctly",
+        "[ ] AnimationManager saves animations.json correctly",
+        "[X] Animations update at 60 FPS correctly",
+        "[X] Loop animations repeat correctly",
+        "[ ] Non-loop animations stop at end",
+        "[X] anim_play() works in Lua",
+        "[X] anim_draw() works in Lua",
+        "[X] anim_get_frame() returns correct sprite ID",
+        "[ ] UI shows all animations correctly",
+        "[ ] Can create new animation from UI",
+        "[ ] Can edit existing animation from UI",
+        "[ ] Can delete animation from UI",
+        "[ ] Preview plays animation correctly",
+        "[X] Auto-load works on cartridge load",
+        "[ ] Auto-save works on sprite editor save",
+        "[X] Handles missing animations.json gracefully",
+        "[X] Handles invalid JSON gracefully",
+        "[X] Multiple animations can play simultaneously",
+        "[X] Frame durations are respected correctly"
+    ],
+    "known_bugs": [
+        {
+            "id": "BUG-ANIM-001",
+            "title": "Preview modal shows incorrect colors (grayscale/wrong palette)",
+            "severity": "medium",
+            "description": "Animation preview in modal displays sprites with incorrect colors - appears grayscale or wrong palette indices. Sprites in Sprite Editor show correct colors.",
+            "affected": [
+                "Modal preview",
+                "Game Run mode"
+            ],
+            "status": "open",
+            "notes": "Palette loading works in editor but not in preview/game. May be related to AestheticLayer palette state or DrawSprite color index mapping."
+        },
+        {
+            "id": "BUG-ANIM-002",
+            "title": "Preview modal lacks proper sprite scaling",
+            "severity": "low",
+            "description": "Preview shows 2x2 grid of same sprite (16x16) instead of a single scaled sprite (32x32). DrawSpriteSection doesn't exist for proper scaling.",
+            "affected": [
+                "Modal preview"
+            ],
+            "status": "open",
+            "notes": "Need to implement pixel-by-pixel scaling or add DrawSpriteSection method to AestheticLayer. Current workaround shows 4 copies of sprite."
+        }
+    ],
+    "known_limitations": [
+        "No rotation or scaling support (just frame sequences)",
+        "No sprite flipping in animation data (handled by Lua draw call)",
+        "No events/callbacks (Lua detects anim_is_finished)",
+        "No blending between frames",
+        "No animation layers or masking",
+        "UI can show max ~10 animations without scrolling"
+    ],
+    "future_enhancements": [
+        "Animation import/export (share between cartridges)",
+        "Onion skin preview in editor",
+        "Timeline scrubber for precise frame control",
+        "Copy animation to clipboard",
+        "Animation templates/presets",
+        "Batch create animations (auto-detect sequences)",
+        "Visual timeline editor (drag frames)"
+    ]
+}

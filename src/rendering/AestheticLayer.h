@@ -56,6 +56,9 @@ public:
     void Print(const std::string& text, int x, int y, uint8_t colorIndex);
 
     // === Sprite Rendering (Phase 5) ===
+    // Loads a sprite sheet from a file
+    void LoadSpriteSheet(const std::string& filepath);
+    
     // Draws a sprite from the loaded sprite sheet.
     // Parameters: spriteId, x, y, width (in tiles), height (in tiles), flipX, flipY
     void DrawSprite(int spriteId, int x, int y, int w = 1, int h = 1, bool flipX = false, bool flipY = false);

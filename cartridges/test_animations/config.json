@@ -1,0 +1,9 @@
+{
+    "name": "Animation Test",
+    "author": "ULICS Team",
+    "version": "1.0.0",
+    "memory_limit_mb": 512,
+    "code_limit_lines": 100000,
+    "palette_size": 16,
+    "description": "Test cartridge for animation system"
+}

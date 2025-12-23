@@ -6,6 +6,7 @@
 #include "ui/UISystem.h"      // Custom UI system (Phase 2.0.1)
 #include "ui/CodeEditor.h"    // Code editor (Phase 2.0.2-2.0.4)
 #include "ui/SpriteEditor.h"  // Sprite editor (Phase 3)
+#include "animation/AnimationManager.h"
 #include "ui/SystemSprites.h" // System UI icons
 #include "ui/MenuSystem.h"     // Menu system
 #include "capture/Screenshot.h"  // Screenshot system (v1.5.3)
@@ -301,13 +302,25 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         if (systemSprites) {
             spriteEditor->SetSystemSprites(systemSprites.get());
         }
+        // Connect engine instance for animation access
+        spriteEditor->SetEngineInstance(this);
         std::cout << "Sprite Editor ready - press F2 to toggle" << std::endl;
     }
     catch (const std::exception& e) {
         std::cerr << "Warning: SpriteEditor failed to initialize: " << e.what() << std::endl;
         // Continue without Sprite Editor
     }
-
+    
+    // Initialize Animation Manager
+    try {
+        animationManager = std::make_unique<AnimationManager>();
+        std::cout << "Animation Manager initialized" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: AnimationManager failed to initialize: " << e.what() << std::endl;
+        // Continue without Animation Manager
+    }
+    
     // Initialize CartridgeLoader
     try {
         cartridgeLoader = std::make_unique<CartridgeLoader>();
@@ -562,6 +575,11 @@ void Engine::Run() {
                     enterErrorState(scriptingManager->GetLastLuaError());
                 }
             }
+            
+            // Update all active animations (only in GAME mode, not paused)
+            if (animationManager && currentState != EngineState::PAUSE_MENU) {
+                animationManager->Update();
+            }
         } else if (currentMode == EngineMode::CODE_EDITOR) {
             // Code Editor mode - update editor
             if (codeEditor && inputManager) {
@@ -609,14 +627,26 @@ void Engine::Run() {
             if (activeGame) {
                 activeGame->_draw(*aestheticLayer);
             }
+            // Call Lua _update function
+            if (scriptingManager) {
+                scriptingManager->CallLuaFunction("_update");
+            }
+            
+            // Update all active animations
+            if (animationManager) {
+                animationManager->Update();
+            }
+            
             // Render settings menu on top
             if (settingsMenu) {
                 settingsMenu->Render(*aestheticLayer);
             }
         } else if (currentMode == EngineMode::GAME) {
-            // Game mode - render game
-            if (activeGame) {
-                activeGame->_draw(*aestheticLayer);
+            // Game mode - call Lua _draw function
+            // NOTE: _update is called in the UPDATE section (via activeGame->_update())
+            // but _draw must be called here in the RENDER section
+            if (scriptingManager) {
+                scriptingManager->CallLuaFunction("_draw");
             }
         } else if (currentMode == EngineMode::CODE_EDITOR) {
             // Code Editor mode - render editor
@@ -736,6 +766,27 @@ bool Engine::LoadCartridge(const std::string& cartridgePath) {
         try {
             aestheticLayer->SetPaletteSize(config.palette_size);
             std::cout << "Engine: Applied palette size: " << config.palette_size << std::endl;
+            
+            // Auto-load animations.json if exists
+            if (animationManager) {
+                std::string animPath = cartridgePath + "/animations.json";
+                animationManager->LoadFromFile(animPath);
+            }
+            
+            // Auto-load spritesheet.png if exists (for Game mode)
+            std::string spritesheetPath = cartridgePath + "/spritesheet.png";
+            
+            // Load in AestheticLayer (needed for spr() and anim_play() in GAME mode)
+            if (aestheticLayer) {
+                aestheticLayer->LoadSpriteSheet(spritesheetPath);
+                std::cout << "Engine: Loaded spritesheet into AestheticLayer from " << spritesheetPath << std::endl;
+            }
+            
+            // Also load in SpriteEditor (for editing)
+            if (spriteEditor) {
+                spriteEditor->Initialize(spritesheetPath);
+                std::cout << "Engine: Loaded spritesheet into SpriteEditor from " << spritesheetPath << std::endl;
+            }
             
             // Load custom palette.pal if it exists (RGB colors for sprites)
             std::filesystem::path cartPath(cartridgePath);

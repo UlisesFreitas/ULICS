@@ -122,8 +122,18 @@ add_executable(UliCS WIN32
     src/core/HotReload.cpp src/core/HotReload.h
     src/ui/DebugConsole.cpp src/ui/DebugConsole.h
     src/ui/UISystem.cpp src/ui/UISystem.h
+    src/ui/LuaSyntax.h
+
+    # Animation system
+    src/animation/Animation.h
+    src/animation/AnimationManager.h
+    src/animation/AnimationManager.cpp
+
+    # Core
     src/ui/CodeEditor.cpp src/ui/CodeEditor.h
     src/ui/SpriteEditor.cpp src/ui/SpriteEditor.h
+    src/ui/SpriteEditor_Animations.cpp
+    src/ui/SpriteEditor_AnimationModal.cpp
     src/ui/SystemSprites.cpp src/ui/SystemSprites.h
     src/ui/FileExplorer.cpp src/ui/FileExplorer.h
     src/ui/MenuSystem.cpp src/ui/MenuSystem.h

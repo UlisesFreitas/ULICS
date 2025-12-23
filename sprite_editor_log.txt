@@ -1,16 +1,51 @@
 === SPRITE EDITOR LOG ===
 SpriteEditor initialized
 [RecentFiles] Loaded 1 recent files
-[LoadSpritesheet] Loaded successfully from: ./cartridges\api_test/spritesheet.png
-[Palette] Looking for palette.pal at: ./cartridges\api_test\palette.pal
+[LoadSpritesheet] Loaded successfully from: ./cartridges\test_animations/spritesheet.png
+[Palette] Looking for palette.pal at: ./cartridges\test_animations\palette.pal
+[LoadSpritesheet] Loaded successfully from: ./cartridges\test_animations/spritesheet.png
+[Palette] Looking for palette.pal at: ./cartridges\test_animations\palette.pal
 [Update] Active! Update count: 60
 [Update] Active! Update count: 120
-[Flags] Toggled sprite 0 flag 0 to ON
 [Update] Active! Update count: 180
 [Update] Active! Update count: 240
 [Update] Active! Update count: 300
 [Update] Active! Update count: 360
+[Update] Active! Update count: 420
+[Update] Active! Update count: 480
+[Update] Active! Update count: 540
+[Update] Active! Update count: 600
+[Update] Active! Update count: 660
+[Update] Active! Update count: 720
+[Update] Active! Update count: 780
+[Update] Active! Update count: 840
+[Update] Active! Update count: 900
+[Update] Active! Update count: 960
+[Update] Active! Update count: 1020
+[Update] Active! Update count: 1080
+[Update] Active! Update count: 1140
+[Update] Active! Update count: 1200
+Switched to sprite #0 - History cleared
+[Update] Active! Update count: 1260
+Switched to sprite #1 - History cleared
+Switched to sprite #2 - History cleared
+[Update] Active! Update count: 1320
+[Update] Active! Update count: 1380
+[Update] Active! Update count: 1440
+[Update] Active! Update count: 1500
+[Update] Active! Update count: 1560
+[Update] Active! Update count: 1620
+[Update] Active! Update count: 1680
+[Update] Active! Update count: 1740
+[Update] Active! Update count: 1800
+[Update] Active! Update count: 1860
 [RecentFiles] Saved 1 recent files
 SpriteEditor destroyed
-ng SpriteEditor::Update() frame: 301
-[Engine] Calling SpriteEditor::Update() frame: 361
+priteEditor::Update() frame: 1441
+[Engine] Calling SpriteEditor::Update() frame: 1501
+[Engine] Calling SpriteEditor::Update() frame: 1561
+[Engine] Calling SpriteEditor::Update() frame: 1621
+[Engine] Calling SpriteEditor::Update() frame: 1681
+[Engine] Calling SpriteEditor::Update() frame: 1741
+[Engine] Calling SpriteEditor::Update() frame: 1801
+[Engine] Calling SpriteEditor::Update() frame: 1861

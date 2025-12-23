@@ -83,10 +83,17 @@ private:
     
     SystemSprites* systemSprites;    // Pointer to system sprites for icons
     AestheticLayer* aestheticLayer;  // Reference to renderer, set in Render()
+    class Engine* engineInstance;    // Reference to Engine for AnimationManager access
     
     // Helper: Draw UI rectangle with fixed RGB color (not affected by palette imports)
     void DrawUIRect(AestheticLayer& renderer, int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_t b);
     void DrawUIRectFill(AestheticLayer& renderer, int x, int y, int w, int h, uint8_t r, uint8_t g, uint8_t b);
+    
+public:
+    // Set engine instance for animation access
+    void SetEngineInstance(class Engine* engine) { engineInstance = engine; }
+    
+private:
     
     // Mouse state
     int lastMouseX = -1;
@@ -121,6 +128,11 @@ private:
     // Recent files tracking
     static constexpr int MAX_RECENT_FILES = 5;
     std::vector<std::string> recentFiles;
+    
+    // Animation editor modal state
+    bool animEditorOpen = false;
+    std::string editingAnimName;  // Name of animation being edited
+    int selectedAnimIndex = -1;    // Index in animations vector
     
     // UI layout constants - PICO-8 style (Vertical layout)
     // Title and status bars (matching CodeEditor style)
@@ -238,6 +250,19 @@ private:
     static constexpr int FLAG_PANEL_Y = PALETTE_Y + (PALETTE_ROWS * COLOR_BOX_SIZE) + 4;  // Debajo de la paleta
     static constexpr int FLAG_PANEL_W = PALETTE_COLS * COLOR_BOX_SIZE;
     static constexpr int FLAG_PANEL_H = 30;  // 12 (label) + 2*(8+2) = 30px (2 rows x 4 cols)
+    
+    // === ANIMATION PANEL LAYOUT (debajo del flag panel) ===
+    static constexpr int ANIM_PANEL_X = FLAG_PANEL_X;  // Same as flag panel (starts after spritesheet)
+    static constexpr int ANIM_PANEL_Y = FLAG_PANEL_Y + FLAG_PANEL_H + 4;  // Debajo del flag panel
+    static constexpr int ANIM_PANEL_W = 72;  // Wider than flag panel (48->72), reaches almost to edge (176+72=248)
+    static constexpr int ANIM_PANEL_H = 50;  // Altura inicial: título + botones + scroll area
+    static constexpr int ANIM_ITEM_H = 12;   // Altura de cada item de animación
+    
+    // === ANIMATION PANEL RENDERING ===
+    void RenderAnimationPanel(AestheticLayer& renderer);
+    void HandleAnimationClick(int mouseX, int mouseY);
+    void RenderAnimationModal(AestheticLayer& renderer);  // Modal editor
+    
     static constexpr int FLAG_BOX_SIZE = 8;
     static constexpr int FLAG_BOX_SPACING = 2;
 };

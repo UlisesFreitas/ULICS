@@ -1,8 +1,10 @@
 #ifndef SCRIPTING_MANAGER_H
-#define SCRIPTING_MANAGER_H
+#define SCRIPTINGMANAGER_H
 
 #include <string>
 #include <random>
+#include <fstream>  // For log file
+#include <chrono>   // For timestamps
 
 // Include the C++ wrapper for the Lua C API headers.
 extern "C" {
@@ -14,6 +16,7 @@ extern "C" {
 class AestheticLayer; // Forward declaration
 class InputManager; // Forward declaration
 class Engine;       // Forward declaration
+class DebugConsole; // Forward declaration
 
 class ScriptingManager {
 public:
@@ -52,6 +55,11 @@ public:
 private:
     lua_State* L; // Pointer to the Lua state.
     Engine* engineInstance; // Non-owning pointer to the main engine instance.
+    DebugConsole* debugConsole;  // Pointer to debug console (set in Initialize)
+    std::ofstream logFile;  // Lua error log file
+    
+    // Helper to log Lua errors
+    void LogError(const std::string& error);
     std::string lastError;
     std::mt19937 rng; // Mersenne Twister random number generator.
     
@@ -135,6 +143,20 @@ private:
     // Sprite flags (PICO-8 style)
     static int Lua_Fget(lua_State* L);  // Get sprite flag(s)
     static int Lua_Fset(lua_State* L);  // Set sprite flag
+    
+    // Animation functions
+    static int Lua_AnimPlay(lua_State* L);          // Play and draw animation
+    static int Lua_AnimDraw(lua_State* L);          // Draw current frame only
+    static int Lua_AnimStart(lua_State* L);         // Start animation
+    static int Lua_AnimStop(lua_State* L);          // Stop animation
+    static int Lua_AnimPause(lua_State* L);         // Pause animation
+    static int Lua_AnimReset(lua_State* L);         // Reset to frame 0
+    static int Lua_AnimGetFrame(lua_State* L);      // Get current sprite ID
+    static int Lua_AnimIsPlaying(lua_State* L);     // Check if playing
+    static int Lua_AnimIsFinished(lua_State* L);    // Check if finished
+    static int Lua_AnimExists(lua_State* L);        // Check if exists
+    static int Lua_AnimGetLength(lua_State* L);     // Get frame count
+    static int Lua_AnimGetDuration(lua_State* L);   // Get total duration
 
     // --- Map Functions (Phase 5.9) ---
     // Draw map

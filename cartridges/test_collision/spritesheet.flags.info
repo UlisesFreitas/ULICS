@@ -1,0 +1,10 @@
+# Sprite Flags File for test_collision
+# This file stores the 8-bit flag values for each of the 256 sprites
+# Format: One byte per sprite (0-255), total 256 bytes
+
+# Sprite 0: Player (FLAG 0 = bit 0 = value 1)
+# Sprite 1: Brown Platform (FLAG 1 = bit 1 = value 2)
+# All other sprites: No flags (value 0)
+
+# The actual binary file will be created by the Sprite Editor
+# when you save with Ctrl+S after using fset() in Lua

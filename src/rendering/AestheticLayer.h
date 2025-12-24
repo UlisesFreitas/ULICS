@@ -90,6 +90,17 @@ public:
     
     // Resets palette to PICO-8/TIC-80 default
     void ResetToDefaultPalette();
+    
+    // === Sprite Sheet Management ===
+    // Loads sprite sheet from PNG file (typically from cartridge folder)
+    bool LoadSpriteSheet(const std::string& path, int tileSize = 8);
+    
+    // Reloads the currently loaded sprite sheet (for hot reload)
+    bool ReloadSpriteSheet();
+    
+    // Gets the path of the currently loaded sprite sheet
+    std::string GetLoadedSpriteSheetPath() const { return loadedSpriteSheetPath; }
+
 
     // Renders the framebuffer to the main window.
     void Present();
@@ -113,6 +124,7 @@ private:
     
     // Sprite rendering (Phase 5)
     std::unique_ptr<SpriteSheet> spriteSheet;
+    std::string loadedSpriteSheetPath;  // Path to currently loaded spritesheet
 };
 
 #endif // AESTHETIC_LAYER_H

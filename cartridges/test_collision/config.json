@@ -1,0 +1,6 @@
+{
+    "name": "Collision Flags Test",
+    "author": "ULICS Dev Team",
+    "version": "1.0.0",
+    "description": "Demonstrates sprite flag-based collision detection. Frame 0 = Player (FLAG 0), Frame 1 = Platform (FLAG 1). Use arrows to move, Z to jump."
+}

@@ -159,7 +159,7 @@ private:
     // Get mouse Y coordinate
     static int Lua_MouseY(lua_State* L);
 
-    // --- Math Functions ---
+      // --- Math Functions ---
     static int Lua_Sin(lua_State* L);
     static int Lua_Cos(lua_State* L);
     static int Lua_Atan2(lua_State* L);
@@ -168,6 +168,13 @@ private:
     static int Lua_Flr(lua_State* L);
     static int Lua_Ceil(lua_State* L);
     static int Lua_Rnd(lua_State* L);
+    
+    // --- Sprite Flags Functions ---
+    // Get sprite flag(s)
+    static int Lua_Fget(lua_State* L);
+    
+    // Set sprite flag(s)
+    static int Lua_Fset(lua_State* L);
 };
 
 #endif // SCRIPTING_MANAGER_H

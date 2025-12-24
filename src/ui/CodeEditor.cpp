@@ -485,9 +485,9 @@ void CodeEditor::Update(InputManager& input) {
 void CodeEditor::Render(AestheticLayer& layer, UISystem& ui) {
     // Colors now come from SystemColors RGB
     
-    // Clear screen with blue background (RGB fixed)
+    // Clear screen with black background (RGB fixed)
     layer.RectFillRGB(0, 0, 256, 256,
-                      SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
+                      SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
     
     // === Font is 8x8 monospace ===
     const int CHAR_W = 8;

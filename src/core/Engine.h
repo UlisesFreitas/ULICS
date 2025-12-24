@@ -78,6 +78,7 @@ public:
     Map* getCurrentMap() const { return currentMap.get(); }
     DebugConsole* getDebugConsole() const { return debugConsole.get(); }
     SystemSprites* getSystemSprites() const { return systemSprites.get(); }
+    SpriteEditor* getSpriteEditor() const { return spriteEditor.get(); }
     double getElapsedTime() const;
 
 private:

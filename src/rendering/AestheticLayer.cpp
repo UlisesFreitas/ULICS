@@ -3,6 +3,7 @@
 #include "rendering/Map.h"
 #include "capture/Screenshot.h"  // For screenshot capture (v1.5.3)
 #include <stdexcept>
+#include <iostream>  // For std::cout, std::cerr
 
 AestheticLayer::AestheticLayer(SDL_Renderer* renderer) : renderer(renderer) {
     if (!renderer) {
@@ -169,6 +170,38 @@ void AestheticLayer::ResetToDefaultPalette() {
         {51, 60, 87, 255}     // 31: Dark blue-gray
     };
 }
+
+// === Sprite Sheet Management Implementation ===
+
+bool AestheticLayer::LoadSpriteSheet(const std::string& path, int tileSize) {
+    std::cout << "[AestheticLayer] Loading sprite sheet from: " << path << std::endl;
+    
+    // Create new sprite sheet if it doesn't exist
+    if (!spriteSheet) {
+        spriteSheet = std::make_unique<SpriteSheet>();
+    }
+    
+    // Try to load the sprite sheet
+    if (spriteSheet->LoadFromPNG(path, tileSize)) {
+        loadedSpriteSheetPath = path;
+        std::cout << "[AestheticLayer] Sprite sheet loaded successfully!" << std::endl;
+        return true;
+    } else {
+        std::cerr << "[AestheticLayer] Failed to load sprite sheet from: " << path << std::endl;
+        return false;
+    }
+}
+
+bool AestheticLayer::ReloadSpriteSheet() {
+    if (loadedSpriteSheetPath.empty()) {
+        std::cerr << "[AestheticLayer] No sprite sheet path to reload" << std::endl;
+        return false;
+    }
+    
+    std::cout << "[AestheticLayer] Reloading sprite sheet from: " << loadedSpriteSheetPath << std::endl;
+    return LoadSpriteSheet(loadedSpriteSheetPath);
+}
+
 
 void AestheticLayer::Clear(uint8_t colorIndex) {
     // Ensure the fill value is of the correct type (uint8_t) to avoid conversion warnings.

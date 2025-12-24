@@ -361,22 +361,35 @@ int lua_fset(lua_State* L);  // fset(sprite, flag, value?)
 - [ ] Testing: Verificar que sprites viejos funcionan
 - [ ] Testing: Verificar que nuevos colores funcionan
 
-### **Fase 2: Sprite Flags** (Prioridad Media)
-- [ ] Agregar `uint8_t spriteFlags[256]` a SpriteEditor
-- [ ] Implementar `SetSpriteFlag()` / `GetSpriteFlag()`
-- [ ] Diseñar panel de UI para flags
-- [ ] Implementar `RenderFlagPanel()`
-- [ ] Implementar `HandleFlagClick()`
-- [ ] Implementar `SaveSpriteFlags()` / `LoadSpriteFlags()`
-- [ ] Testing: Guardar/cargar flags correctamente
-- [ ] Documentar formato de archivo `.flags`
+### **Fase 2: Sprite Flags** ✅ **COMPLETADO - 2025-12-25**
+- [x] Agregar `uint8_t spriteFlags[256]` a SpriteEditor
+- [x] Implementar `SetSpriteFlag()` / `GetSpriteFlag()`
+- [x] Diseñar panel de UI para flags (8 checkboxes below spritesheet)
+- [x] Implementar `RenderFlagPanel()`
+- [x] Implementar `HandleFlagClick()`
+- [x] Implementar `SaveSpriteFlags()` / `LoadSpriteFlags()`
+- [x] Testing: Guardar/cargar flags correctamente
+- [x] Documentar formato de archivo `.flags`
+- [x] **Engine.cpp**: Load sprite flags when loading cartridge
+- [x] **SpriteEditor**: `SetCartridgePath()` method added
+- [x] **Test cartridge**: `test_collision` demonstrating flag-based collision
 
-### **Fase 3: Lua API** (Futuro)
-- [ ] Implementar `lua_fget()`
-- [ ] Implementar `lua_fset()`
-- [ ] Agregar a registry de Lua
-- [ ] Escribir ejemplos de uso
-- [ ] Testing con cartridges de prueba
+**NOTAS DE IMPLEMENTACIÓN:**
+- Archivo `.flags` separado (256 bytes, 1 byte por sprite)
+- Panel UI debajo del spritesheet con 8 checkboxes
+- Flags se cargan automáticamente al cargar cartridge en modo GAME
+- Demo completo en `cartridges/test_collision/`
+
+### **Fase 3: Lua API** ✅ **COMPLETADO - 2025-12-25**
+- [x] Implementar `lua_fget()` (ScriptingManager.cpp)
+- [x] Implementar `lua_fset()` (ScriptingManager.cpp)
+- [x] Agregar a registry de Lua
+- [x] Escribir ejemplos de uso (test_collision/main.lua)
+- [x] Testing con cartridges de prueba
+- [x] Documentación en README.md
+
+**NOTA**: Las funciones `fget()`/`fset()` YA estaban implementadas en ScriptingManager.cpp.
+Solo faltaba la integración con Engine para cargar flags en modo GAME.
 
 ---
 

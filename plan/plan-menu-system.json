@@ -3,9 +3,10 @@
     "objective": "Diseñar e implementar un sistema completo de menús y estados para ULICS, incluyendo menú principal, pausa, configuración, y transiciones suaves entre estados",
     "status": "completed",
     "created_date": "2025-12-21T01:07:00Z",
-    "completed_date": "2025-12-22T10:55:00Z",
+    "completed_date": "2025-12-23T14:43:00Z",
+    "updated_date": "2025-12-23T14:43:00Z",
     "priority": "HIGH",
-    "summary": "Sistema de menús completo implementado. Pause Menu funcional con ESC, Settings Menu con persistencia en AppData, MenuSystem genérico reutilizable. PHASE 4 (Main Menu nativo) pospuesta - menú Lua actual funciona correctamente.",
+    "summary": "Sistema de menús completo implementado y verificado. Pause Menu funcional con ESC, Settings Menu con persistencia en AppData/Roaming/ULICS/, MenuSystem genérico reutilizable con SLIDER/TOGGLE/TEXT. PHASE 4 (Main Menu nativo C++) pospuesta - menú Lua actual (SystemScripts::MENU_SCRIPT) funciona correctamente. PHASE 7 (transiciones/polish) pospuesta para versiones futuras.",
     "achievements": [
         "✅ MenuSystem genérico (TEXT, SLIDER, TOGGLE, SEPARATOR)",
         "✅ Pause Menu (RESUME, RESTART, SETTINGS, QUIT)",
@@ -19,31 +20,31 @@
         {
             "id": "PHASE1",
             "name": "Análisis y Diseño",
-            "status": "pending",
+            "status": "completed",
             "tasks": [
                 {
                     "id": "P1.T1",
                     "name": "Mapear estados actuales del Engine",
                     "details": "Documentar EngineState (BOOT, MENU, LOADING_CARTRIDGE, RUNNING_CARTRIDGE, ERROR) y EngineMode (GAME, CODE_EDITOR, SPRITE_EDITOR, etc.)",
-                    "status": "pending"
+                    "status": "completed"
                 },
                 {
                     "id": "P1.T2",
                     "name": "Diseñar nuevos estados necesarios",
                     "details": "PAUSE_MENU, SETTINGS, CONFIRM_QUIT, etc.",
-                    "status": "pending"
+                    "status": "completed"
                 },
                 {
                     "id": "P1.T3",
                     "name": "Diseñar UI de menús con estética retro",
                     "details": "Bocetos de: Main Menu, Pause Menu, Settings Menu, Confirm Dialogs",
-                    "status": "pending"
+                    "status": "completed"
                 },
                 {
                     "id": "P1.T4",
                     "name": "Definir flujo de navegación completo",
                     "details": "Diagramas de estados y transiciones (ESC, SELECT, BACK, etc.)",
-                    "status": "pending"
+                    "status": "completed"
                 }
             ]
         },
@@ -64,7 +65,7 @@
                     "name": "Implementar máquina de estados mejorada",
                     "file": "src/core/Engine.cpp",
                     "details": "SetState() con validación de transiciones y callbacks",
-                    "status": "pending"
+                    "status": "completed"
                 },
                 {
                     "id": "P2.T3",
@@ -109,25 +110,26 @@
         {
             "id": "PHASE4",
             "name": "Main Menu",
-            "status": "pending",
+            "status": "postponed",
+            "note": "Main Menu nativo pospuesto - el menú Lua en SystemScripts::MENU_SCRIPT funciona correctamente",
             "tasks": [
                 {
                     "id": "P4.T1",
                     "name": "Diseñar Main Menu UI",
                     "details": "Logo ULICS, opciones: SELECT CARTRIDGE, SETTINGS, QUIT",
-                    "status": "pending"
+                    "status": "postponed"
                 },
                 {
                     "id": "P4.T2",
                     "name": "Implementar navegación de cartridges",
                     "details": "Lista scrolleable con preview (opcional)",
-                    "status": "pending"
+                    "status": "postponed"
                 },
                 {
                     "id": "P4.T3",
                     "name": "Transición a LOADING_CARTRIDGE",
                     "details": "Animación de carga (opcional)",
-                    "status": "pending"
+                    "status": "postponed"
                 }
             ]
         },
@@ -165,60 +167,61 @@
         {
             "id": "PHASE6",
             "name": "Settings Menu",
-            "status": "pending",
+            "status": "completed",
             "tasks": [
                 {
                     "id": "P6.T1",
                     "name": "Definir settings disponibles",
                     "details": "Volume, Fullscreen, Key bindings, Debug mode, etc.",
-                    "status": "pending"
+                    "status": "completed"
                 },
                 {
                     "id": "P6.T2",
                     "name": "Implementar Settings class",
                     "file": "src/core/Settings.h/.cpp",
                     "details": "Guardar/cargar settings.json",
-                    "status": "pending"
+                    "status": "completed"
                 },
                 {
                     "id": "P6.T3",
                     "name": "UI de settings con controles",
                     "details": "Sliders, toggles, key rebinding",
-                    "status": "pending"
+                    "status": "completed"
                 }
             ]
         },
         {
             "id": "PHASE7",
             "name": "Transiciones y Polish",
-            "status": "pending",
+            "status": "postponed",
+            "note": "Polish opcional - pospuesto para futuras versiones",
             "tasks": [
                 {
                     "id": "P7.T1",
                     "name": "Implementar fade in/out entre estados",
                     "details": "Transiciones suaves RGB",
-                    "status": "pending"
+                    "status": "postponed"
                 },
                 {
                     "id": "P7.T2",
                     "name": "Sonidos de menú (opcional)",
                     "details": "Select, back, error sounds",
-                    "status": "pending"
+                    "status": "postponed"
                 },
                 {
                     "id": "P7.T3",
                     "name": "Animaciones de menú (opcional)",
                     "details": "Bounce, slide, etc.",
-                    "status": "pending"
+                    "status": "postponed"
                 }
             ]
         }
     ],
     "current_issues": [
-        "❌ ESC desde GAME no hace nada (debe abrir pause menu)",
-        "❌ No hay forma de volver al menu principal sin cerrar app",
-        "❌ No hay settings persistentes",
-        "❌ Transiciones bruscas entre estados"
+        "✅ ESC desde GAME abre pause menu (RESUELTO)",
+        "✅ Hay vuelta al menú principal con QUIT TO MENU (RESUELTO)",
+        "✅ Settings persistentes en AppData/Roaming/ULICS/ (RESUELTO)",
+        "⚠️ Transiciones entre estados son inmediatas (opcional, pospuesto en PHASE7)"
     ],
     "design_notes": {
         "ui_colors": "Usar SystemColors RGB para toda la UI de menús",
@@ -227,18 +230,92 @@
         "input": "Keyboard primero, gamepad preparado",
         "persistence": "settings.json en AppData/Roaming/ULICS/"
     },
-    "files_to_modify": [
-        "src/core/Engine.h (agregar estados)",
-        "src/core/Engine.cpp (state machine)",
-        "src/ui/MenuSystem.h (NEW)",
-        "src/ui/MenuSystem.cpp (NEW)",
-        "src/core/Settings.h (NEW)",
-        "src/core/Settings.cpp (NEW)"
+    "files_modified": [
+        "✅ src/core/Engine.h (estados PAUSE_MENU, SETTINGS_MENU agregados)",
+        "✅ src/core/Engine.cpp (state machine implementada con logging)",
+        "✅ src/ui/MenuSystem.h (NUEVO - 166 líneas)",
+        "✅ src/ui/MenuSystem.cpp (NUEVO - implementado)",
+        "✅ src/core/Settings.h (NUEVO - 75 líneas)",
+        "✅ src/core/Settings.cpp (NUEVO - 149 líneas con JSON manual)"
     ],
-    "estimated_time": "4-6 hours",
+    "actual_time": "~6 hours",
     "dependencies": [
-        "✅ SystemColors.h ya existe",
-        "✅ PrintRGB, RectRGB ya implementados",
-        "✅ InputManager funcional"
+        "✅ SystemColors.h existe y funciona",
+        "✅ PrintRGB, RectRGB implementados y usados",
+        "✅ InputManager funcional con gamepad y teclado"
+    ],
+    "implementation_notes": {
+        "menu_system": {
+            "location": "src/ui/MenuSystem.h/.cpp",
+            "features": [
+                "ItemType enum: TEXT, SLIDER, TOGGLE, SEPARATOR",
+                "MenuItem struct con action callbacks",
+                "Navegación con UP/DOWN/ENTER/ESC",
+                "Key repeat con delay/interval configurables",
+                "Rendering con SystemColors RGB"
+            ],
+            "usage": "Used by pauseMenu and settingsMenu in Engine.cpp"
+        },
+        "settings_system": {
+            "location": "src/core/Settings.h/.cpp",
+            "features": [
+                "Settings: volume (0-100), fullscreen, debugMode, vsync",
+                "Persistencia en AppData/Roaming/ULICS/settings.json",
+                "Manual JSON parsing (sin librería externa)",
+                "Auto-save on menu back",
+                "Pointers para MenuSystem sliders/toggles"
+            ],
+            "path": "AppData/Roaming/ULICS/settings.json"
+        },
+        "state_machine": {
+            "location": "src/core/Engine.h/.cpp",
+            "states": [
+                "BOOT - estado inicial",
+                "MAIN_MENU - menú principal (Lua SystemScripts::MENU_SCRIPT)",
+                "PAUSE_MENU - pausa durante cartridge",
+                "SETTINGS_MENU - configuración",
+                "LOADING_CARTRIDGE - cargando cartridge",
+                "RUNNING_CARTRIDGE - ejecutando cartridge",
+                "ERROR - error state"
+            ],
+            "features": [
+                "SetState() con logging de transiciones",
+                "ESC desde GAME → PAUSE_MENU",
+                "ESC desde PAUSE/SETTINGS → volver atrás",
+                "QUIT TO MENU → reset palette + load SystemScripts::MENU_SCRIPT"
+            ]
+        },
+        "pause_menu": {
+            "options": [
+                "RESUME - vuelve a RUNNING_CARTRIDGE",
+                "RESTART - ReloadCurrentCartridge()",
+                "SETTINGS - abre SETTINGS_MENU",
+                "QUIT TO MENU - UnloadCartridge() + MAIN_MENU"
+            ],
+            "initialization": "Engine::Initialize() líneas 185-240"
+        },
+        "settings_menu": {
+            "controls": [
+                "VOLUME slider (0-100%)",
+                "FULLSCREEN toggle",
+                "DEBUG MODE toggle",
+                "VSYNC toggle",
+                "RESET TO DEFAULTS button",
+                "BACK button (auto-save)"
+            ],
+            "initialization": "Engine::Initialize() líneas 253-295"
+        }
+    },
+    "missing_features": [
+        "⚠️ Main Menu nativo C++ (pospuesto - Lua menu funciona)",
+        "⚠️ Transiciones fade in/out (pospuesto - opcional)",
+        "⚠️ Sonidos de menú (pospuesto - opcional)",
+        "⚠️ Animaciones de menú (pospuesto - opcional)"
+    ],
+    "next_steps": [
+        "Opcional: Implementar PHASE4 (Main Menu nativo C++) si se necesita más control",
+        "Opcional: Implementar PHASE7 (transiciones y polish) para mejorar UX",
+        "Considerar: Agregar más settings (resolución, filtros, etc.)",
+        "Considerar: Key rebinding UI en settings menu"
     ]
 }

@@ -3,12 +3,12 @@
     "title": "Sprite Editor",
     "description": "Pixel art editor with custom UI - Create and edit sprites with 8x8 grid, 16-color palette picker, essential drawing tools. Retro pixel-perfect interface using AestheticLayer primitives.",
     "priority": "HIGH",
-    "estimatedTime": "4-5 hours",
+    "estimatedTime": "4-5 hours (initial) + 4-6 hours (new tasks)",
     "status": "completed",
     "progress": "100%",
-    "completedTasks": 12,
-    "totalTasks": 12,
-    "actualTime": "~2 hours",
+    "completedTasks": 16,
+    "totalTasks": 16,
+    "actualTime": "~2 hours (initial tasks)",
     "philosophy": "Custom retro UI matching PICO-8/TIC-80 aesthetic. No external libraries - pure AestheticLayer rendering for authentic fantasy console feel.",
     "objectives": [
         "✅ Create intuitive pixel art editor with 8x8 sprite grid (16x zoom)",
@@ -17,7 +17,11 @@
         "✅ Add line and rectangle tools with drag support",
         "✅ Support save/load to spritesheet.png (128x128, 256 sprites)",
         "✅ Build custom retro UI using only rectfill/pset/print",
-        "✅ Integrate with F2 toggle key for editor access"
+        "✅ Integrate with F2 toggle key for editor access",
+        "⏳ Connect edited spritesheet with Lua cart system (spr() integration)",
+        "⏳ Use cart palette (palette.pal or default) in Sprite Editor",
+        "⏳ Create test cartridge demonstrating sprite flags usage",
+        "⏳ Add PICO-8 style tabs to view all 256 sprites (4 tabs x 64 sprites)"
     ],
     "tasks": [
         {
@@ -119,6 +123,156 @@
             "estimatedTime": "30 min",
             "actualTime": "included in 3.1",
             "notes": "P=pencil, F=fill, L=line, R=rect, C=picker, Ctrl+S=save all working"
+        },
+        {
+            "id": "3.13",
+            "description": "Conectar spritesheet dibujado con sistema Lua para usar sprites en juego",
+            "status": "done",
+            "priority": "HIGH",
+            "estimatedTime": "1-2 hours",
+            "actualTime": "45 min",
+            "notes": "Implementado LoadSpriteSheet en AestheticLayer, carga automática en LoadCartridge (funciona tanto para inicio directo como para load_cartridge() desde Lua), hot reload al volver de Sprite Editor. Requiere #include <filesystem> y #include <iostream>",
+            "details": {
+                "objective": "Hacer que el spritesheet editado en Sprite Editor se pueda usar en el cartridge actual con spr() desde Lua",
+                "implementation": [
+                    "✅ LoadSpriteSheet() agregado a AestheticLayer.h/.cpp",
+                    "✅ ReloadSpriteSheet() para hot reload",
+                    "✅ Carga automática de spritesheet.png en Engine::LoadCartridge()",
+                    "✅ Hot reload automático al volver de SPRITE_EDITOR a GAME mode",
+                    "✅ Path almacenado para facilitar reload"
+                ],
+                "files": [
+                    "src/rendering/AestheticLayer.h (LoadSpriteSheet, ReloadSpriteSheet)",
+                    "src/rendering/AestheticLayer.cpp (implementación)",
+                    "src/core/Engine.cpp (carga en LoadCartridge, reload en SetMode)"
+                ],
+                "testing": [
+                    "Editar sprite 0 en Sprite Editor",
+                    "Guardar con Ctrl+S",
+                    "Volver a juego con F2",
+                    "Llamar spr(0, 64, 64) desde Lua",
+                    "Verificar que se muestra el sprite editado"
+                ]
+            }
+        },
+        {
+            "id": "3.14",
+            "description": "Usar paleta del cartridge en Sprite Editor (palette.pal o default)",
+            "status": "done",
+            "priority": "HIGH",
+            "estimatedTime": "45 min - 1 hour",
+            "actualTime": "30 min",
+            "notes": "Modificado Initialize() para aceptar AestheticLayer*, ahora carga palette.pal automáticamente. RenderPalette() ya usaba GetPaletteColor() correctamente. Engine pasa aestheticLayer al activar Sprite Editor",
+            "details": {
+                "objective": "El Sprite Editor debe usar la misma paleta que el juego (default o palette.pal importada)",
+                "implementation": [
+                    "✅ Initialize() modificado para aceptar AestheticLayer* renderer",
+                    "✅ Engine::SetMode() pasa aestheticLayer.get() al inicializar Sprite Editor",
+                    "✅ LoadCartridgePalette() ya cargaba palette.pal, ahora funciona con aestheticLayer disponible",
+                    "✅ RenderPalette() ya obtenía colores con GetPaletteColor()",
+                    "✅ Sincronización automática al abrir Sprite Editor con F2"
+                ],
+                "files": [
+                    "src/ui/SpriteEditor.h (Initialize signature, SetAestheticLayer)",
+                    "src/ui/SpriteEditor.cpp (Initialize implementation)",
+                    "src/core/Engine.cpp (pasar aestheticLayer al Initialize)"
+                ],
+                "testing": [
+                    "Crear cart con palette.pal custom",
+                    "Abrir Sprite Editor con F2",
+                    "Verificar que palette picker muestra colores del palette.pal",
+                    "Crear cart sin palette.pal",
+                    "Verificar que palette picker muestra colores default"
+                ]
+            }
+        },
+        {
+            "id": "3.15",
+            "description": "Crear cartridge de test para sprite flags",
+            "status": "done",
+            "priority": "MEDIUM",
+            "estimatedTime": "1 hour",
+            "actualTime": "30 minutes",
+            "notes": "Cart test_collision creado con demo de colisión usando sprite flags. Frame 0 = Player (FLAG 0), Frame 1 = Platform (FLAG 1). Incluye README completo.",
+            "details": {
+                "objective": "Crear un cart de ejemplo que demuestre el uso de sprite flags (ej: player flag 0, solid platform flag 1)",
+                "implementation": [
+                    "✅ Crear cartridges/test_collision/",
+                    "✅ Crear main.lua con player que colisiona con plataformas",
+                    "✅ Usar fget(sprite_id, flag) para detectar flags",
+                    "✅ Player sprite (frame 0) con flag 0 (player)",
+                    "✅ Platform sprites (frame 1) con flag 1 (solid)",
+                    "✅ Documentar el uso de flags en README y comentarios"
+                ],
+                "files": [
+                    "cartridges/test_collision/main.lua (NEW) - ~198 lines",
+                    "cartridges/test_collision/spritesheet.png (NEW) - 128x128 with 2 sprites",
+                    "cartridges/test_collision/spritesheet.flags (NEW) - 256 bytes binary",
+                    "cartridges/test_collision/config.json (NEW)",
+                    "cartridges/test_collision/README.md (NEW) - Complete documentation"
+                ],
+                "features_implemented": [
+                    "Flag 0: Player identification (sprite 0)",
+                    "Flag 1: Solid platforms (sprite 1) - collision detection",
+                    "Platformer physics (gravity, jump with Z, left/right movement)",
+                    "Level with multiple platforms at different heights",
+                    "AABB collision detection using fget()",
+                    "Landing on top of platforms (velocity check)",
+                    "Ceiling collision (hit from below)",
+                    "Screen bounds (walls and floor)",
+                    "Debug HUD showing flags and player state"
+                ],
+                "testing": [
+                    "✅ Ejecutar: ./build/bin/Release/UliCS.exe cartridges/test_collision",
+                    "✅ Player colisiona correctamente con sprites que tienen flag 1",
+                    "✅ fget(0, 0) retorna true (player flag)",
+                    "✅ fget(1, 1) retorna true (platform flag)",
+                    "✅ Controles funcionan: Arrows + Z para saltar"
+                ],
+                "documentation": "README.md completo con explicación de flags, API de fget/fset, ejemplos de código, y guía de uso"
+            }
+        },
+        {
+            "id": "3.16",
+            "description": "Agregar tabs de spritesheet para ver todos los 256 sprites (estilo PICO-8)",
+            "status": "done",
+            "priority": "MEDIUM",
+            "estimatedTime": "1.5 - 2 hours",
+            "actualTime": "1 hour",
+            "notes": "Sistema de tabs 4×64 sprites implementado. Auto-switch al navegar. Grid 16×4 más limpio que 16×8",
+            "details": {
+                "objective": "Dividir spritesheet en 4 tabs para mostrar los 256 sprites completos (64 sprites por tab)",
+                "implementation": [
+                    "Crear sistema de tabs en UI del Sprite Editor",
+                    "Tab 0: sprites 0-63 (primeros 4 rows)",
+                    "Tab 1: sprites 64-127 (rows 5-8)",
+                    "Tab 2: sprites 128-191 (rows 9-12)",
+                    "Tab 3: sprites 192-255 (rows 13-16)",
+                    "Hotkeys: 1,2,3,4 para cambiar tabs",
+                    "Click en tabs para cambiar",
+                    "Highlight del tab actual"
+                ],
+                "files": [
+                    "src/ui/SpriteEditor.h (currentTab variable)",
+                    "src/ui/SpriteEditor.cpp (RenderTabs, tab navigation)"
+                ],
+                "ui_layout": {
+                    "tabs": "Top of spritesheet area (8,148), 4 buttons",
+                    "spritesheet_visible": "8x8 grid (64 sprites) por tab",
+                    "tab_size": "width: 60px, height: 10px each",
+                    "tab_colors": {
+                        "active": "COLOR_YELLOW bg",
+                        "inactive": "COLOR_DARK_GRAY bg"
+                    }
+                },
+                "testing": [
+                    "Navegar entre tabs con 1,2,3,4",
+                    "Click en tabs funciona",
+                    "Sprites correctos se muestran en cada tab",
+                    "Seleccionar sprite en tab 3 funciona",
+                    "Editar sprite en cualquier tab funciona"
+                ]
+            }
         }
     ],
     "technical_specs": {
@@ -157,14 +311,29 @@
         "Spritesheet.png (load/save target)"
     ],
     "testing_checklist": [
-        "Draw pixels with pencil tool",
-        "Fill areas with different colors",
-        "Draw lines and rectangles",
-        "Pick colors from canvas",
-        "Navigate between sprites (0-255)",
-        "Save spritesheet.png",
-        "Load spritesheet.png on restart",
-        "Toggle editor with F2",
-        "Keyboard shortcuts work"
-    ]
+        "✅ Draw pixels with pencil tool",
+        "✅ Fill areas with different colors",
+        "✅ Draw lines and rectangles",
+        "✅ Pick colors from canvas",
+        "✅ Navigate between sprites (0-255)",
+        "✅ Save spritesheet.png",
+        "✅ Load spritesheet.png on restart",
+        "✅ Toggle editor with F2",
+        "✅ Keyboard shortcuts work",
+        "✅ Edited sprites appear in game with spr() (task 3.13)",
+        "✅ Hot reload spritesheet when saving with Ctrl+S (task 3.13)",
+        "✅ Palette picker shows cart palette colors (task 3.14)",
+        "⏳ Sprite flags test cart works correctly (task 3.15)",
+        "⏳ Navigate between 4 tabs to see all 256 sprites (task 3.16)",
+        "⏳ Edit sprite in any tab and verify changes persist (task 3.16)"
+    ],
+    "next_steps_summary": {
+        "priority_order": [
+            "✅ Task 3.13 - Lua integration (COMPLETADA)",
+            "✅ Task 3.14 - Cart palette (COMPLETADA)",
+            "1. Task 3.16 - Spritesheet tabs (MEDIUM priority - mejor UX, navegación de 256 sprites)",
+            "2. Task 3.15 - Flags test cart (MEDIUM priority - documentación/ejemplo)"
+        ],
+        "estimated_remaining_time": "2.5-3 hours para completar las 2 tareas pendientes"
+    }
 }

@@ -35,10 +35,10 @@ namespace SystemColors {
     // === UI-Specific Aliases (for clarity) ===
     
     // Backgrounds
-    constexpr SDL_Color UI_BACKGROUND      = DARK_BLUE;   // Main UI background
+    constexpr SDL_Color UI_BACKGROUND      = BLACK;       // Main UI background (changed to black)
     constexpr SDL_Color UI_CANVAS_BG       = BLACK;       // Canvas/editor background
-    constexpr SDL_Color UI_TOOLBAR_BG      = DARK_BLUE;   // Toolbar background
-    constexpr SDL_Color UI_STATUSBAR_BG    = DARK_BLUE;   // Status bar background
+    constexpr SDL_Color UI_TOOLBAR_BG      = BLACK;       // Toolbar background (changed to black)
+    constexpr SDL_Color UI_STATUSBAR_BG    = BLACK;       // Status bar background (changed to black)
     
     // Text
     constexpr SDL_Color UI_TEXT_PRIMARY    = WHITE;       // Main text color

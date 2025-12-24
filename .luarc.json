@@ -34,6 +34,8 @@
         "map",
         "mget",
         "mset",
+        "fget",
+        "fset",
         "sfx",
         "music",
         "mouse",

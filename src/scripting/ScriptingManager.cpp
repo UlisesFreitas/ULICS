@@ -8,6 +8,7 @@
 #include "core/Engine.h"
 #include "cartridge/CartridgeLoader.h"
 #include "audio/AudioManager.h"  // For sfx() Lua binding
+#include "ui/SpriteEditor.h"  // For sprite flags (fget/fset)
 #include <iostream>
 #include <string> // Required for std::string
 #include <array>
@@ -148,6 +149,10 @@ void ScriptingManager::RegisterAPI() {
     // --- Sprite Functions (Phase 5.5) ---
     RegisterFunction("spr", &ScriptingManager::Lua_Spr);
     RegisterFunction("sspr", &ScriptingManager::Lua_Sspr);
+    
+    // --- Sprite Flags Functions ---
+    RegisterFunction("fget", &ScriptingManager::Lua_Fget);
+    RegisterFunction("fset", &ScriptingManager::Lua_Fset);
     
     // --- Map Functions (Phase 5.9) ---
     RegisterFunction("map", &ScriptingManager::Lua_Map);
@@ -1028,4 +1033,76 @@ int ScriptingManager::Lua_MouseY(lua_State* L) {
     
     lua_pushinteger(L, input->getMouseY());
     return 1;
+}
+
+/**
+ * @brief Lua function: fget(sprite_id, [flag_bit])
+ * 
+ * Get sprite flag(s).
+ * - fget(sprite_id) returns all 8 flags as a byte (0-255)
+ * - fget(sprite_id, flag_bit) returns true/false for specific flag (0-7)
+ * 
+ * PICO-8 compatible
+ */
+int ScriptingManager::Lua_Fget(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    SpriteEditor* spriteEditor = sm->engineInstance->getSpriteEditor();
+    
+    if (!spriteEditor) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    int argCount = lua_gettop(L);
+    int spriteIndex = luaL_checkinteger(L, 1);
+    
+    if (argCount == 1) {
+        // fget(sprite_id) - return all flags as byte
+        uint8_t flags = spriteEditor->GetSpriteFlagsAll(spriteIndex);
+        lua_pushinteger(L, flags);
+        return 1;
+    } else {
+        // fget(sprite_id, flag_bit) - return specific flag as boolean
+        int flagBit = luaL_checkinteger(L, 2);
+        bool flagValue = spriteEditor->GetSpriteFlag(spriteIndex, flagBit);
+        lua_pushboolean(L, flagValue);
+        return 1;
+    }
+}
+
+/**
+ * @brief Lua function: fset(sprite_id, [flag_bit], [value])
+ * 
+ * Set sprite flag(s).
+ * - fset(sprite_id, flags_byte) sets all 8 flags from byte (0-255)
+ * - fset(sprite_id, flag_bit, value) sets specific flag to true/false
+ * 
+ * PICO-8 compatible
+ */
+int ScriptingManager::Lua_Fset(lua_State* L) {
+    auto* sm = static_cast<ScriptingManager*>(lua_touserdata(L, lua_upvalueindex(1)));
+    SpriteEditor* spriteEditor = sm->engineInstance->getSpriteEditor();
+    
+    if (!spriteEditor) {
+        return 0;
+    }
+    
+    int argCount = lua_gettop(L);
+    int spriteIndex = luaL_checkinteger(L, 1);
+    
+    if (argCount == 2) {
+        // fset(sprite_id, flags_byte) - set all flags from byte
+        uint8_t flags = luaL_checkinteger(L, 2);
+        spriteEditor->SetSpriteFlagsAll(spriteIndex, flags);
+    } else if (argCount == 3) {
+        // fset(sprite_id, flag_bit, value) - set specific flag
+        int flagBit = luaL_checkinteger(L, 2);
+        bool value = lua_toboolean(L, 3);
+        spriteEditor->SetSpriteFlag(spriteIndex, flagBit, value);
+    }
+    
+    // Auto-save flags after modification
+    spriteEditor->SaveSpriteFlags();
+    
+    return 0;
 }

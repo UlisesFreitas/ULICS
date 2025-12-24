@@ -41,7 +41,7 @@ local selected_index = 1
 local scroll_offset = 0
 local max_visible = 10
 
-local COLOR_BG = 1        -- Dark blue
+local COLOR_BG = 0        -- Black (changed from 1/dark blue)
 local COLOR_TITLE = 7     -- White
 local COLOR_TEXT = 6      -- Light gray
 local COLOR_SELECTED = 11 -- Green

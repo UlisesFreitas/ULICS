@@ -25,6 +25,7 @@
 #include "scripting/ScriptingManager.h"
 #include "scripting/EmbeddedScripts.h" // Include our new embedded script header.
 #include "scripting/SystemScripts.h" // System menu
+#include <filesystem>  // For std::filesystem (Task 3.13 - spritesheet loading)
 
 Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    window(nullptr), renderer(nullptr), aestheticLayer(nullptr), 
@@ -76,6 +77,9 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
 
     try {
         aestheticLayer = std::make_unique<AestheticLayer>(renderer);
+        // Set color 0 (Black) as transparent by default, like PICO-8
+        aestheticLayer->SetTransparentColor(0);
+        std::cout << "AestheticLayer initialized (color 0 = transparent)" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error initializing AestheticLayer: " << e.what() << std::endl;
         return false;
@@ -836,6 +840,72 @@ bool Engine::LoadCartridge(const std::string& cartridgePath) {
     try {
         activeGame = std::make_unique<LuaGame>(scriptingManager.get());
         currentCartridgePath = cartridgePath;
+        
+        // Load spritesheet (Task 3.13 - Sprite Editor integration)
+        if (aestheticLayer) {
+            std::filesystem::path cartPath(cartridgePath);
+            std::filesystem::path spritesheetPath = cartPath / "spritesheet.png";
+            
+            if (std::filesystem::exists(spritesheetPath)) {
+                std::cout << "Engine: Loading sprite sheet from cartridge..." << std::endl;
+                if (aestheticLayer->LoadSpriteSheet(spritesheetPath.string())) {
+                    std::cout << "Engine: Sprite sheet loaded successfully" << std::endl;
+                } else {
+                    std::cout << "Engine: Warning - failed to load sprite sheet" << std::endl;
+                }
+            } else {
+                std::cout << "Engine: No spritesheet.png found in cartridge" << std::endl;
+            }
+            
+            // Load palette.pal from cartridge (Task 3.14 fix)
+            std::filesystem::path palettePath = cartPath / "palette.pal";
+            if (std::filesystem::exists(palettePath)) {
+                std::cout << "Engine: Loading palette.pal from cartridge..." << std::endl;
+                
+                // Read palette file (32 colors * 3 bytes RGB = 96 bytes)
+                std::ifstream paletteFile(palettePath, std::ios::binary);
+                if (paletteFile.is_open()) {
+                    std::vector<SDL_Color> cartPalette;
+                    for (int i = 0; i < 32; i++) {
+                        uint8_t r, g, b;
+                        paletteFile.read(reinterpret_cast<char*>(&r), 1);
+                        paletteFile.read(reinterpret_cast<char*>(&g), 1);
+                        paletteFile.read(reinterpret_cast<char*>(&b), 1);
+                        
+                        if (!paletteFile.fail()) {
+                            cartPalette.push_back({r, g, b, 255});
+                        }
+                    }
+                    paletteFile.close();
+                    
+                    if (cartPalette.size() == 32) {
+                        aestheticLayer->LoadPalette(cartPalette);
+                        std::cout << "Engine: Palette loaded successfully (32 colors)" << std::endl;
+                    }
+                }
+            } else {
+                std::cout << "Engine: No palette.pal found, using default palette" << std::endl;
+            }
+        }
+        
+        // Load sprite flags (Task 3.15 - Sprite flags for collision detection)
+        if (spriteEditor) {
+            std::filesystem::path cartPath(cartridgePath);
+            std::filesystem::path flagsPath = cartPath / "spritesheet.flags";
+            
+            if (std::filesystem::exists(flagsPath)) {
+                std::cout << "Engine: Loading sprite flags from cartridge..." << std::endl;
+                
+                // Tell SpriteEditor to load flags from this path
+                spriteEditor->SetCartridgePath(cartPath.string());
+                spriteEditor->LoadSpriteFlags();
+                
+                std::cout << "Engine: Sprite flags loaded successfully" << std::endl;
+            } else {
+                std::cout << "Engine: No spritesheet.flags found in cartridge" << std::endl;
+            }
+        }
+        
         SetState(EngineState::RUNNING_CARTRIDGE);
         std::cout << "Engine: Cartridge '" << config.name << "' loaded successfully." << std::endl;
         return true;
@@ -961,8 +1031,11 @@ void Engine::SetMode(EngineMode newMode) {
             log.close();
         }
         std::string spritesheetPath = currentCartridgePath + "/spritesheet.png";
-        spriteEditor->Initialize(spritesheetPath);
+        
+        // Pass aestheticLayer for palette loading (Task 3.14)
+        spriteEditor->Initialize(spritesheetPath, aestheticLayer.get());
         spriteEditor->SetActive(true);
+        
         std::ofstream log2("sprite_editor_log.txt", std::ios::app);
         if (log2.is_open()) {
             log2 << "[Engine::SetMode] Sprite Editor activated" << std::endl;
@@ -975,6 +1048,14 @@ void Engine::SetMode(EngineMode newMode) {
             log.close();
         }
         spriteEditor->SetActive(false);
+        
+        // Reload spritesheet after editing (Task 3.13 - Hot reload)
+        if (currentMode == EngineMode::GAME && aestheticLayer && !currentCartridgePath.empty()) {
+            std::cout << "Engine: Reloading sprite sheet after editing..." << std::endl;
+            if (aestheticLayer->ReloadSpriteSheet()) {
+                std::cout << "Engine: Sprite sheet hot-reloaded successfully!" << std::endl;
+            }
+        }
     }
     
     std::cout << "Mode switched to: ";

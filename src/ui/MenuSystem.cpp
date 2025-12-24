@@ -277,9 +277,9 @@ void MenuSystem::Render(AestheticLayer& layer) {
     
     // Draw menu background
     layer.RectFillRGB(MENU_X, MENU_Y, MENU_W, MENU_H,
-                     SystemColors::DARK_BLUE.r, 
-                     SystemColors::DARK_BLUE.g, 
-                     SystemColors::DARK_BLUE.b);
+                     SystemColors::BLACK.r, 
+                     SystemColors::BLACK.g, 
+                     SystemColors::BLACK.b);
     
     // Draw border
     layer.RectRGB(MENU_X, MENU_Y, MENU_W, MENU_H,

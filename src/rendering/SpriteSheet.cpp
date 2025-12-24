@@ -43,36 +43,22 @@ bool SpriteSheet::LoadFromPNG(const std::string& path, int ts) {
         return false;
     }
     
-    // For now, create a simple PICO-8 style palette for color matching
-    std::vector<uint32_t> palette = {
-        0x000000, // 0: Black
-        0x1D2B53, // 1: Dark Blue
-        0x7E2553, // 2: Dark Purple
-        0x008751, // 3: Dark Green
-        0xAB5236, // 4: Brown
-        0x5F574F, // 5: Dark Gray
-        0xC2C3C7, // 6: Light Gray
-        0xFFF1E8, // 7: White
-        0xFF004D, // 8: Red
-        0xFFA300, // 9: Orange
-        0xFFEC27, // 10: Yellow
-        0x00E436, // 11: Green
-        0x29ADFF, // 12: Blue
-        0x83769C, // 13: Lavender
-        0xFF77A8, // 14: Pink
-        0xFFCCAA  // 15: Peach
-    };
+    // IMPORTANT: spritesheet.png from Sprite Editor uses grayscale values as palette indices
+    // Each pixel's grayscale value (0-255) maps to palette index (value / 16)
+    // This is intentional - the Sprite Editor saves palette indices, not RGB colors
+    // DO NOT convert RGB to palette using color matching!
     
-    // Convert pixels to palette indices
+    // Convert pixels to palette indices (grayscale method)
     for (int y = 0; y < SHEET_HEIGHT; y++) {
         for (int x = 0; x < SHEET_WIDTH; x++) {
             int pixelIndex = (y * width + x) * 3;  // RGB = 3 bytes per pixel
-            uint8_t r = pixels[pixelIndex + 0];
-            uint8_t g = pixels[pixelIndex + 1];
-            uint8_t b = pixels[pixelIndex + 2];
+            uint8_t grayValue = pixels[pixelIndex];  // R channel (grayscale)
             
-            // Convert RGB to palette index
-            uint8_t paletteIndex = RGBToPaletteIndex(r, g, b, palette);
+            // Convert grayscale (0-255) to palette index (0-31)
+            // Sprite Editor uses: index * 16 = grayValue, so: grayValue / 16 = index
+            uint8_t paletteIndex = grayValue / 16;
+            if (paletteIndex > 31) paletteIndex = 31;  // Clamp to valid range
+            
             data[y * SHEET_WIDTH + x] = paletteIndex;
         }
     }

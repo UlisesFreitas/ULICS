@@ -33,14 +33,18 @@ public:
     void Update(InputManager& input);
     void Render(AestheticLayer& renderer, InputManager& input);
     
+    
     // Initialization and persistence
-    void Initialize(const std::string& spritesheetPath);
+    void Initialize(const std::string& spritesheetPath, AestheticLayer* renderer = nullptr);
     void SaveSpritesheet();
     void LoadSpritesheet();
     
     // State queries
     bool IsActive() const { return isActive; }
     void SetActive(bool active) { isActive = active; }
+    
+    // Set renderer for palette loading (Task 3.14)
+    void SetAestheticLayer(AestheticLayer* renderer) { aestheticLayer = renderer; }
     
     // Set system sprites for icons
     void SetSystemSprites(SystemSprites* sprites) { systemSprites = sprites; }
@@ -56,6 +60,16 @@ public:
     void OnFileDropped(const char* filepath);  // Drag & drop handler
     void ResetPaletteToDefault();  // Reset palette to default and save
     
+    // Sprite Flags API (public - can be called from Lua bindings)
+    bool GetSpriteFlag(int spriteIndex, int flagBit) const;  // Get single flag bit
+    void SetSpriteFlag(int spriteIndex, int flagBit, bool value);  // Set single flag bit
+    void ToggleSpriteFlag(int spriteIndex, int flagBit);  // Toggle single flag bit
+    uint8_t GetSpriteFlagsAll(int spriteIndex) const;  // Get all 8 flags as byte
+    void SetSpriteFlagsAll(int spriteIndex, uint8_t flags);  // Set all 8 flags from byte
+    void SaveSpriteFlags();  // Save to .flags file
+    void LoadSpriteFlags();  // Load from .flags file
+    void SetCartridgePath(const std::string& path);  // Set cartridge path for flags loading
+    
 private:
     // Tool types
     enum class Tool {
@@ -70,6 +84,9 @@ private:
     uint8_t canvas[8][8];           // Current sprite being edited (8x8 pixels)
     uint8_t spriteSheet[256][8][8]; // All 256 sprites (256 x 8x8)
     int currentSpriteIndex;          // 0-255
+    
+    // Sprite flags (8 bits per sprite, 256 sprites = 256 bytes)
+    uint8_t spriteFlags[256];        // Each byte = 8 boolean flags (bit 0-7)
     
     SystemSprites* systemSprites;    // Pointer to system sprites for icons
     AestheticLayer* aestheticLayer;  // Reference to renderer, set in Render()
@@ -90,6 +107,11 @@ private:
     int zoom;  // Pixels per sprite pixel (16 = 128x128 display)
     bool showGrid;  // Toggle grid visibility (hotkey: G)
     bool filledRectMode;  // Toggle filled/outline rectangle (hotkey: X)
+    
+    // Spritesheet tab navigation (Task 3.16)
+    // 256 sprites divided into 4 tabs of 64 each:
+    // Tab 0: sprites 0-63, Tab 1: 64-127, Tab 2: 128-191, Tab 3: 192-255
+    int currentTab;  // 0-3
     
     // Drag state for line/rect tools
     bool isDragging;
@@ -145,12 +167,26 @@ private:
     static constexpr int TOOLBAR_X = 16;
     static constexpr int TOOLBAR_Y = CANVAS_Y + CANVAS_SIZE + 4;  // 150 (18+128+4) - was +5
     
-    // Spritesheet grid (below toolbar, 16x8 = 128 visible sprites)
-    static constexpr int SHEET_X = 8;
-    static constexpr int SHEET_Y = TOOLBAR_Y + 32;  // 186 (toolbar 16px + spacing)
+    // Tab system (Task 3.16) - styled like utility icons, below utility bar
+    static constexpr int NUM_TABS = 4;          // 4 tabs total
+    static constexpr int SPRITES_PER_TAB = 64;  // 16x4 = 64 sprites per tab
+    static constexpr int TAB_SELECTOR_Y = TOOLBAR_Y + 16 + 2 + 2;  // 170: toolbar(16) + borders(2) + gap(2)
+    static constexpr int TAB_BUTTON_SIZE = 16;  // 16x16 like icons
+    static constexpr int TAB_BUTTON_SPACING = 0;  // 0 - tabs are side-by-side like toolbar
+    
+    // Spritesheet grid (below tabs, 16x4 = 64 sprites per tab)
+    static constexpr int SHEET_X = CANVAS_X;  // 16 - Aligned with canvas and utility bar
+    static constexpr int SHEET_Y = TAB_SELECTOR_Y + 16 + 2 + 2;  // 190: tabs(16) + border(2) + gap(2)
     static constexpr int SHEET_COLS = 16;
-    static constexpr int SHEET_ROWS = 8;
+    static constexpr int SHEET_ROWS = 4;  // Changed from 8 to 4 (Task 3.16)
     static constexpr int SHEET_SPRITE_SIZE = 8;  // Each sprite 8x8px
+    
+    // Flag panel (below spritesheet) - 8 checkboxes for current sprite
+    static constexpr int FLAG_PANEL_Y = SHEET_Y + (SHEET_ROWS * SHEET_SPRITE_SIZE) + 4;  // Below sheet
+    static constexpr int FLAG_PANEL_X = SHEET_X;
+    static constexpr int FLAG_CHECKBOX_SIZE = 8;  // 8x8 checkbox
+    static constexpr int FLAG_CHECKBOX_SPACING = 12;  // Space between checkboxes
+    static constexpr int NUM_FLAGS = 8;  // 8 flags per sprite
     
     // Rendering methods
     void RenderCanvas(AestheticLayer& renderer);
@@ -161,6 +197,7 @@ private:
     void RenderHeader(AestheticLayer& renderer);
     void RenderCursorHighlight(AestheticLayer& renderer, InputManager& input);
     void RenderDragPreview(AestheticLayer& renderer, InputManager& input);
+    void RenderFlagPanel(AestheticLayer& renderer);  // NEW: 8 flag checkboxes
     
     // Input handling
     void HandleCanvasClick(int mouseX, int mouseY);
@@ -168,6 +205,7 @@ private:
     void HandleToolbarClick(int mouseX, int mouseY);
     void HandleUtilityButtonClick(int index);
     void HandlePaletteButtonClick(int buttonIndex);  // 0 = Import, 1 = Export
+    void HandleFlagClick(int mouseX, int mouseY);  // NEW: Handle flag checkbox clicks
     
     // Palette Import/Export
     void ImportPalette();

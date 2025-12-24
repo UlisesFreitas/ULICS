@@ -25,6 +25,7 @@ SpriteEditor::SpriteEditor()
     , zoom(CANVAS_ZOOM)  // PICO-8 style: 16x zoom = 128x128 display
     , showGrid(true)  // Grid visible by default
     , filledRectMode(false)  // Outline by default
+    , currentTab(0)  // Start on tab 0 (sprites 0-63) - Task 3.16
     , isDragging(false)
     , dragStartX(0)
     , dragStartY(0)
@@ -45,6 +46,9 @@ SpriteEditor::SpriteEditor()
     // Initialize all sprites in spritesheet to transparent
     std::memset(spriteSheet, 0, sizeof(spriteSheet));
     
+    // Initialize all sprite flags to 0 (all flags off)
+    std::memset(spriteFlags, 0, sizeof(spriteFlags));
+    
     // Load recent files list
     LoadRecentFiles();
 }
@@ -58,9 +62,16 @@ SpriteEditor::~SpriteEditor() {
     }
 }
 
-void SpriteEditor::Initialize(const std::string& path) {
+void SpriteEditor::Initialize(const std::string& path, AestheticLayer* renderer) {
     spritesheetPath = path;
+    
+    // Store renderer reference for palette loading (Task 3.14)
+    if (renderer) {
+        aestheticLayer = renderer;
+    }
+    
     LoadSpritesheet();
+    LoadSpriteFlags();  // Load sprite flags from .flags file if exists
 }
 
 void SpriteEditor::Update(InputManager& input) {
@@ -147,12 +158,25 @@ void SpriteEditor::Update(InputManager& input) {
                     HandlePaletteButtonClick(2);  // Export
                 }
             }
+            // Check TAB SELECTOR area (Task 3.16)
+            else if (mouseY >= TAB_SELECTOR_Y && mouseY < TAB_SELECTOR_Y + TAB_BUTTON_SIZE) {
+                for (int i = 0; i < NUM_TABS; i++) {
+                    int tabX = CANVAS_X + (i * TAB_BUTTON_SIZE);  // No spacing - side by side
+                    if (mouseX >= tabX && mouseX < tabX + TAB_BUTTON_SIZE) {
+                        currentTab = i;
+                        Log("[TabClick] Switched to tab " + std::to_string(i + 1));
+                        break;
+                    }
+                }
+            }
             // Check spritesheet area
             else if (mouseX >= SHEET_X && mouseX < SHEET_X + (SHEET_COLS * SHEET_SPRITE_SIZE) &&
                      mouseY >= SHEET_Y && mouseY < SHEET_Y + (SHEET_ROWS * SHEET_SPRITE_SIZE)) {
                 int col = (mouseX - SHEET_X) / SHEET_SPRITE_SIZE;
                 int row = (mouseY - SHEET_Y) / SHEET_SPRITE_SIZE;
-                int newIndex = row * SHEET_COLS + col;
+                // Calculate sprite index with tab offset (Task 3.16)
+                int localIndex = row * SHEET_COLS + col;  // 0-63 within tab
+                int newIndex = (currentTab * SPRITES_PER_TAB) + localIndex;  // Global index (0-255)
                 if (newIndex >= 0 && newIndex < 256) {
                     SwitchSprite(newIndex);
                 }
@@ -161,6 +185,11 @@ void SpriteEditor::Update(InputManager& input) {
             else if (mouseX >= UTILITY_BAR_X && mouseX < UTILITY_BAR_X + UTILITY_BUTTON_SIZE &&
                      mouseY >= UTILITY_BAR_Y && mouseY < UTILITY_BAR_Y + (8 * UTILITY_BUTTON_SIZE)) {  // 8 botones
                 HandleToolbarClick(mouseX, mouseY);  // This handles both toolbar and utility bar
+            }
+            // Check flag panel area (8 checkboxes below spritesheet)
+            else if (mouseY >= FLAG_PANEL_Y && mouseY < FLAG_PANEL_Y + 12 &&
+                     mouseX >= FLAG_PANEL_X && mouseX < FLAG_PANEL_X + (NUM_FLAGS * FLAG_CHECKBOX_SPACING)) {
+                HandleFlagClick(mouseX, mouseY);
             }
             // Check toolbar area
             else if (mouseY >= TOOLBAR_Y) {
@@ -185,9 +214,9 @@ void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
     const int TITLE_BAR_H = SpriteEditor::TITLE_BAR_H;
     const int STATUS_BAR_H = SpriteEditor::STATUS_BAR_H;
     
-    // Clear screen with blue background (RGB fixed)
+    // Clear screen with black background (RGB fixed)
     renderer.RectFillRGB(0, 0, SCREEN_W, SCREEN_H,
-                         SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
+                         SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
     
     // === TOP BAR (LIGHT GRAY background, BLACK text - RGB fixed) ===
     renderer.RectFillRGB(0, 0, SCREEN_W, TITLE_BAR_H,
@@ -210,6 +239,9 @@ void SpriteEditor::Render(AestheticLayer& renderer, InputManager& input) {
     
     // Render spritesheet grid
     RenderSpritesheet(renderer);
+    
+    // Render flag panel (8 checkboxes for current sprite)
+    RenderFlagPanel(renderer);
     
     // Render toolbar
     RenderToolbar(renderer);
@@ -352,14 +384,19 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
 void SpriteEditor::RenderSpritesheet(AestheticLayer& renderer) {
     // Background (black, RGB fixed)
     int sheetW = SHEET_COLS * 8;  // 16 * 8 = 128
-    int sheetH = SHEET_ROWS * 8;  // 8 * 8 = 64
+    int sheetH = SHEET_ROWS * 8;  // 4 * 8 = 32 (changed from 8 rows to 4)
     renderer.RectFillRGB(SHEET_X, SHEET_Y, sheetW, sheetH,
                          SystemColors::UI_CANVAS_BG.r, SystemColors::UI_CANVAS_BG.g, SystemColors::UI_CANVAS_BG.b);
     
-    // Draw all visible sprites (uses editable palette)
+    // Calculate offset based on current tab (Task 3.16)
+    // Tab 0: sprites 0-63, Tab 1: 64-127, Tab 2: 128-191, Tab 3: 192-255
+    int tabOffset = currentTab * SPRITES_PER_TAB;
+    
+    // Draw all visible sprites in current tab (uses editable palette)
     for (int row = 0; row < SHEET_ROWS; row++) {
         for (int col = 0; col < SHEET_COLS; col++) {
-            int spriteIndex = row * SHEET_COLS + col;
+            int localIndex = row * SHEET_COLS + col;  // 0-63 within tab
+            int spriteIndex = tabOffset + localIndex;  // Global sprite index (0-255)
             int screenX = SHEET_X + (col * 8);
             int screenY = SHEET_Y + (row * 8);
             
@@ -382,6 +419,54 @@ void SpriteEditor::RenderSpritesheet(AestheticLayer& renderer) {
     // Draw grid outline (gray, RGB fixed)
     renderer.RectRGB(SHEET_X - 1, SHEET_Y - 1, sheetW + 2, sheetH + 2,
                     SystemColors::UI_BORDER_MEDIUM.r, SystemColors::UI_BORDER_MEDIUM.g, SystemColors::UI_BORDER_MEDIUM.b);
+    
+    // === TAB SELECTOR (Task 3.16) ===
+    // Draw 4 tab buttons below toolbar, styled like toolbar (side-by-side with outer white border)
+    
+    // First, draw all tab backgrounds side-by-side
+    for (int i = 0; i < NUM_TABS; i++) {
+        int tabX = CANVAS_X + (i * TAB_BUTTON_SIZE);  // No spacing - side by side
+        int tabY = TAB_SELECTOR_Y;
+        
+        // Inner background color: selected = green, unselected = dark gray
+        if (i == currentTab) {
+            // Selected tab: green background (like selected utility icons)
+            renderer.RectFillRGB(tabX, tabY, TAB_BUTTON_SIZE, TAB_BUTTON_SIZE,
+                                SystemColors::GREEN.r, SystemColors::GREEN.g, SystemColors::GREEN.b);
+        } else {
+            // Unselected tab: dark gray background
+            renderer.RectFillRGB(tabX, tabY, TAB_BUTTON_SIZE, TAB_BUTTON_SIZE,
+                                SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
+        }
+        
+        // 3D borders for each button (RGB fixed) - same effect as palette buttons
+        renderer.LineRGB(tabX, tabY, tabX, tabY + 15, 
+                        SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);
+        renderer.LineRGB(tabX, tabY, tabX + 15, tabY, 
+                        SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);
+        renderer.LineRGB(tabX + 15, tabY, tabX + 15, tabY + 15, 
+                        SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
+        renderer.LineRGB(tabX, tabY + 15, tabX + 15, tabY + 15, 
+                        SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
+        
+        // Tab number (1-4 for user display) - always white
+        char tabLabel[4];
+        sprintf(tabLabel, "%d", i + 1);
+        int textX = tabX + (TAB_BUTTON_SIZE / 2) - 2;  // Center text
+        int textY = tabY + 4;  // Vertically centered
+        
+        renderer.PrintRGB(tabLabel, textX, textY,
+                        SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+    }
+    
+    // White border around all four tabs (like palette buttons and toolbar)
+    int totalTabWidth = NUM_TABS * TAB_BUTTON_SIZE;  // 4 * 16 = 64
+    renderer.RectRGB(CANVAS_X - 1, TAB_SELECTOR_Y - 1, 
+                    totalTabWidth + 2, TAB_BUTTON_SIZE + 2,
+                    SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+
+
+
 }
 
 void SpriteEditor::RenderToolbar(AestheticLayer& renderer) {
@@ -827,6 +912,14 @@ void SpriteEditor::SwitchSprite(int newIndex) {
     // Load new sprite
     currentSpriteIndex = newIndex;
     std::memcpy(canvas, spriteSheet[currentSpriteIndex], sizeof(canvas));
+    
+    // Auto-switch tab if sprite is in a different tab (Task 3.16)
+    // Tab 0: 0-63, Tab 1: 64-127, Tab 2: 128-191, Tab 3: 192-255
+    int requiredTab = currentSpriteIndex / SPRITES_PER_TAB;
+    if (requiredTab != currentTab) {
+        currentTab = requiredTab;
+        Log("[AutoSwitch] Changed to tab " + std::to_string(currentTab + 1) + " for sprite #" + std::to_string(currentSpriteIndex));
+    }
     
     // Clear undo/redo history for this sprite
     undoStack.clear();
@@ -1821,4 +1914,172 @@ void SpriteEditor::ResetPaletteToDefault() {
     SaveCartridgePalette();
     
     Log("[Palette] Reset to default and saved successfully");
+}
+
+// ===== SPRITE FLAGS IMPLEMENTATION =====
+
+void SpriteEditor::RenderFlagPanel(AestheticLayer& renderer) {
+    // Draw 8 checkboxes for the current sprite's flags
+    // Layout: FLAGS: [0] [1] [2] [3] [4] [5] [6] [7]
+    
+    int y = FLAG_PANEL_Y;
+    
+    // Label
+    renderer.PrintRGB("FLAGS:", FLAG_PANEL_X, y,
+                     SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+    
+    // Draw 8 checkboxes
+    for (int i = 0; i < NUM_FLAGS; i++) {
+        int x = FLAG_PANEL_X + 40 + (i * FLAG_CHECKBOX_SPACING);
+        
+        // Checkbox background (dark gray)
+        renderer.RectFillRGB(x, y, FLAG_CHECKBOX_SIZE, FLAG_CHECKBOX_SIZE,
+                            SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
+        
+        // Checkbox border (white)
+        renderer.RectRGB(x, y, FLAG_CHECKBOX_SIZE, FLAG_CHECKBOX_SIZE,
+                        SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+        
+        // If flag is set, draw checkmark (green)
+        if (GetSpriteFlag(currentSpriteIndex, i)) {
+            renderer.RectFillRGB(x + 2, y + 2, FLAG_CHECKBOX_SIZE - 4, FLAG_CHECKBOX_SIZE - 4,
+                                SystemColors::GREEN.r, SystemColors::GREEN.g, SystemColors::GREEN.b);
+        }
+        
+        // Flag number label below checkbox
+        char label[4];
+        sprintf(label, "%d", i);
+        renderer.PrintRGB(label, x, y + 10,
+                         SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
+    }
+}
+
+void SpriteEditor::HandleFlagClick(int mouseX, int mouseY) {
+    // Determine which flag checkbox was clicked
+    int y = FLAG_PANEL_Y;
+    
+    for (int i = 0; i < NUM_FLAGS; i++) {
+        int x = FLAG_PANEL_X + 40 + (i * FLAG_CHECKBOX_SPACING);
+        
+        if (mouseX >= x && mouseX < x + FLAG_CHECKBOX_SIZE &&
+            mouseY >= y && mouseY < y + FLAG_CHECKBOX_SIZE) {
+            // Toggle flag
+            ToggleSpriteFlag(currentSpriteIndex, i);
+            SaveSpriteFlags();  // Auto-save flags
+            Log("[Flags] Toggled flag " + std::to_string(i) + " for sprite #" + std::to_string(currentSpriteIndex));
+            break;
+        }
+    }
+}
+
+// Sprite Flags API Implementation
+
+bool SpriteEditor::GetSpriteFlag(int spriteIndex, int flagBit) const {
+    if (spriteIndex < 0 || spriteIndex >= 256 || flagBit < 0 || flagBit >= 8) {
+        return false;  // Out of bounds
+    }
+    
+    return (spriteFlags[spriteIndex] & (1 << flagBit)) != 0;
+}
+
+void SpriteEditor::SetSpriteFlag(int spriteIndex, int flagBit, bool value) {
+    if (spriteIndex < 0 || spriteIndex >= 256 || flagBit < 0 || flagBit >= 8) {
+        return;  // Out of bounds
+    }
+    
+    if (value) {
+        spriteFlags[spriteIndex] |= (1 << flagBit);  // Set bit
+    } else {
+        spriteFlags[spriteIndex] &= ~(1 << flagBit);  // Clear bit
+    }
+}
+
+void SpriteEditor::ToggleSpriteFlag(int spriteIndex, int flagBit) {
+    if (spriteIndex < 0 || spriteIndex >= 256 || flagBit < 0 || flagBit >= 8) {
+        return;  // Out of bounds
+    }
+    
+    spriteFlags[spriteIndex] ^= (1 << flagBit);  // XOR to toggle
+}
+
+uint8_t SpriteEditor::GetSpriteFlagsAll(int spriteIndex) const {
+    if (spriteIndex < 0 || spriteIndex >= 256) {
+        return 0;  // Out of bounds
+    }
+    
+    return spriteFlags[spriteIndex];
+}
+
+void SpriteEditor::SetSpriteFlagsAll(int spriteIndex, uint8_t flags) {
+    if (spriteIndex < 0 || spriteIndex >= 256) {
+        return;  // Out of bounds
+    }
+    
+    spriteFlags[spriteIndex] = flags;
+}
+
+void SpriteEditor::SaveSpriteFlags() {
+    if (spritesheetPath.empty()) {
+        Log("[Flags] No spritesheet path set, cannot save flags");
+        return;
+    }
+    
+    // Determine .flags file path from spritesheet path
+    // spritesheet.png -> spritesheet.flags
+    std::string flagsPath = spritesheetPath;
+    size_t dotPos = flagsPath.find_last_of('.');
+    if (dotPos != std::string::npos) {
+        flagsPath = flagsPath.substr(0, dotPos) + ".flags";
+    } else {
+        flagsPath += ".flags";
+    }
+    
+    // Write 256 bytes to file
+    std::ofstream file(flagsPath, std::ios::binary);
+    if (!file) {
+        Log("[Flags] ERROR: Could not open file for writing: " + flagsPath);
+        return;
+    }
+    
+    file.write(reinterpret_cast<const char*>(spriteFlags), 256);
+    file.close();
+    
+    Log("[Flags] Saved to: " + flagsPath);
+}
+
+void SpriteEditor::SetCartridgePath(const std::string& path) {
+    // Set spritesheet path for flags loading
+    // Append '/spritesheet.png' to cartridge folder path
+    spritesheetPath = path + "/spritesheet.png";
+    Log("[Flags] Cartridge path set: " + spritesheetPath);
+}
+
+void SpriteEditor::LoadSpriteFlags() {
+    if (spritesheetPath.empty()) {
+        Log("[Flags] No spritesheet path set, cannot load flags");
+        return;
+    }
+    
+    // Determine .flags file path from spritesheet path
+    std::string flagsPath = spritesheetPath;
+    size_t dotPos = flagsPath.find_last_of('.');
+    if (dotPos != std::string::npos) {
+        flagsPath = flagsPath.substr(0, dotPos) + ".flags";
+    } else {
+        flagsPath += ".flags";
+    }
+    
+    // Check if file exists
+    std::ifstream file(flagsPath, std::ios::binary);
+    if (!file) {
+        Log("[Flags] No .flags file found, using defaults (all flags = 0)");
+        std::memset(spriteFlags, 0, sizeof(spriteFlags));
+        return;
+    }
+    
+    // Read 256 bytes from file
+    file.read(reinterpret_cast<char*>(spriteFlags), 256);
+    file.close();
+    
+    Log("[Flags] Loaded from: " + flagsPath);
 }

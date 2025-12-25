@@ -506,20 +506,22 @@ void AestheticLayer::DrawSpriteSection(int sx, int sy, int sw, int sh, int dx, i
         return; // No sprite sheet loaded
     }
     
-    // Simple version: no scaling (dw/dh ignored for now, assumes 1:1)
-    // TODO: Add proper scaling support
-    
-    for (int py = 0; py < sh; py++) {
-        for (int px = 0; px < sw; px++) {
+    // Scaling support using nearest-neighbor sampling
+    for (int py = 0; py < dh; py++) {
+        for (int px = 0; px < dw; px++) {
+            // Map destination pixel back to source pixel
+            int srcX = sx + (px * sw) / dw;
+            int srcY = sy + (py * sh) / dh;
+            
             // Get pixel from sprite sheet
-            uint8_t colorIndex = spriteSheet->GetPixel(sx + px, sy + py);
+            uint8_t colorIndex = spriteSheet->GetPixel(srcX, srcY);
             
             // Skip transparent pixels
             if (transparentColorIndex >= 0 && colorIndex == static_cast<uint8_t>(transparentColorIndex)) {
                 continue;
             }
             
-            // Draw to destination (no scaling)
+            // Draw to destination
             int destX = dx + px;
             int destY = dy + py;
             

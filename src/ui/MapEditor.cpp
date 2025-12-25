@@ -18,7 +18,7 @@ MapEditor::MapEditor()
       showGrid(true),
       cameraX(4),   // Start map at position (4,4)
       cameraY(4),
-      zoom(0.25f),  // Start zoomed out to see entire 128x64 map (will be calculated properly in Initialize)
+      zoom(1.0f),   // Start at 100% zoom (1x)
       isPanning(false),
       panStartX(0),
       panStartY(0),
@@ -72,6 +72,33 @@ void MapEditor::Update(InputManager& input) {
     
     int mouseX = input.getMouseX();
     int mouseY = input.getMouseY();
+    
+    // === ZOOM with Mouse Wheel (discrete levels) ===
+    int wheelDelta = input.getMouseWheelY();
+    if (wheelDelta != 0 && mouseX >= MAP_X && mouseX < MAP_X + MAP_W && mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H) {
+        // 5 discrete zoom levels: 0.25x, 0.5x, 1x, 2x, 4x
+        float zoomLevels[] = {0.25f, 0.5f, 1.0f, 2.0f, 4.0f};
+        int currentLevel = 2;  // Start at 1x
+        
+        // Find current zoom level
+        for (int i = 0; i < 5; i++) {
+            if (zoom == zoomLevels[i]) {
+                currentLevel = i;
+                break;
+            }
+        }
+        
+        // Wheel forward (positive) = zoom in (higher level = bigger sprites)
+        // Wheel backward (negative) = zoom out (lower level = smaller sprites)
+        if (wheelDelta > 0 && currentLevel < 4) {
+            currentLevel++;  // Zoom IN (bigger sprites: 1x → 2x → 4x)
+        } else if (wheelDelta < 0 && currentLevel > 0) {
+            currentLevel--;  // Zoom OUT (smaller sprites: 1x → 0.5x → 0.25x)
+        }
+        
+        zoom = zoomLevels[currentLevel];
+        std::cout << "[MapEditor] Zoom: " << (zoom * 100) << "%" << std::endl;
+    }
     
     // === MOVE MAP with Middle Mouse (like Photoshop hand tool) ===
     bool isMiddlePressed = input.isMouseButtonDown(SDL_BUTTON_MIDDLE);
@@ -170,10 +197,10 @@ void MapEditor::RenderMapViewport(AestheticLayer& renderer) {
         }
     }
     
-    // === MAP (complete 128x64 tiles = 1024x512 pixels) ===
+    // === MAP (complete 128x64 tiles, scaled by zoom) ===
     // Map position (starts at 4,4 by default, moves with cameraX/cameraY)
-    int mapPixelWidth = MAP_WIDTH * TILE_SIZE;   // 128 * 8 = 1024
-    int mapPixelHeight = MAP_HEIGHT * TILE_SIZE; // 64 * 8 = 512
+    int mapPixelWidth = MAP_WIDTH * TILE_SIZE * zoom;   // 128 * 8 * zoom
+    int mapPixelHeight = MAP_HEIGHT * TILE_SIZE * zoom; // 64 * 8 * zoom
     int mapX = MAP_X + cameraX;  // Camera is the map offset
     int mapY = MAP_Y + cameraY;
     
@@ -184,7 +211,10 @@ void MapEditor::RenderMapViewport(AestheticLayer& renderer) {
     // Black background for map
     renderer.RectFillRGB(mapX, mapY, mapPixelWidth, mapPixelHeight, 0, 0, 0);
     
-    // === RENDER ALL TILES on the map ===
+    // === RENDER ALL TILES on the map (scaled by zoom) ===
+    float tileSizeFloat = TILE_SIZE * zoom;  // 8 * zoom
+    int tileSize = static_cast<int>(tileSizeFloat);
+    
     for (int layer = 0; layer < LAYER_COUNT; layer++) {
         if (!layers[layer].visible) continue;
         
@@ -193,26 +223,36 @@ void MapEditor::RenderMapViewport(AestheticLayer& renderer) {
                 uint8_t tileId = GetTile(tx, ty, layer);
                 if (tileId == 0) continue;
                 
-                int screenX = mapX + tx * TILE_SIZE;
-                int screenY = mapY + ty * TILE_SIZE;
+                int screenX = mapX + tx * tileSizeFloat;
+                int screenY = mapY + ty * tileSizeFloat;
                 
                 // Only draw if visible in viewport
-                if (screenX + TILE_SIZE < MAP_X || screenX > MAP_X + MAP_W) continue;
-                if (screenY + TILE_SIZE < MAP_Y || screenY > MAP_Y + MAP_H) continue;
+                if (screenX + tileSize < MAP_X || screenX > MAP_X + MAP_W) continue;
+                if (screenY + tileSize < MAP_Y || screenY > MAP_Y + MAP_H) continue;
                 
-                renderer.DrawSprite(tileId, screenX, screenY, 1, 1);
+                // Scale sprite to match tile size using DrawSpriteSection
+                // Calculate sprite position in spritesheet (16 sprites per row)
+                int spriteSheetX = (tileId % 16) * 8;
+                int spriteSheetY = (tileId / 16) * 8;
+                
+                renderer.DrawSpriteSection(
+                    spriteSheetX, spriteSheetY,  // Source position in spritesheet
+                    8, 8,                         // Source size (always 8×8)
+                    screenX, screenY,             // Destination position
+                    tileSize, tileSize            // Destination size (scaled: 2, 4, 8, 16, 32)
+                );
             }
         }
     }
     
-    // === GRID OVERLAY (toggle with Grid button) ===
-    if (showGrid) {
-        // Draw grid lines every 8 pixels (1 tile)
+    // === GRID OVERLAY (only visible at 1x and above) ===
+    if (showGrid && zoom >= 1.0f) {
+        // Draw grid lines every tileSizeFloat pixels
         SDL_Color gridColor = SystemColors::DARK_GRAY;
         
         // Vertical lines
         for (int tx = 0; tx <= MAP_WIDTH; tx++) {
-            int lineX = mapX + tx * TILE_SIZE;
+            int lineX = mapX + tx * tileSizeFloat;
             // Only draw if visible in viewport
             if (lineX < MAP_X || lineX > MAP_X + MAP_W) continue;
             
@@ -226,7 +266,7 @@ void MapEditor::RenderMapViewport(AestheticLayer& renderer) {
         
         // Horizontal lines
         for (int ty = 0; ty <= MAP_HEIGHT; ty++) {
-            int lineY = mapY + ty * TILE_SIZE;
+            int lineY = mapY + ty * tileSizeFloat;
             // Only draw if visible in viewport
             if (lineY < MAP_Y || lineY > MAP_Y + MAP_H) continue;
             
@@ -753,27 +793,31 @@ bool MapEditor::IsValidTileCoord(int x, int y) const {
 int MapEditor::ScreenToTileX(int screenX) const {
     // Map position
     int mapX = MAP_X + cameraX;
+    float tileSize = TILE_SIZE * zoom;
     // Convert screen to tile
-    return (screenX - mapX) / TILE_SIZE;
+    return (screenX - mapX) / tileSize;
 }
 
 int MapEditor::ScreenToTileY(int screenY) const {
     // Map position
     int mapY = MAP_Y + cameraY;
+    float tileSize = TILE_SIZE * zoom;
     // Convert screen to tile
-    return (screenY - mapY) / TILE_SIZE;
+    return (screenY - mapY) / tileSize;
 }
 
 int MapEditor::TileToScreenX(int tileX) const {
     // Map position
     int mapX = MAP_X + cameraX;
-    return mapX + tileX * TILE_SIZE;
+    float tileSize = TILE_SIZE * zoom;
+    return mapX + tileX * tileSize;
 }
 
 int MapEditor::TileToScreenY(int tileY) const {
     // Map position
     int mapY = MAP_Y + cameraY;
-    return mapY + tileY * TILE_SIZE;
+    float tileSize = TILE_SIZE * zoom;
+    return mapY + tileY * tileSize;
 }
 
 void MapEditor::Log(const std::string& message) {

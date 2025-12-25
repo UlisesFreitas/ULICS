@@ -47,6 +47,16 @@ void MapEditor::Initialize(const std::string& path) {
     }
 }
 
+void MapEditor::SetActive(bool active, AestheticLayer* renderer) {
+    isActive = active;
+    
+    // When activating MapEditor, reload spritesheet to get latest changes from Sprite Editor
+    if (active && renderer) {
+        renderer->ReloadSpriteSheet();
+        std::cout << "[MapEditor] Reloaded spritesheet" << std::endl;
+    }
+}
+
 // ===== Core Update/Render =====
 
 void MapEditor::Update(InputManager& input) {
@@ -139,9 +149,8 @@ void MapEditor::RenderMapViewport(AestheticLayer& renderer) {
                 int screenX = MAP_X + (tx - cameraX) * TILE_SIZE;
                 int screenY = MAP_Y + (ty - cameraY) * TILE_SIZE;
                 
-                // Draw tile (TODO: use DrawSprite when spritesheet is loaded)
-                uint8_t color = tileId % 16;
-                renderer.RectFill(screenX, screenY, TILE_SIZE, TILE_SIZE, color);
+                // Draw sprite from spritesheet
+                renderer.DrawSprite(tileId, screenX, screenY, 1, 1);
             }
         }
     }
@@ -300,7 +309,7 @@ void MapEditor::RenderSpritesheet(AestheticLayer& renderer) {
     renderer.RectRGB(SHEET_X - 1, SHEET_Y - 1, SHEET_W + 2, SHEET_H + 2,
                      SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
     
-    // Draw sprites for current tab (8x8 grid)
+    // Draw sprites for current tab (16x4 grid)
     int baseSprite = currentTab * SPRITES_PER_TAB;  // 0, 64, 128, or 192
     
     for (int row = 0; row < SHEET_ROWS; row++) {
@@ -311,9 +320,10 @@ void MapEditor::RenderSpritesheet(AestheticLayer& renderer) {
             int x = SHEET_X + col * SHEET_SPRITE_SIZE;
             int y = SHEET_Y + row * SHEET_SPRITE_SIZE;
             
-            // Draw tile (TODO: use DrawSprite at 2x zoom)
-            uint8_t color = tileId % 16;
-            renderer.RectFill(x, y, SHEET_SPRITE_SIZE, SHEET_SPRITE_SIZE, color);
+            // Draw sprite centered in the 16x16 cell (sprite is 8x8)
+            int centerX = x + (SHEET_SPRITE_SIZE - 8) / 2;
+            int centerY = y + (SHEET_SPRITE_SIZE - 8) / 2;
+            renderer.DrawSprite(tileId, centerX, centerY, 1, 1);
             
             // Highlight selected tile
             if (tileId == selectedTile) {

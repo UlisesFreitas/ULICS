@@ -1102,11 +1102,11 @@ void Engine::SetMode(EngineMode newMode) {
         std::cout << "[Engine::SetMode] Activating Map Editor" << std::endl;
         std::string mapPath = currentCartridgePath + "/map.json";
         mapEditor->Initialize(mapPath);
-        mapEditor->SetActive(true);
+        mapEditor->SetActive(true, aestheticLayer.get());  // Pass AestheticLayer to reload spritesheet
         std::cout << "[Engine::SetMode] Map Editor activated" << std::endl;
     } else if (mapEditor) {
         std::cout << "[Engine::SetMode] Deactivating Map Editor" << std::endl;
-        mapEditor->SetActive(false);
+        mapEditor->SetActive(false, aestheticLayer.get());
         
         // Save map when leaving map editor
         if (currentMode == EngineMode::GAME && !currentCartridgePath.empty()) {

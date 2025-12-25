@@ -39,7 +39,7 @@ public:
     
     // State queries
     bool IsActive() const { return isActive; }
-    void SetActive(bool active) { isActive = active; }
+    void SetActive(bool active, AestheticLayer* renderer = nullptr);
     
     // Set system sprites for icons
     void SetSystemSprites(SystemSprites* sprites) { systemSprites = sprites; }

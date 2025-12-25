@@ -127,9 +127,10 @@
         {
             "id": "4.13",
             "description": "Load current cartridge spritesheet",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "30 min",
-            "notes": "Load spritesheet from current cartridge in MapEditor, use actual sprites instead of placeholder colors in viewport and picker"
+            "actualTime": "25 min",
+            "notes": "Updated RenderMapViewport and RenderSpritesheet to use DrawSprite instead of placeholder colors. Sprites now display from loaded cart ridge spritesheet"
         },
         {
             "id": "4.14",

@@ -8,10 +8,21 @@
 namespace fs = std::filesystem;
 
 /**
+ * @brief Resource types for hot reload
+ */
+enum class ResourceType {
+    CODE,        // Lua scripts (main.lua)
+    SPRITESHEET, // spritesheet.png
+    FLAGS,       // spritesheet.flags
+    MAP,         // map.json
+    AUDIO        // sfx/music files (future)
+};
+
+/**
  * @brief HotReload - Monitors file changes and triggers reloads
  * 
- * Watches main.lua and other cartridge files for modifications.
- * When a change is detected, triggers Engine::ReloadCurrentCartridge()
+ * Watches cartridge files (code, sprites, flags, maps) for modifications.
+ * When a change is detected, triggers appropriate reload actions.
  */
 class HotReload {
 public:
@@ -21,8 +32,9 @@ public:
     /**
      * @brief Start monitoring a file for changes
      * @param filepath Path to file to watch
+     * @param type Type of resource (default: CODE for backwards compatibility)
      */
-    void WatchFile(const std::string& filepath);
+    void WatchFile(const std::string& filepath, ResourceType type = ResourceType::CODE);
 
     /**
      * @brief Stop monitoring all files
@@ -36,9 +48,13 @@ public:
     bool CheckForChanges();
 
     /**
-     * @brief Get list of changed files
+     * @brief Get list of changed files with their types
      */
-    const std::vector<std::string>& GetChangedFiles() const { return changedFiles; }
+    struct ChangedResource {
+        std::string filepath;
+        ResourceType type;
+    };
+    const std::vector<ChangedResource>& GetChangedResources() const { return changedResources; }
 
     /**
      * @brief Enable/disable hot reload
@@ -49,12 +65,13 @@ public:
 private:
     struct WatchedFile {
         std::string path;
+        ResourceType type;
         fs::file_time_type lastModified;
     };
 
     bool enabled;
     std::vector<WatchedFile> watchedFiles;
-    std::vector<std::string> changedFiles;
+    std::vector<ChangedResource> changedResources;
 
     /**
      * @brief Get last modification time of a file

@@ -421,45 +421,50 @@ void SpriteEditor::RenderSpritesheet(AestheticLayer& renderer) {
                     SystemColors::UI_BORDER_MEDIUM.r, SystemColors::UI_BORDER_MEDIUM.g, SystemColors::UI_BORDER_MEDIUM.b);
     
     // === TAB SELECTOR (Task 3.16) ===
-    // Draw 4 tab buttons below toolbar, styled like toolbar (side-by-side with outer white border)
+    // Draw 4 tab buttons styled EXACTLY like utility icons (16x16 with proper borders)
     
-    // First, draw all tab backgrounds side-by-side
     for (int i = 0; i < NUM_TABS; i++) {
         int tabX = CANVAS_X + (i * TAB_BUTTON_SIZE);  // No spacing - side by side
         int tabY = TAB_SELECTOR_Y;
         
-        // Inner background color: selected = green, unselected = dark gray
-        if (i == currentTab) {
-            // Selected tab: green background (like selected utility icons)
-            renderer.RectFillRGB(tabX, tabY, TAB_BUTTON_SIZE, TAB_BUTTON_SIZE,
-                                SystemColors::GREEN.r, SystemColors::GREEN.g, SystemColors::GREEN.b);
-        } else {
-            // Unselected tab: dark gray background
-            renderer.RectFillRGB(tabX, tabY, TAB_BUTTON_SIZE, TAB_BUTTON_SIZE,
-                                SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
-        }
+        // 1. OUTER BLACK BORDER (1px) - matches icon-bg.png
+        renderer.RectFill(tabX, tabY, TAB_BUTTON_SIZE, TAB_BUTTON_SIZE, 0);  // Black background
         
-        // 3D borders for each button (RGB fixed) - same effect as palette buttons
-        renderer.LineRGB(tabX, tabY, tabX, tabY + 15, 
-                        SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);
-        renderer.LineRGB(tabX, tabY, tabX + 15, tabY, 
-                        SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);
-        renderer.LineRGB(tabX + 15, tabY, tabX + 15, tabY + 15, 
-                        SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
-        renderer.LineRGB(tabX, tabY + 15, tabX + 15, tabY + 15, 
-                        SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);
+        // 2. INNER BACKGROUND (14x14 gray or green) - leaves 1px black border
+        SDL_Color bgColor = (i == currentTab) ? SystemColors::GREEN : SystemColors::DARK_GRAY;
+        renderer.RectFillRGB(tabX + 1, tabY + 1, TAB_BUTTON_SIZE - 2, TAB_BUTTON_SIZE - 2, 
+                            bgColor.r, bgColor.g, bgColor.b);
         
-        // Tab number (1-4 for user display) - always white
+        // 3. 3D BORDERS - EXACTLY like utility icons
+        // Left/Top = Lavender (light purple)
+        renderer.LineRGB(tabX + 1, tabY + 1, tabX + 1, tabY + 13, 
+                        SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);  // Left
+        renderer.LineRGB(tabX + 1, tabY + 1, tabX + 13, tabY + 1, 
+                        SystemColors::LAVENDER.r, SystemColors::LAVENDER.g, SystemColors::LAVENDER.b);  // Top
+        
+        // Right/Bottom = Dark Blue (shadow)
+        renderer.LineRGB(tabX + 14, tabY + 1, tabX + 14, tabY + 14, 
+                        SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);  // Right
+        renderer.LineRGB(tabX + 1, tabY + 14, tabX + 14, tabY + 14, 
+                        SystemColors::DARK_BLUE.r, SystemColors::DARK_BLUE.g, SystemColors::DARK_BLUE.b);  // Bottom
+        
+        // 4. TAB NUMBER (1-4) - PERFECTLY CENTERED
         char tabLabel[4];
         sprintf(tabLabel, "%d", i + 1);
-        int textX = tabX + (TAB_BUTTON_SIZE / 2) - 2;  // Center text
-        int textY = tabY + 4;  // Vertically centered
+        
+        // Font is 8x8, single digit character
+        const int charWidth = 8;
+        const int charHeight = 8;
+        
+        // Perfect centering: (iconSize / 2) - (charSize / 2)
+        int textX = tabX + (TAB_BUTTON_SIZE / 2) - (charWidth / 2);   // 8 - 4 = 4
+        int textY = tabY + (TAB_BUTTON_SIZE / 2) - (charHeight / 2);  // 8 - 4 = 4
         
         renderer.PrintRGB(tabLabel, textX, textY,
                         SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
     }
     
-    // White border around all four tabs (like palette buttons and toolbar)
+    // WHITE OUTER BORDER around all four tabs together
     int totalTabWidth = NUM_TABS * TAB_BUTTON_SIZE;  // 4 * 16 = 64
     renderer.RectRGB(CANVAS_X - 1, TAB_SELECTOR_Y - 1, 
                     totalTabWidth + 2, TAB_BUTTON_SIZE + 2,

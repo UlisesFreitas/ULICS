@@ -150,11 +150,11 @@ void SpriteEditor::RenderPalette(AestheticLayer& renderer) {
 ---
 
 ### **Testing Checklist**
-- [ ] Paleta de 32 colores se renderiza correctamente
-- [ ] Clicks en todos los 32 colores funcionan
-- [ ] Sprites existentes (0-15) siguen viéndose igual
-- [ ] Border blanco alrededor de la paleta se ajusta
-- [ ] No hay overlap con otros elementos de UI
+- [x] Paleta de 32 colores se renderiza correctamente
+- [x] Clicks en todos los 32 colores funcionan
+- [x] Sprites existentes (0-15) siguen viéndose igual
+- [x] Border blanco alrededor de la paleta se ajusta
+- [x] No hay overlap con otros elementos de UI
 
 ---
 
@@ -350,16 +350,158 @@ int lua_fset(lua_State* L);  // fset(sprite, flag, value?)
 
 ---
 
+## 🔄 **FEATURE 3: Resource Hot Reload (Auto-Reload on File Change)**
+
+### **Concepto**
+
+Cuando editas sprites en el Sprite Editor (F2) y vuelves al juego (ESC), los cambios deberían reflejarse automáticamente **sin necesidad de RESET manual**.
+
+**Problema actual:**
+1. GAME carga `spritesheet.png` una vez al inicio
+2. Editas sprites en Sprite Editor
+3. Vuelves a GAME → ❌ Cambios NO se reflejan
+4. Necesitas RESET manual desde pause menu
+
+**Solución: FileWatcher automático**
+
+---
+
+### **Implementación Completada** ✅
+
+#### **1. HotReload extendido con tipos de recursos**
+
+```cpp
+// HotReload.h
+enum class ResourceType {
+    CODE,        // Lua scripts (main.lua)
+    SPRITESHEET, // spritesheet.png
+    FLAGS,       // spritesheet.flags
+    MAP,         // map.json
+    AUDIO        // sfx/music files (future)
+};
+
+void WatchFile(const std::string& filepath, ResourceType type = ResourceType::CODE);
+const std::vector<ChangedResource>& GetChangedResources() const;
+```
+
+**Beneficios:**
+- Detecta cambios en cualquier tipo de recurso
+- Identifica qué tipo de archivo cambió
+- Permite recargas específicas por tipo
+
+---
+
+#### **2. AestheticLayer::ReloadSpriteSheet()**
+
+```cpp
+bool AestheticLayer::ReloadSpriteSheet() {
+    if (loadedSpriteSheetPath.empty()) {
+        return false;
+    }
+    return LoadSpriteSheet(loadedSpriteSheetPath);
+}
+```
+
+**Uso:**
+```cpp
+// Cuando HotReload detecta cambio en spritesheet.png
+aestheticLayer->ReloadSpriteSheet();
+```
+
+---
+
+### **Integración Pendiente en Engine** ⏳
+
+El sistema de HotReload está listo pero falta integrarlo en `Engine::Run()`:
+
+```cpp
+// Pseudo-código para Engine.cpp
+void Engine::LoadCartridge(const std::string& path) {
+    // ... existing code ...
+    
+    // Watch resources for hot reload
+    if (hotReload) {
+        hotReload->WatchFile(mainLuaPath, ResourceType::CODE);
+        hotReload->WatchFile(spritesheetPath, ResourceType::SPRITESHEET);
+        hotReload->WatchFile(flagsPath, ResourceType::FLAGS);
+        hotReload->WatchFile(mapPath, ResourceType::MAP);
+    }
+}
+
+void Engine::Run() {
+    while (running) {
+        // ... existing update logic ...
+        
+        // Check for resource changes
+        if (hotReload && hotReload->CheckForChanges()) {
+            auto changes = hotReload->GetChangedResources();
+            
+            for (const auto& change : changes) {
+                if (change.type == ResourceType::SPRITESHEET) {
+                    aestheticLayer->ReloadSpriteSheet();
+                    std::cout << "✓ Spritesheet reloaded!" << std::endl;
+                }
+                else if (change.type == ResourceType::FLAGS) {
+                    spriteEditor->LoadSpriteFlags();
+                    std::cout << "✓ Sprite flags reloaded!" << std::endl;
+                }
+                else if (change.type == ResourceType::CODE) {
+                    ReloadCurrentCartridge();
+                }
+                // ... MAP, AUDIO, etc
+            }
+        }
+    }
+}
+```
+
+---
+
+### **Testing Checklist** ⏳
+
+- [ ] Integrar HotReload en Engine::LoadCartridge()
+- [ ] Watch spritesheet.png en modo GAME
+- [ ] Watch spritesheet.flags en modo GAME
+- [ ] Editar sprite en Sprite Editor (F2)
+- [ ] Volver a GAME (ESC)
+- [ ] Verificar que sprite cambió automáticamente
+- [ ] Editar flags → verificar hot reload
+- [ ] Extender a map.json cuando exista Map Editor
+
+---
+
+### **Recursos Vigilados**
+
+| Recurso | Archivo | Acción al cambiar |
+|---------|---------|-------------------|
+| **Sprites** | `spritesheet.png` | `aestheticLayer->ReloadSpriteSheet()` |
+| **Flags** | `spritesheet.flags` | `spriteEditor->LoadSpriteFlags()` |
+| **Código** | `main.lua` | `Engine::ReloadCurrentCartridge()` |
+| **Mapa** | `map.json` | `mapEditor->Reload()` (futuro) |
+| **Audio** | `sfx.dat`, `music.dat` | Hot reload (futuro) |
+
+---
+
+### **Ventajas del Sistema**
+
+✅ **Workflow fluido**: Edit → Back to game → Cambios automáticos  
+✅ **Reutiliza infraestructura**: Mismo FileWatcher que `main.lua`  
+✅ **Extensible**: Fácil agregar nuevos tipos de recursos  
+✅ **Granular**: Solo recarga lo que cambió  
+✅ **Transparente**: El usuario no necesita hacer nada  
+
+---
+
 ## 📋 **CHECKLIST DE IMPLEMENTACIÓN**
 
-### **Fase 1: Paleta de 32 Colores** (Prioridad Alta)
-- [ ] Actualizar `PALETTE_SIZE` a 32
-- [ ] Definir los 16 colores extendidos
-- [ ] Cambiar `PALETTE_ROWS` de 4 a 8
-- [ ] Actualizar `RenderPalette()` para 32 colores
-- [ ] Actualizar `HandlePaletteClick()` para 32 colores
-- [ ] Testing: Verificar que sprites viejos funcionan
-- [ ] Testing: Verificar que nuevos colores funcionan
+### **Fase 1: Paleta de 32 Colores** ✅ **COMPLETADO**
+- [x] Actualizar `PALETTE_SIZE` a 32
+- [x] Definir los 16 colores extendidos
+- [x] Cambiar `PALETTE_ROWS` de 4 a 8
+- [x] Actualizar `RenderPalette()` para 32 colores
+- [x] Actualizar `HandlePaletteClick()` para 32 colores
+- [x] Testing: Verificar que sprites viejos funcionan
+- [x] Testing: Verificar que nuevos colores funcionan
 
 ### **Fase 2: Sprite Flags** ✅ **COMPLETADO - 2025-12-25**
 - [x] Agregar `uint8_t spriteFlags[256]` a SpriteEditor
@@ -418,4 +560,3 @@ Solo faltaba la integración con Engine para cargar flags en modo GAME.
 ---
 
 **Última actualización:** 2025-12-20 05:05 AM  
-**Próxima revisión:** Mañana, decidir qué implementar primero

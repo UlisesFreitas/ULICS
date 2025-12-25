@@ -9,7 +9,7 @@ HotReload::~HotReload() {
     StopWatching();
 }
 
-void HotReload::WatchFile(const std::string& filepath) {
+void HotReload::WatchFile(const std::string& filepath, ResourceType type) {
     try {
         if (!fs::exists(filepath)) {
             std::cerr << "HotReload: File doesn't exist, cannot watch: " << filepath << std::endl;
@@ -25,10 +25,22 @@ void HotReload::WatchFile(const std::string& filepath) {
 
         WatchedFile wf;
         wf.path = filepath;
+        wf.type = type;
         wf.lastModified = GetFileModificationTime(filepath);
         
         watchedFiles.push_back(wf);
-        std::cout << "HotReload: Now watching " << filepath << std::endl;
+        
+        // Log resource type
+        const char* typeName = "UNKNOWN";
+        switch (type) {
+            case ResourceType::CODE: typeName = "CODE"; break;
+            case ResourceType::SPRITESHEET: typeName = "SPRITESHEET"; break;
+            case ResourceType::FLAGS: typeName = "FLAGS"; break;
+            case ResourceType::MAP: typeName = "MAP"; break;
+            case ResourceType::AUDIO: typeName = "AUDIO"; break;
+        }
+        
+        std::cout << "HotReload: Now watching " << filepath << " [" << typeName << "]" << std::endl;
     }
     catch (const std::exception& e) {
         std::cerr << "HotReload: Error watching file: " << e.what() << std::endl;
@@ -37,7 +49,7 @@ void HotReload::WatchFile(const std::string& filepath) {
 
 void HotReload::StopWatching() {
     watchedFiles.clear();
-    changedFiles.clear();
+    changedResources.clear();
 }
 
 bool HotReload::CheckForChanges() {
@@ -45,7 +57,7 @@ bool HotReload::CheckForChanges() {
         return false;
     }
 
-    changedFiles.clear();
+    changedResources.clear();
 
     try {
         for (auto& watched : watchedFiles) {
@@ -57,7 +69,11 @@ bool HotReload::CheckForChanges() {
             
             if (currentModTime != watched.lastModified) {
                 // File was modified!
-                changedFiles.push_back(watched.path);
+                ChangedResource change;
+                change.filepath = watched.path;
+                change.type = watched.type;
+                changedResources.push_back(change);
+                
                 watched.lastModified = currentModTime;
                 
                 std::cout << "HotReload: Detected change in " << watched.path << std::endl;
@@ -68,7 +84,7 @@ bool HotReload::CheckForChanges() {
         std::cerr << "HotReload: Error checking for changes: " << e.what() << std::endl;
     }
 
-    return !changedFiles.empty();
+    return !changedResources.empty();
 }
 
 fs::file_time_type HotReload::GetFileModificationTime(const std::string& path) {

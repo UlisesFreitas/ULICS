@@ -18,10 +18,11 @@
         "✅ Support save/load to spritesheet.png (128x128, 256 sprites)",
         "✅ Build custom retro UI using only rectfill/pset/print",
         "✅ Integrate with F2 toggle key for editor access",
-        "⏳ Connect edited spritesheet with Lua cart system (spr() integration)",
-        "⏳ Use cart palette (palette.pal or default) in Sprite Editor",
-        "⏳ Create test cartridge demonstrating sprite flags usage",
-        "⏳ Add PICO-8 style tabs to view all 256 sprites (4 tabs x 64 sprites)"
+        "✅ Connect edited spritesheet with Lua cart system (spr() integration)",
+        "✅ Use cart palette (palette.pal or default) in Sprite Editor",
+        "✅ Create test cartridge demonstrating sprite flags usage (test_collision)",
+        "✅ Add PICO-8 style tabs to view all 256 sprites (4 tabs x 64 sprites)",
+        "✅ Sprite flags system with fget/fset API and Engine integration"
     ],
     "tasks": [
         {

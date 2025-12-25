@@ -19,6 +19,7 @@ class AudioManager;  // Audio system (Phase 5.12)
 class UISystem;      // Custom UI system (Phase 2.0.1)
 class CodeEditor;    // Code editor (Phase 2.0.2)
 class SpriteEditor;  // Sprite editor (Phase 3)
+class MapEditor;     // Map editor (Phase 4)
 class SystemSprites; // System icon sprites
 class MenuSystem;    // Menu system
 class Settings;      // Settings manager
@@ -79,6 +80,7 @@ public:
     DebugConsole* getDebugConsole() const { return debugConsole.get(); }
     SystemSprites* getSystemSprites() const { return systemSprites.get(); }
     SpriteEditor* getSpriteEditor() const { return spriteEditor.get(); }
+    MapEditor* getMapEditor() const { return mapEditor.get(); }
     double getElapsedTime() const;
 
 private:
@@ -110,6 +112,7 @@ private:
     std::unique_ptr<UISystem> uiSystem;      // Custom UI rendering (2.0.1)
     std::unique_ptr<CodeEditor> codeEditor;  // Code editor (2.0.2-2.0.4)
     std::unique_ptr<SpriteEditor> spriteEditor;  // Sprite editor (Phase 3)
+    std::unique_ptr<MapEditor> mapEditor;    // Map editor (Phase 4)
     std::unique_ptr<SystemSprites> systemSprites; // System UI icons
 
     // Menu Systems

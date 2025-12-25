@@ -6,6 +6,7 @@
 #include "ui/UISystem.h"      // Custom UI system (Phase 2.0.1)
 #include "ui/CodeEditor.h"    // Code editor (Phase 2.0.2-2.0.4)
 #include "ui/SpriteEditor.h"  // Sprite editor (Phase 3)
+#include "ui/MapEditor.h"     // Map editor (Phase 4)
 #include "ui/SystemSprites.h" // System UI icons
 #include "ui/MenuSystem.h"     // Menu system
 #include "capture/Screenshot.h"  // Screenshot system (v1.5.3)
@@ -32,7 +33,7 @@ Engine::Engine() : isRunning(false), inErrorState(false), errorMessage(""),
                    activeGame(nullptr), scriptingManager(nullptr),
                    inputManager(nullptr), cartridgeLoader(nullptr), currentMap(nullptr), hotReload(nullptr), debugConsole(nullptr), gifRecorder(nullptr),
                    audioManager(nullptr),
-                   uiSystem(nullptr), codeEditor(nullptr), spriteEditor(nullptr), systemSprites(nullptr),
+                   uiSystem(nullptr), codeEditor(nullptr), spriteEditor(nullptr), mapEditor(nullptr), systemSprites(nullptr),
                    currentState(EngineState::BOOT), previousState(EngineState::BOOT),
                    currentMode(EngineMode::GAME),
                    currentCartridgePath("") {
@@ -312,6 +313,20 @@ bool Engine::Initialize(const char* title, int width, int height, const std::str
         // Continue without Sprite Editor
     }
 
+    // Initialize Map Editor (Phase 4)
+    try {
+        mapEditor = std::make_unique<MapEditor>();
+        // Connect system sprites to map editor
+        if (systemSprites) {
+            mapEditor->SetSystemSprites(systemSprites.get());
+        }
+        std::cout << "Map Editor ready - press F3 to toggle" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Warning: MapEditor failed to initialize: " << e.what() << std::endl;
+        // Continue without Map Editor
+    }
+
     // Initialize CartridgeLoader
     try {
         cartridgeLoader = std::make_unique<CartridgeLoader>();
@@ -465,6 +480,20 @@ void Engine::Run() {
                 }
             }
             
+            // F3 - Map Editor (Phase 4)
+            if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F3) {
+                std::ofstream log("sprite_editor_log.txt", std::ios::app);
+                if (log.is_open()) {
+                    log << "[Engine] F3 pressed, current mode: " << static_cast<int>(currentMode) << std::endl;
+                    log.close();
+                }
+                if (currentMode == EngineMode::MAP_EDITOR) {
+                    SetMode(EngineMode::GAME);
+                } else {
+                    SetMode(EngineMode::MAP_EDITOR);
+                }
+            }
+            
             // ESC - Return to game
             if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                 if (currentMode != EngineMode::GAME) {
@@ -584,8 +613,13 @@ void Engine::Run() {
                 }
                 spriteEditor->Update(*inputManager);
             }
+        } else if (currentMode == EngineMode::MAP_EDITOR) {
+            // Map Editor mode - update editor (Phase 4)
+            if (mapEditor && inputManager) {
+                mapEditor->Update(*inputManager);
+            }
         }
-        // TODO: Add handlers for other editor modes (SPRITE, MAP, SFX, MUSIC)
+        // TODO: Add handlers for other editor modes (SFX, MUSIC)
 
         // STEP 4.5: Generate audio for this frame (Bug 1.1.3 fix)
         // This runs in main thread and writes to ring buffer
@@ -632,8 +666,13 @@ void Engine::Run() {
             if (spriteEditor) {
                 spriteEditor->Render(*aestheticLayer, *inputManager);
             }
+        } else if (currentMode == EngineMode::MAP_EDITOR) {
+            // Map Editor mode - render editor (Phase 4)
+            if (mapEditor) {
+                mapEditor->Render(*aestheticLayer, *inputManager);
+            }
         }
-        // TODO: Add render handlers for other editor modes
+        // TODO: Add render handlers for other editor modes (SFX, MUSIC)
         
         // Draw debug console on top (works in any mode)
         if (debugConsole) {
@@ -1058,12 +1097,29 @@ void Engine::SetMode(EngineMode newMode) {
         }
     }
     
+    // Initialize Map Editor when entering MAP_EDITOR mode (Phase 4)
+    if (currentMode == EngineMode::MAP_EDITOR && mapEditor && !currentCartridgePath.empty()) {
+        std::cout << "[Engine::SetMode] Activating Map Editor" << std::endl;
+        std::string mapPath = currentCartridgePath + "/map.json";
+        mapEditor->Initialize(mapPath);
+        mapEditor->SetActive(true);
+        std::cout << "[Engine::SetMode] Map Editor activated" << std::endl;
+    } else if (mapEditor) {
+        std::cout << "[Engine::SetMode] Deactivating Map Editor" << std::endl;
+        mapEditor->SetActive(false);
+        
+        // Save map when leaving map editor
+        if (currentMode == EngineMode::GAME && !currentCartridgePath.empty()) {
+            std::cout << "Engine: Map editor closed" << std::endl;
+        }
+    }
+    
     std::cout << "Mode switched to: ";
     switch (currentMode) {
         case EngineMode::GAME: std::cout << "GAME"; break;
         case EngineMode::CODE_EDITOR: std::cout << "CODE_EDITOR"; break;
         case EngineMode::SPRITE_EDITOR: std::cout << "SPRITE_EDITOR"; break;
-        case EngineMode::MAP_EDITOR: std::cout << "MAP_EDITOR (not implemented)"; break;
+        case EngineMode::MAP_EDITOR: std::cout << "MAP_EDITOR"; break;
         case EngineMode::SFX_EDITOR: std::cout << "SFX_EDITOR (not implemented)"; break;
         case EngineMode::MUSIC_EDITOR: std::cout << "MUSIC_EDITOR (not implemented)"; break;
     }

@@ -3,22 +3,7 @@ SpriteEditor initialized
 [RecentFiles] Loaded 1 recent files
 [Flags] Cartridge path set: ./cartridges\api_test/spritesheet.png
 [Flags] Loaded from: ./cartridges\api_test/spritesheet.flags
-[LoadSpritesheet] Loaded successfully from: ./cartridges\api_test/spritesheet.png
-[Palette] Looking for palette.pal at: ./cartridges\api_test\palette.pal
-[Palette] Loaded palette.pal successfully (32 colors)
-[Flags] Loaded from: ./cartridges\api_test/spritesheet.flags
-[Update] Active! Update count: 60
-[Update] Active! Update count: 120
-[Update] Active! Update count: 180
-[Update] Active! Update count: 240
-[Update] Active! Update count: 300
-[Update] Active! Update count: 360
-[Update] Active! Update count: 420
-[Update] Active! Update count: 480
 [RecentFiles] Saved 1 recent files
 SpriteEditor destroyed
-301
-[Engine] Calling SpriteEditor::Update() frame: 361
-[Engine] Calling SpriteEditor::Update() frame: 421
-[Engine] Calling SpriteEditor::Update() frame: 481
+essed, current mode: 1
 [Engine::SetMode] Deactivating Sprite Editor

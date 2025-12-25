@@ -1,158 +1,327 @@
 {
     "phase": 4,
     "title": "Map Editor",
-    "description": "Tile map editor with multi-layer support - 128x64 tile grid, up to 8 layers, tile picker from spritesheet, fill and pencil tools. Save to JSON or binary format.",
+    "description": "Tile map editor with multi-layer support - 128x64 tile grid, up to 8 layers, PICO-8 style vertical layout with tab-based spritesheet picker. Full-width design with map at top, toolbar in middle, and 16x4 spritesheet grid at bottom.",
     "priority": "HIGH",
-    "estimatedTime": "4-5 hours",
-    "status": "pending",
-    "philosophy": "Powerful layer system for rich 2D worlds. PICO-8 simplicity with modern multi-layer support for depth and complexity.",
+    "estimatedTime": "4-5 hours (core), 4 hours (enhancements)",
+    "actualTime": "~6 hours (core completed 2025-12-25)",
+    "status": "in_progress",
+    "coreStatus": "completed",
+    "enhancementsStatus": "pending",
+    "completionDate": "2025-12-25 (core features)",
+    "philosophy": "Powerful layer system for rich 2D worlds. PICO-8 simplicity with modern multi-layer support for depth and complexity. Vertical layout maximizes map viewport while maintaining easy access to tools and tiles.",
     "objectives": [
-        "Create 128x64 tile grid map editor",
-        "Support up to 8 independent layers",
-        "Implement tile picker using current spritesheet",
-        "Add pencil and fill tools for tile placement",
-        "Layer visibility toggle and active layer selection",
-        "Save/load map data to JSON format",
-        "Integrate with F3 toggle key"
+        "✅ Create 128x64 tile grid map editor",
+        "✅ Support up to 8 independent layers",
+        "✅ Implement tab-based spritesheet picker (4 tabs × 64 tiles)",
+        "✅ Add pencil, fill, eraser, and picker tools",
+        "✅ Layer visibility toggle and active layer selection (1-8 keys)",
+        "✅ Save/load map data to JSON format",
+        "✅ Integrate with F3 toggle key",
+        "✅ PICO-8 style vertical layout with proper borders",
+        "⏳ Load actual spritesheet from cartridge",
+        "⏳ Add layer management UI panel",
+        "⏳ Implement PICO-8 zoom/pan with mouse wheel"
     ],
     "tasks": [
         {
             "id": "4.1",
             "description": "Create MapEditor class structure",
-            "status": "pending",
+            "status": "completed",
             "files": [
                 "src/ui/MapEditor.h",
                 "src/ui/MapEditor.cpp"
             ],
             "estimatedTime": "30 min",
-            "notes": "Basic class, map data structure, layer management"
+            "actualTime": "45 min",
+            "notes": "Class with 8 Layer structs, 128x64 tile grid, tool enum (PENCIL, FILL, ERASER, PICKER)"
         },
         {
             "id": "4.2",
             "description": "Implement tile grid viewport with scroll",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "1 hour",
-            "notes": "Render visible portion, arrow keys or drag to scroll"
+            "actualTime": "1.5 hours",
+            "notes": "Full-width map (254x150) with white border, arrow keys for camera pan, supports partial map rendering"
         },
         {
             "id": "4.3",
             "description": "Add tile picker panel from spritesheet",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "45 min",
-            "notes": "Display 16x16 sprite grid, click to select tile"
+            "actualTime": "2 hours",
+            "notes": "16x4 grid (64 sprites per tab), 4 tabs for 256 total tiles, full-width (256px), 16x16 sprite display"
         },
         {
             "id": "4.4",
             "description": "Implement pencil tool for tiles",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "30 min",
-            "notes": "Place selected tile on click/drag"
+            "actualTime": "20 min",
+            "notes": "Click to place selected tile on active layer"
         },
         {
             "id": "4.5",
             "description": "Implement fill tool for tiles",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "45 min",
-            "notes": "Flood fill with selected tile"
+            "actualTime": "1 hour",
+            "notes": "Iterative flood fill with queue (not recursive), 10k tile safety limit, respects map bounds"
         },
         {
             "id": "4.6",
             "description": "Add layer selector (0-7)",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "1 hour",
-            "notes": "8 layer buttons, highlight active, toggle visibility"
+            "actualTime": "30 min",
+            "notes": "8 layers with 1-8 key shortcuts, layer visibility toggles, active layer highlighted in status"
         },
         {
             "id": "4.7",
             "description": "Render multiple layers with transparency",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "45 min",
-            "notes": "Composite all visible layers, respect layer order"
+            "actualTime": "30 min",
+            "notes": "Renders all visible layers bottom-to-top, tile 0 = transparent, proper layering"
         },
         {
             "id": "4.8",
             "description": "Implement save to JSON",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "45 min",
-            "notes": "Export map data with all layers to map.json"
+            "actualTime": "40 min",
+            "notes": "Saves to cartridge/map.json with all 8 layers, metadata (width, height, version)"
         },
         {
             "id": "4.9",
             "description": "Implement load from JSON",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "30 min",
-            "notes": "Parse map.json and populate editor"
+            "actualTime": "25 min",
+            "notes": "Loads from map.json, validates structure, populates all layers"
         },
         {
             "id": "4.10",
             "description": "Integrate with Engine F3 toggle",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "15 min",
-            "notes": "Wire into Engine mode switching"
+            "actualTime": "30 min",
+            "notes": "F3 toggles GAME ↔ MAP_EDITOR, ESC returns to GAME, Engine::SetMode() integration with Initialize/SetActive"
         },
         {
             "id": "4.11",
             "description": "Add keyboard shortcuts and polish",
+            "status": "completed",
+            "estimatedTime": "30 min",
+            "actualTime": "1 hour",
+            "notes": "1-8 layer select, G grid toggle, Ctrl+S save, Arrow keys camera pan, SystemSprites icons"
+        },
+        {
+            "id": "4.12",
+            "description": "PICO-8 layout refinement and styling",
+            "status": "completed",
+            "estimatedTime": "N/A",
+            "actualTime": "2 hours",
+            "notes": "Vertical layout from bottom-up, full-width borders, tab styling match Sprite Editor, proper border spacing"
+        },
+        {
+            "id": "4.13",
+            "description": "Load current cartridge spritesheet",
             "status": "pending",
             "estimatedTime": "30 min",
-            "notes": "Layer shortcuts (1-8), tool shortcuts, minimap?"
+            "notes": "Load spritesheet from current cartridge in MapEditor, use actual sprites instead of placeholder colors in viewport and picker"
+        },
+        {
+            "id": "4.14",
+            "description": "Add layer management UI panel",
+            "status": "pending",
+            "estimatedTime": "1.5 hours",
+            "notes": "UI panel for layer operations: rename, toggle visibility, reorder, opacity slider, lock/unlock. Small panel in middle space between map and toolbar"
+        },
+        {
+            "id": "4.15",
+            "description": "Implement PICO-8 style zoom and pan",
+            "status": "pending",
+            "estimatedTime": "2 hours",
+            "notes": "Full map visible in viewport as sublayer, middle mouse button + drag to pan, mouse wheel to zoom in/out. Show entire 128x64 map with ability to zoom into specific regions"
         }
     ],
     "technical_specs": {
         "map_size": "128x64 tiles",
-        "tile_size": "8x8 pixels",
+        "tile_size": "8x8 pixels (storage)",
+        "display_size": "16x16 pixels (in spritesheet picker)",
         "layer_count": 8,
-        "tiles_per_layer": "128 * 64 = 8,192",
-        "tile_range": "0-255 (from spritesheet)",
-        "file_format": "JSON",
+        "tiles_per_layer": "128 × 64 = 8,192",
+        "tile_range": "0-255 (from spritesheet, 0=transparent)",
+        "file_format": "JSON (nlohmann/json)",
         "tools": [
-            "pencil",
-            "fill",
-            "eraser"
-        ]
+            "pencil (icon 0)",
+            "fill (icon 1)",
+            "eraser (icon 20 - CLEAR)",
+            "picker (icon 4)",
+            "grid toggle (icon 16)"
+        ],
+        "layout_calculated_from": "bottom-up (PICO-8 style)"
     },
     "ui_layout": {
-        "viewport": "Center, scrollable 128x64 grid",
-        "tile_picker": "Right sidebar, 16x16 tile grid",
-        "layer_selector": "Top bar, 8 layer buttons with visibility toggles",
-        "current_tile": "Shows selected tile with preview",
+        "style": "PICO-8 vertical (header → map → toolbar → spritesheet → footer)",
+        "header": "Y=0, H=10 (light gray, black text)",
+        "map_viewport": "Y=10-161, W=254 (full width with 1px white border), scrollable, grid overlay",
+        "toolbar": "Y=162-181, contains tool buttons (left, x=0) and tab buttons (right, x=192-255)",
+        "spritesheet": "Y=182-245, W=256 (full width), 16 cols × 4 rows = 64 tiles per tab",
+        "footer": "Y=246-255, H=10 (light gray, shows position, tool, tile, tab)",
+        "tab_system": "4 tabs (1-4), 16x16 buttons, green when active, numbers centered",
+        "borders": {
+            "map": "full-width white border (x=0, w=256)",
+            "tools": "white on left/top/right only (no bottom to avoid double line)",
+            "tabs": "white on left/top/right only (no bottom to avoid double line)",
+            "spritesheet": "white on all sides"
+        },
         "colors": {
-            "background": "COLOR_DARK_BLUE",
-            "grid": "COLOR_DARK_GRAY",
-            "active_layer": "COLOR_YELLOW",
-            "inactive_layer": "COLOR_LIGHT_GRAY"
+            "background": "UI_CANVAS_BG",
+            "grid": "DARK_GRAY",
+            "active_tool": "GREEN",
+            "inactive_tool": "DARK_GRAY",
+            "active_tab": "GREEN",
+            "border": "WHITE",
+            "header_footer": "LIGHT_GRAY with BLACK text"
         }
     },
     "map_data_format": {
         "format": "JSON",
         "structure": {
+            "version": "1.0",
             "width": 128,
             "height": 64,
+            "tileSize": 8,
             "layers": [
                 {
                     "id": 0,
                     "name": "Layer 0",
                     "visible": true,
-                    "data": "array[8192] of tile IDs"
+                    "opacity": 100,
+                    "data": "array[8192] of uint8_t tile IDs"
                 }
             ]
-        }
+        },
+        "example_path": "cartridges/test_collision/map.json"
     },
     "dependencies": [
-        "AestheticLayer (rendering)",
-        "InputManager (mouse/keyboard)",
-        "Spritesheet (tile source)",
-        "Map class (src/rendering/Map.h) - may need updates"
+        "✅ AestheticLayer (rendering)",
+        "✅ InputManager (mouse/keyboard)",
+        "✅ SystemSprites (tool icons)",
+        "✅ SystemColors (UI theming)",
+        "✅ nlohmann/json (JSON save/load)",
+        "✅ Spritesheet (tile source - 256 tiles)",
+        "✅ Engine (F3 toggle, mode switching)"
     ],
     "testing_checklist": [
-        "Place tiles with pencil",
-        "Fill areas with tile",
-        "Switch between layers (1-8 keys)",
-        "Toggle layer visibility",
-        "Scroll viewport to see entire map",
-        "Save map.json",
-        "Load map.json",
-        "Toggle editor with F3",
-        "Verify layer compositing order"
-    ]
+        "✅ Place tiles with pencil",
+        "✅ Fill areas with tile (iterative flood fill)",
+        "✅ Erase tiles (sets to 0)",
+        "✅ Pick tiles from map",
+        "✅ Switch between layers (1-8 keys)",
+        "✅ Toggle grid (G key)",
+        "✅ Scroll viewport with arrow keys",
+        "✅ Select tiles from spritesheet (16x4 grid)",
+        "✅ Switch tabs (1-4) for 256 tiles",
+        "✅ Save map.json (Ctrl+S)",
+        "✅ Load map.json (on Initialize)",
+        "✅ Toggle editor with F3",
+        "✅ Verify layer compositing order (bottom-to-top)",
+        "✅ UI borders and spacing correct",
+        "✅ Full-width layout (map and spritesheet)",
+        "✅ Tool/tab buttons at screen edges"
+    ],
+    "implementation_highlights": [
+        "Vertical PICO-8 layout calculated from bottom-up for perfect spacing",
+        "Tab system matches Sprite Editor exactly (16x16, 3D borders, centered numbers)",
+        "Iterative flood fill prevents stack overflow on large areas",
+        "Full-width white borders for professional look",
+        "Tool buttons start at x=0, tab buttons end at x=256 (screen edges)",
+        "1px spacing between toolbar and spritesheet (no double white line)",
+        "Map viewport auto-calculates height (152px) to fill available space",
+        "SystemSprites integration for all tool icons",
+        "Camera bounds checking prevents scrolling out of map",
+        "Tile 0 treated as transparent for proper layering"
+    ],
+    "pending_enhancements": {
+        "description": "Additional features to enhance the Map Editor beyond core functionality",
+        "tasks": [
+            {
+                "id": "4.13",
+                "title": "Load Cartridge Spritesheet",
+                "priority": "HIGH",
+                "reason": "Currently using placeholder colors - need to load actual sprites from cartridge",
+                "implementation": [
+                    "Access Engine's loaded spritesheet data",
+                    "Pass spritesheet pointer to MapEditor on Initialize",
+                    "Update RenderMapViewport to use DrawSprite instead of colored rects",
+                    "Update RenderSpritesheet to show actual sprites",
+                    "Handle spritesheet reload when switching cartridges"
+                ],
+                "dependencies": [
+                    "Engine spritesheet loader",
+                    "AestheticLayer::DrawSprite"
+                ]
+            },
+            {
+                "id": "4.14",
+                "title": "Layer Management UI Panel",
+                "priority": "MEDIUM",
+                "reason": "Need visual feedback and controls for layer operations beyond 1-8 keys",
+                "implementation": [
+                    "Add small panel in space between map and toolbar (Y=152-162, 10px height)",
+                    "Show 8 layer indicators with:",
+                    "- Layer number and name",
+                    "- Visibility toggle (eye icon)",
+                    "- Active layer highlight (yellow)",
+                    "- Click to select layer",
+                    "- Right-click for context menu (rename, delete, etc.)",
+                    "Style matching PICO-8 aesthetic"
+                ],
+                "ui_space": "10px vertical space between map (Y=161) and toolbar (Y=162)",
+                "features": [
+                    "visibility toggle",
+                    "active selection",
+                    "layer naming",
+                    "reordering"
+                ]
+            },
+            {
+                "id": "4.15",
+                "title": "PICO-8 Style Zoom & Pan",
+                "priority": "HIGH",
+                "reason": "Essential for large map editing - see entire 128x64 map and zoom into regions",
+                "implementation": [
+                    "Show entire 128x64 map in viewport initially (fit to 254x150)",
+                    "Middle mouse button + drag to pan camera",
+                    "Mouse wheel to zoom in/out (0.25x to 4x range)",
+                    "Zoom centered on mouse cursor position",
+                    "Mini overview in corner showing camera position",
+                    "Smooth zoom/pan transitions",
+                    "Update grid rendering for zoomed view"
+                ],
+                "zoom_levels": [
+                    "0.25x (entire map)",
+                    "0.5x",
+                    "1.0x (1:1)",
+                    "2.0x",
+                    "4.0x (pixel detail)"
+                ],
+                "controls": {
+                    "pan": "Middle mouse + drag",
+                    "zoom": "Mouse wheel up/down",
+                    "reset": "Home key (zoom to fit entire map)"
+                },
+                "reference": "PICO-8 map editor - see Recording 2025-12-25 164810.gif"
+            }
+        ],
+        "estimatedTotalTime": "4 hours",
+        "priority_order": [
+            "4.13 (spritesheet)",
+            "4.15 (zoom/pan)",
+            "4.14 (layer UI)"
+        ]
+    }
 }

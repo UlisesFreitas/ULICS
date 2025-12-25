@@ -124,6 +124,7 @@ add_executable(UliCS WIN32
     src/ui/UISystem.cpp src/ui/UISystem.h
     src/ui/CodeEditor.cpp src/ui/CodeEditor.h
     src/ui/SpriteEditor.cpp src/ui/SpriteEditor.h
+    src/ui/MapEditor.cpp src/ui/MapEditor.h
     src/ui/SystemSprites.cpp src/ui/SystemSprites.h
     src/ui/FileExplorer.cpp src/ui/FileExplorer.h
     src/ui/MenuSystem.cpp src/ui/MenuSystem.h

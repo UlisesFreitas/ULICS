@@ -142,9 +142,10 @@
         {
             "id": "4.15",
             "description": "Implement PICO-8 style zoom and pan",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "2 hours",
-            "notes": "Full map visible in viewport as sublayer, middle mouse button + drag to pan, mouse wheel to zoom in/out. Show entire 128x64 map with ability to zoom into specific regions"
+            "actualTime": "1.5 hours",
+            "notes": "Full map visible with zoom (0.125x-4x), middle mouse + drag to pan, mouse wheel to zoom centered on cursor. All coordinate transformations updated to support zoom"
         }
     ],
     "technical_specs": {

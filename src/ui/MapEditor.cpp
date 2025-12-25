@@ -16,9 +16,14 @@ MapEditor::MapEditor()
       selectedTile(1),  // Default to tile 1 (not empty)
       isActive(false),
       showGrid(true),
-      cameraX(0),
-      cameraY(0),
-      zoom(1.0f),
+      cameraX(4),   // Start map at position (4,4)
+      cameraY(4),
+      zoom(0.25f),  // Start zoomed out to see entire 128x64 map (will be calculated properly in Initialize)
+      isPanning(false),
+      panStartX(0),
+      panStartY(0),
+      cameraStartX(0),
+      cameraStartY(0),
       currentTab(0),  // Start at tab 0
       systemSprites(nullptr) {
     
@@ -65,23 +70,51 @@ void MapEditor::Update(InputManager& input) {
     // Handle keyboard shortcuts
     HandleKeyboard(input);
     
-    // Handle mouse input
-    if (input.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
-        int mouseX = input.getMouseX();
-        int mouseY = input.getMouseY();
-        
+    int mouseX = input.getMouseX();
+    int mouseY = input.getMouseY();
+    
+    // === MOVE MAP with Middle Mouse (like Photoshop hand tool) ===
+    bool isMiddlePressed = input.isMouseButtonDown(SDL_BUTTON_MIDDLE);
+    
+    if (isMiddlePressed && mouseX >= MAP_X && mouseX < MAP_X + MAP_W && mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H) {
+        if (!isPanning) {
+            // Start dragging
+            isPanning = true;
+            panStartX = mouseX;
+            panStartY = mouseY;
+            cameraStartX = cameraX;
+            cameraStartY = cameraY;
+        } else {
+            // Move map based on drag
+            int deltaX = mouseX - panStartX;
+            int deltaY = mouseY - panStartY;
+            
+            cameraX = cameraStartX + deltaX;
+            cameraY = cameraStartY + deltaY;
+        }
+    } else {
+        // Just released middle mouse - snap to grid
+        if (isPanning) {
+            // Snap to checkboard grid (8px = 1 tile)
+            int gridSize = 8;
+            cameraX = ((cameraX + gridSize / 2) / gridSize) * gridSize;
+            cameraY = ((cameraY + gridSize / 2) / gridSize) * gridSize;
+            std::cout << "[MapEditor] Snapped to grid: (" << cameraX << ", " << cameraY << ")" << std::endl;
+        }
+        isPanning = false;
+    }
+    
+    // Handle left mouse click
+    if (input.isMouseButtonPressed(SDL_BUTTON_LEFT) && !isPanning) {
         // Check which UI element was clicked
-        // Map viewport
         if (mouseX >= MAP_X && mouseX < MAP_X + MAP_W &&
             mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H) {
             HandleViewportClick(mouseX, mouseY);
         }
-        // Spritesheet
         else if (mouseX >= SHEET_X && mouseX < SHEET_X + SHEET_W &&
                  mouseY >= SHEET_Y && mouseY < SHEET_Y + SHEET_H) {
             HandlePickerClick(mouseX, mouseY);
         }
-        // Toolbar (tools + tabs)
         else if (mouseY >= TOOLBAR_Y && mouseY < TOOLBAR_Y + TOOLBAR_H) {
             HandleToolbarClick(mouseX, mouseY);
         }
@@ -120,46 +153,97 @@ void MapEditor::RenderTitleBar(AestheticLayer& renderer) {
 }
 
 void MapEditor::RenderMapViewport(AestheticLayer& renderer) {
-    // Draw white border FIRST (full width, from header to toolbar)
+    // White border around viewport
     renderer.RectRGB(MAP_BORDER_X, MAP_BORDER_Y, MAP_BORDER_W, MAP_BORDER_H,
                      SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
     
-    // Map background (inside border)
-    renderer.RectFillRGB(MAP_X, MAP_Y, MAP_W, MAP_H,
-                         SystemColors::UI_CANVAS_BG.r, SystemColors::UI_CANVAS_BG.g, SystemColors::UI_CANVAS_BG.b);
+    // === CHECKBOARD BACKGROUND (8x8 to match tile size) ===
+    int checkSize = 8;  // Same as TILE_SIZE
+    for (int y = MAP_Y; y < MAP_Y + MAP_H; y += checkSize) {
+        for (int x = MAP_X; x < MAP_X + MAP_W; x += checkSize) {
+            bool isDark = ((x - MAP_X) / checkSize + (y - MAP_Y) / checkSize) % 2 == 0;
+            if (isDark) {
+                renderer.RectFillRGB(x, y, checkSize, checkSize, 102, 102, 102);  // Dark gray
+            } else {
+                renderer.RectFillRGB(x, y, checkSize, checkSize, 153, 153, 153);  // Light gray
+            }
+        }
+    }
     
-    // Calculate visible tile range
-    int startTileX = cameraX;
-    int startTileY = cameraY;
-    int endTileX = std::min(cameraX + (MAP_W / TILE_SIZE) + 1, MAP_WIDTH);
-    int endTileY = std::min(cameraY + (MAP_H / TILE_SIZE) + 1, MAP_HEIGHT);
+    // === MAP (complete 128x64 tiles = 1024x512 pixels) ===
+    // Map position (starts at 4,4 by default, moves with cameraX/cameraY)
+    int mapPixelWidth = MAP_WIDTH * TILE_SIZE;   // 128 * 8 = 1024
+    int mapPixelHeight = MAP_HEIGHT * TILE_SIZE; // 64 * 8 = 512
+    int mapX = MAP_X + cameraX;  // Camera is the map offset
+    int mapY = MAP_Y + cameraY;
     
-    // Render all visible layers (bottom to top)
+    // White border around map
+    renderer.RectRGB(mapX - 1, mapY - 1, mapPixelWidth + 2, mapPixelHeight + 2,
+                     SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+    
+    // Black background for map
+    renderer.RectFillRGB(mapX, mapY, mapPixelWidth, mapPixelHeight, 0, 0, 0);
+    
+    // === RENDER ALL TILES on the map ===
     for (int layer = 0; layer < LAYER_COUNT; layer++) {
         if (!layers[layer].visible) continue;
         
-        for (int ty = startTileY; ty < endTileY; ty++) {
-            for (int tx = startTileX; tx < endTileX; tx++) {
+        for (int ty = 0; ty < MAP_HEIGHT; ty++) {
+            for (int tx = 0; tx < MAP_WIDTH; tx++) {
                 uint8_t tileId = GetTile(tx, ty, layer);
-                
-                // Skip transparent tiles (0)
                 if (tileId == 0) continue;
                 
-                // Calculate screen position
-                int screenX = MAP_X + (tx - cameraX) * TILE_SIZE;
-                int screenY = MAP_Y + (ty - cameraY) * TILE_SIZE;
+                int screenX = mapX + tx * TILE_SIZE;
+                int screenY = mapY + ty * TILE_SIZE;
                 
-                // Draw sprite from spritesheet
+                // Only draw if visible in viewport
+                if (screenX + TILE_SIZE < MAP_X || screenX > MAP_X + MAP_W) continue;
+                if (screenY + TILE_SIZE < MAP_Y || screenY > MAP_Y + MAP_H) continue;
+                
                 renderer.DrawSprite(tileId, screenX, screenY, 1, 1);
             }
         }
     }
     
-    // Draw grid overlay
+    // === GRID OVERLAY (toggle with Grid button) ===
     if (showGrid) {
-        RenderGrid(renderer);
+        // Draw grid lines every 8 pixels (1 tile)
+        SDL_Color gridColor = SystemColors::DARK_GRAY;
+        
+        // Vertical lines
+        for (int tx = 0; tx <= MAP_WIDTH; tx++) {
+            int lineX = mapX + tx * TILE_SIZE;
+            // Only draw if visible in viewport
+            if (lineX < MAP_X || lineX > MAP_X + MAP_W) continue;
+            
+            // Clamp line to map bounds and viewport
+            int lineStartY = std::max(mapY, MAP_Y);
+            int lineEndY = std::min(mapY + mapPixelHeight, MAP_Y + MAP_H);
+            
+            renderer.LineRGB(lineX, lineStartY, lineX, lineEndY,
+                            gridColor.r, gridColor.g, gridColor.b);
+        }
+        
+        // Horizontal lines
+        for (int ty = 0; ty <= MAP_HEIGHT; ty++) {
+            int lineY = mapY + ty * TILE_SIZE;
+            // Only draw if visible in viewport
+            if (lineY < MAP_Y || lineY > MAP_Y + MAP_H) continue;
+            
+            // Clamp line to map bounds and viewport
+            int lineStartX = std::max(mapX, MAP_X);
+            int lineEndX = std::min(mapX + mapPixelWidth, MAP_X + MAP_W);
+            
+            renderer.LineRGB(lineStartX, lineY, lineEndX, lineY,
+                            gridColor.r, gridColor.g, gridColor.b);
+        }
     }
 }
+//     // Draw grid overlay
+//     if (showGrid) {
+//         RenderGrid(renderer);
+//     }
+// }
 
 void MapEditor::RenderGrid(AestheticLayer& renderer) {
     int startTileX = cameraX;
@@ -667,19 +751,29 @@ bool MapEditor::IsValidTileCoord(int x, int y) const {
 }
 
 int MapEditor::ScreenToTileX(int screenX) const {
-    return cameraX + (screenX - MAP_X) / TILE_SIZE;
+    // Map position
+    int mapX = MAP_X + cameraX;
+    // Convert screen to tile
+    return (screenX - mapX) / TILE_SIZE;
 }
 
 int MapEditor::ScreenToTileY(int screenY) const {
-    return cameraY + (screenY - MAP_Y) / TILE_SIZE;
+    // Map position
+    int mapY = MAP_Y + cameraY;
+    // Convert screen to tile
+    return (screenY - mapY) / TILE_SIZE;
 }
 
 int MapEditor::TileToScreenX(int tileX) const {
-    return MAP_X + (tileX - cameraX) * TILE_SIZE;
+    // Map position
+    int mapX = MAP_X + cameraX;
+    return mapX + tileX * TILE_SIZE;
 }
 
 int MapEditor::TileToScreenY(int tileY) const {
-    return MAP_Y + (tileY - cameraY) * TILE_SIZE;
+    // Map position
+    int mapY = MAP_Y + cameraY;
+    return mapY + tileY * TILE_SIZE;
 }
 
 void MapEditor::Log(const std::string& message) {

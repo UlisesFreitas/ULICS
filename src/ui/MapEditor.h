@@ -102,9 +102,18 @@ private:
     // UI state
     bool isActive;
     bool showGrid;
+    
+    // Camera and zoom (PICO-8 style)
     int cameraX;  // Camera offset in tiles
     int cameraY;
-    float zoom;   // Zoom level (1.0 = 100%)
+    float zoom;   // Zoom level (0.25 = 25%, 1.0 = 100%, 4.0 = 400%)
+    
+    // Pan state (middle mouse button)
+    bool isPanning;
+    int panStartX;
+    int panStartY;
+    int cameraStartX;
+    int cameraStartY;
     
     // UI Layout constants (PICO-8 style - vertical layout, calculated from BOTTOM UP)
     static constexpr int TITLE_BAR_H = 10;

@@ -227,10 +227,12 @@
         {
             "id": "4.21.2",
             "description": "Implement dynamic cursor changing with SDL",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "2 hours",
+            "actualTime": "45 min",
+            "completionDate": "2025-12-26",
             "priority": "low",
-            "notes": "Implement SDL_Cursor management for dynamic cursor changes. Change cursor based on UI area: Default arrow cursor everywhere, Hand cursor when hovering toolbars/sidebar/spritesheet (clickable areas), Crosshair cursor when hovering map viewport (drawing area). Use SDL_CreateSystemCursor() or SDL_CreateColorCursor() with the icons from SystemSprites (26-28). Track mouse position and current UI area to determine which cursor to show. Performance: only change cursor when moving between different UI areas, not every frame."
+            "notes": "Implemented SDL_Cursor management with dynamic cursor changing. Arrow cursor (default), Hand cursor (toolbars, sidebar, spritesheet - clickable areas), Crosshair cursor (map viewport - drawing area). InitializeCursors creates SDL system cursors, UpdateCursor checks mouse position and determines appropriate cursor, SetCursor changes cursor only when needed (performance optimized). Cursor tracked per UI area. Works seamlessly across all MapEditor sections."
         },
         {
             "id": "4.22",

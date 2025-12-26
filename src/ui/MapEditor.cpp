@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <json.hpp>
 #include <cassert>  // For debug assertions
+#include <ctime>    // For timestamp logging
 
 using json = nlohmann::json;
 
@@ -19,6 +20,7 @@ MapEditor::MapEditor()
       isDrawing(false),
       lastDrawnTileX(-1),
       lastDrawnTileY(-1),
+      isFillingOperation(false),
       isActive(false),
       showGrid(true),
       cameraX(4),   // Start map at position (4,4)
@@ -31,6 +33,10 @@ MapEditor::MapEditor()
       cameraStartY(0),
       showLayerSidebar(false),
       hoveredLayer(-1),
+      currentCursor(CursorType::ARROW),
+      arrowCursor(nullptr),
+      handCursor(nullptr),
+      crossCursor(nullptr),
       toastMessage(""),
       toastTimer(0),
       currentTab(0),  // Start at tab 0
@@ -43,10 +49,14 @@ MapEditor::MapEditor()
         layers[i].visible = (i == 0);  // Only layer 0 visible by default
     }
     
+    // Initialize cursors
+    InitializeCursors();
+    
     std::cout << "[MapEditor] Initialized with " << LAYER_COUNT << " layers" << std::endl;
 }
 
 MapEditor::~MapEditor() {
+    CleanupCursors();
     std::cout << "[MapEditor] Destroyed" << std::endl;
 }
 
@@ -66,11 +76,9 @@ void MapEditor::SetActive(bool active, AestheticLayer* renderer) {
     isActive = active;
     
     if (active && renderer) {
-        // Save initial state when editor becomes active (for first undo to work)
+        // Clear undo history and save initial state when opening editor  
         if (wasInactive) {
-            // Clear undo history when opening editor
             ClearUndoHistory();
-            // Save current state as starting point
             SaveUndoState("Initial");
         }
         
@@ -84,6 +92,9 @@ void MapEditor::SetActive(bool active, AestheticLayer* renderer) {
 
 void MapEditor::Update(InputManager& input) {
     if (!isActive) return;
+    
+    // Update cursor based on mouse position
+    UpdateCursor(input.getMouseX(), input.getMouseY());
     
     // Update toast timer
     if (toastTimer > 0) {
@@ -210,7 +221,9 @@ void MapEditor::Update(InputManager& input) {
     }
     
     // Handle continuous drawing (mouse held + dragging)
-    if (isDrawing && input.isMouseButtonDown(SDL_BUTTON_LEFT) && !isPanning) {
+    // NOTE: Only Pencil is continuous. Fill and Eraser are single-click operations
+    if (isDrawing && input.isMouseButtonDown(SDL_BUTTON_LEFT) && !isPanning &&
+        currentTool == Tool::PENCIL) {
         if (mouseX >= MAP_X && mouseX < MAP_X + MAP_W &&
             mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H) {
             // Only draw if not on sidebar
@@ -276,9 +289,9 @@ void MapEditor::RenderTitleBar(AestheticLayer& renderer) {
     renderer.PrintRGB(layerText.c_str(), 160, 1,
                       SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
     
-    // Toast message (right side, fades based on timer)
+    // Toast message - right after "MAP" text
     if (toastTimer > 0) {
-        renderer.PrintRGB(toastMessage.c_str(), 210, 1,
+        renderer.PrintRGB(toastMessage.c_str(), 35, 1,
                           SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
     }
 }
@@ -673,29 +686,35 @@ void MapEditor::HandleViewportClick(int mouseX, int mouseY) {
     
     if (!IsValidTileCoord(tileX, tileY)) return;
     
-    // Check if we should save undo (only on first click, not during continuous drawing)
-    bool shouldSaveUndo = (currentTool != Tool::PICKER) && 
-                          (!isDrawing || (lastDrawnTileX == -1 && lastDrawnTileY == -1));
-    
     // Apply current tool
     switch (currentTool) {
         case Tool::PENCIL:
-            UsePencil(tileX, tileY);
-            if (shouldSaveUndo) SaveUndoState("Paint");
+            // Only save on first click, not during continuous drawing
+            {
+                bool shouldSaveUndo = !isDrawing || (lastDrawnTileX == -1 && lastDrawnTileY == -1);
+                UsePencil(tileX, tileY);
+                if (shouldSaveUndo) SaveUndoState("Paint");
+            }
             break;
+            
         case Tool::FILL:
             {
                 uint8_t targetTile = GetTile(tileX, tileY, activeLayer);
                 UseFill(tileX, tileY, targetTile, selectedTile);
-                if (shouldSaveUndo) SaveUndoState("Fill");
+                SaveUndoState("Fill");
             }
             break;
+            
         case Tool::ERASER:
-            UseEraser(tileX, tileY);
-            if (shouldSaveUndo) SaveUndoState("Erase");
+            // Only save on first click, not during continuous drawing
+            {
+                bool shouldSaveUndo = !isDrawing || (lastDrawnTileX == -1 && lastDrawnTileY == -1);
+                UseEraser(tileX, tileY);
+                if (shouldSaveUndo) SaveUndoState("Erase");
+            }
             break;
+            
         case Tool::PICKER:
-            // Picker doesn't modify, no undo needed
             UsePicker(tileX, tileY);
             break;
     }
@@ -1073,4 +1092,82 @@ void MapEditor::ShowToast(const std::string& message) {
 
 void MapEditor::Log(const std::string& message) {
     std::cout << "[MapEditor] " << message << std::endl;
+}
+
+// ===== Cursor Management =====
+
+void MapEditor::InitializeCursors() {
+    // Create system cursors using SDL built-in cursors
+    arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+    crossCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+    
+    // Set default cursor
+    SetCursor(CursorType::ARROW);
+    
+    std::cout << "[MapEditor] Cursors initialized" << std::endl;
+}
+
+void MapEditor::CleanupCursors() {
+    if (arrowCursor) SDL_FreeCursor(arrowCursor);
+    if (handCursor) SDL_FreeCursor(handCursor);
+    if (crossCursor) SDL_FreeCursor(crossCursor);
+    
+    arrowCursor = nullptr;
+    handCursor = nullptr;
+    crossCursor = nullptr;
+}
+
+void MapEditor::UpdateCursor(int mouseX, int mouseY) {
+    CursorType newCursor = CursorType::ARROW;  // Default
+    
+    // Determine which cursor to show based on UI area
+    // Map viewport - Crosshair
+    if (mouseX >= MAP_X && mouseX < MAP_X + MAP_W &&
+        mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H) {
+        if (!showLayerSidebar || mouseX >= SIDEBAR_X + SIDEBAR_W) {
+            newCursor = CursorType::CROSSHAIR;
+        } else {
+            newCursor = CursorType::HAND;  // Sidebar area
+        }
+    }
+    // Toolbar - Hand
+    else if (mouseY >= TOOLBAR_Y && mouseY < TOOLBAR_Y + TOOLBAR_H) {
+        newCursor = CursorType::HAND;
+    }
+    // Spritesheet - Hand
+    else if (mouseX >= SHEET_X && mouseX < SHEET_X + SHEET_W &&
+             mouseY >= SHEET_Y && mouseY < SHEET_Y + SHEET_H) {
+        newCursor = CursorType::HAND;
+    }
+    // Layer sidebar - Hand
+    else if (showLayerSidebar && mouseX >= SIDEBAR_X && mouseX < SIDEBAR_X + SIDEBAR_W &&
+             mouseY >= SIDEBAR_Y && mouseY < SIDEBAR_Y + SIDEBAR_H) {
+        newCursor = CursorType::HAND;
+    }
+    // Title bar - Hand (for layer toggle button)
+    else if (mouseY >= 0 && mouseY < TITLE_BAR_H) {
+        newCursor = CursorType::HAND;
+    }
+    
+    // Only change cursor if it's different (performance optimization)
+    if (newCursor != currentCursor) {
+        SetCursor(newCursor);
+    }
+}
+
+void MapEditor::SetCursor(CursorType type) {
+    currentCursor = type;
+    
+    switch (type) {
+        case CursorType::ARROW:
+            if (arrowCursor) SDL_SetCursor(arrowCursor);
+            break;
+        case CursorType::HAND:
+            if (handCursor) SDL_SetCursor(handCursor);
+            break;
+        case CursorType::CROSSHAIR:
+            if (crossCursor) SDL_SetCursor(crossCursor);
+            break;
+    }
 }

@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
+#include <SDL.h>  // For SDL_Cursor
 
 // Forward declarations
 class AestheticLayer;
@@ -115,6 +116,9 @@ private:
     bool isDrawing;      // True while left mouse is held
     int lastDrawnTileX;  // Last tile painted (to avoid double-paint)
     int lastDrawnTileY;
+    
+    // Fill operation state
+    bool isFillingOperation;  // True during fill, prevents multiple undo saves
     
     // UI state
     bool isActive;
@@ -260,6 +264,12 @@ private:
     void Undo();
     void Redo();
     void ClearUndoHistory();
+    
+    // Cursor management
+    void InitializeCursors();
+    void CleanupCursors();
+    void UpdateCursor(int mouseX, int mouseY);
+    void SetCursor(CursorType type);
     
     // Debug logging
     void Log(const std::string& message);

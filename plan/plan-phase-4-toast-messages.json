@@ -1,0 +1,165 @@
+{
+    "phaseName": "Phase 4 - Toast Messages System",
+    "phaseNumber": 4,
+    "status": "pending",
+    "priority": "medium",
+    "startDate": "2025-12-26",
+    "estimatedCompletionDate": "2025-12-27",
+    "description": "Global Toast Messages system for user feedback across all editors. Bottom-right tooltip style with fade animations.",
+    "objectives": [
+        "Create reusable ToastManager class",
+        "Position toasts at bottom-right corner",
+        "Add fade-in/fade-out animations",
+        "Integrate with all editors (Code, Sprite, Map, SFX, Music)",
+        "Support different toast types (info, success, error, warning)"
+    ],
+    "tasks": [
+        {
+            "id": "4.T.1",
+            "description": "Create ToastManager class",
+            "status": "pending",
+            "estimatedTime": "1 hour",
+            "priority": "high",
+            "dependencies": [],
+            "notes": "Create ui/ToastManager.h and .cpp. Singleton pattern for global access. Queue-based system to show multiple toasts sequentially."
+        },
+        {
+            "id": "4.T.2",
+            "description": "Design toast visual style",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "priority": "medium",
+            "dependencies": [
+                "4.T.1"
+            ],
+            "notes": "Bottom-right corner position (screen width - toast width - padding, screen height - toast height - padding). Dark background with border. Icon support for different types. Padding and margins defined."
+        },
+        {
+            "id": "4.T.3",
+            "description": "Implement fade animations",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "priority": "medium",
+            "dependencies": [
+                "4.T.1"
+            ],
+            "notes": "Fade-in: 10 frames (0-255 alpha). Display: 90 frames (1.5s at 60fps). Fade-out: 20 frames (255-0 alpha). Total: 120 frames = 2 seconds."
+        },
+        {
+            "id": "4.T.4",
+            "description": "Add toast types and icons",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "priority": "low",
+            "dependencies": [
+                "4.T.1",
+                "4.T.2"
+            ],
+            "notes": "Types: INFO (blue), SUCCESS (green), ERROR (red), WARNING (yellow). Use SystemSprites for icons or create new ones. Different background colors per type."
+        },
+        {
+            "id": "4.T.5",
+            "description": "Integrate ToastManager in Engine",
+            "status": "pending",
+            "estimatedTime": "15 min",
+            "priority": "high",
+            "dependencies": [
+                "4.T.1"
+            ],
+            "notes": "Add ToastManager instance to Engine class. Call Update() and Render() in Engine's main loop. Make accessible to all editors via Engine pointer."
+        },
+        {
+            "id": "4.T.6",
+            "description": "Migrate MapEditor to use ToastManager",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "priority": "high",
+            "dependencies": [
+                "4.T.5"
+            ],
+            "notes": "Remove local toast system from MapEditor. Replace ShowToast() calls with ToastManager::Show(). Test all toast messages (undo, redo, save, load)."
+        },
+        {
+            "id": "4.T.7",
+            "description": "Migrate SpriteEditor to use ToastManager",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "priority": "high",
+            "dependencies": [
+                "4.T.6"
+            ],
+            "notes": "Check if SpriteEditor has toast messages. If not, add for undo/redo, save/load operations. Use ToastManager for consistency."
+        },
+        {
+            "id": "4.T.8",
+            "description": "Migrate CodeEditor to use ToastManager",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "priority": "medium",
+            "dependencies": [
+                "4.T.6"
+            ],
+            "notes": "Add toast messages for save/load operations. Optional: syntax error notifications."
+        },
+        {
+            "id": "4.T.9",
+            "description": "Add toast queue system",
+            "status": "pending",
+            "estimatedTime": "45 min",
+            "priority": "medium",
+            "dependencies": [
+                "4.T.3"
+            ],
+            "notes": "Support multiple toasts. Show up to 3 toasts stacked vertically. Auto-dismiss oldest when queue is full. Slide animation when new toast appears."
+        },
+        {
+            "id": "4.T.10",
+            "description": "Test and polish",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "priority": "low",
+            "dependencies": [
+                "4.T.6",
+                "4.T.7",
+                "4.T.8",
+                "4.T.9"
+            ],
+            "notes": "Test all toast scenarios. Verify positioning on different screen sizes. Check animation smoothness. Test queue behavior with rapid toasts."
+        }
+    ],
+    "technicalNotes": {
+        "architecture": {
+            "class": "ToastManager (Singleton)",
+            "location": "src/ui/ToastManager.h/cpp",
+            "dependencies": [
+                "AestheticLayer",
+                "SystemColors",
+                "SystemSprites (optional)"
+            ]
+        },
+        "position": {
+            "x": "SCREEN_WIDTH - TOAST_WIDTH - 8",
+            "y": "SCREEN_HEIGHT - TOAST_HEIGHT - 8 - (index * (TOAST_HEIGHT + 4))",
+            "anchor": "bottom-right"
+        },
+        "dimensions": {
+            "width": 120,
+            "height": 16,
+            "padding": 4,
+            "margin": 4
+        },
+        "animation": {
+            "fadeIn": "10 frames",
+            "display": "90 frames",
+            "fadeOut": "20 frames",
+            "total": "120 frames (2 seconds)"
+        },
+        "api": {
+            "show": "ToastManager::Show(message, type = INFO)",
+            "update": "ToastManager::Update()",
+            "render": "ToastManager::Render(AestheticLayer&)"
+        }
+    },
+    "estimatedTotalTime": "6 hours",
+    "completionPercentage": 0
+}

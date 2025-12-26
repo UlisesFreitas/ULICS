@@ -945,6 +945,24 @@ bool Engine::LoadCartridge(const std::string& cartridgePath) {
             }
         }
         
+        // Load map.json (Phase 4.22 - Map Editor runtime integration)
+        if (currentMap) {
+            std::filesystem::path cartPath(cartridgePath);
+            std::filesystem::path mapPath = cartPath / "map.json";
+            
+            if (std::filesystem::exists(mapPath)) {
+                std::cout << "Engine: Loading map.json from cartridge..." << std::endl;
+                
+                if (currentMap->LoadFromJSON(mapPath.string())) {
+                    std::cout << "Engine: Map loaded successfully" << std::endl;
+                } else {
+                    std::cout << "Engine: Warning - failed to load map.json" << std::endl;
+                }
+            } else {
+                std::cout << "Engine: No map.json found in cartridge (using empty map)" << std::endl;
+            }
+        }
+        
         SetState(EngineState::RUNNING_CARTRIDGE);
         std::cout << "Engine: Cartridge '" << config.name << "' loaded successfully." << std::endl;
         return true;

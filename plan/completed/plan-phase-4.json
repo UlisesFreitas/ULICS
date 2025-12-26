@@ -237,10 +237,12 @@
         {
             "id": "4.22",
             "description": "Runtime integration - Map display in game",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "1 hour",
+            "actualTime": "30 min",
+            "completionDate": "2025-12-26",
             "priority": "critical",
-            "notes": "Integrate map rendering in actual game runtime. Implement mget(x, y, [layer]) and mset(x, y, [layer], tile) Lua API. Implement map(mx, my, sx, sy, w, h, [layer_mask]) for rendering. Load map.json from cartridge folder. Test with sample game that displays and scrolls the map."
+            "notes": "✅ COMPLETED. APIs mget/mset/map were already implemented. Added map.json loading in Engine::LoadCartridge(). Created test_map cartridge to demonstrate functionality. Map data now loads automatically when cartridge loads. All map APIs functional in game runtime."
         },
         {
             "id": "4.23",

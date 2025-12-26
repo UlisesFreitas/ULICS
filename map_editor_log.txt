@@ -1,0 +1,214 @@
+[22:45:50] >>> ClearUndoHistory called
+[22:45:50]     Stack cleared, undoIndex=-1
+[22:45:50] >>> SaveUndoState called: Initial
+[22:45:50]     Before: undoIndex=-1, stack size=0
+[22:45:50]     After: undoIndex=0, stack size=1
+[22:46:54] >>> ClearUndoHistory called
+[22:46:54]     Stack cleared, undoIndex=-1
+[22:46:54] >>> SaveUndoState called: Initial
+[22:46:54]     Before: undoIndex=-1, stack size=0
+[22:46:54]     After: undoIndex=0, stack size=1
+[22:48:18] >>> ClearUndoHistory called
+[22:48:18]     Stack cleared, undoIndex=-1
+[22:48:18] >>> SaveUndoState called: Initial
+[22:48:18]     Before: undoIndex=-1, stack size=0
+[22:48:18]     After: undoIndex=0, stack size=1
+[22:48:24] >>> SaveUndoState called: Paint
+[22:48:24]     Before: undoIndex=0, stack size=1
+[22:48:24]     After: undoIndex=1, stack size=2
+[22:48:26] >>> SaveUndoState called: Paint
+[22:48:26]     Before: undoIndex=1, stack size=2
+[22:48:26]     After: undoIndex=2, stack size=3
+[22:48:35] >>> ClearUndoHistory called
+[22:48:35]     Stack cleared, undoIndex=-1
+[22:48:35] >>> SaveUndoState called: Initial
+[22:48:35]     Before: undoIndex=-1, stack size=0
+[22:48:35]     After: undoIndex=0, stack size=1
+[22:53:08] >>> ClearUndoHistory called
+[22:53:08]     Stack cleared, undoIndex=-1
+[22:53:08] >>> SaveUndoState called: Initial
+[22:53:08]     Before: undoIndex=-1, stack size=0
+[22:53:08]     After: undoIndex=0, stack size=1
+[22:53:38] >>> ClearUndoHistory called
+[22:53:38]     Stack cleared, undoIndex=-1
+[22:53:38] >>> SaveUndoState called: Initial
+[22:53:38]     Before: undoIndex=-1, stack size=0
+[22:53:38]     After: undoIndex=0, stack size=1
+[22:53:46] >>> SaveUndoState called: Paint
+[22:53:46]     Before: undoIndex=0, stack size=1
+[22:53:46]     After: undoIndex=1, stack size=2
+[22:53:47] >>> SaveUndoState called: Paint
+[22:53:47]     Before: undoIndex=1, stack size=2
+[22:53:47]     After: undoIndex=2, stack size=3
+[22:53:48] >>> SaveUndoState called: Paint
+[22:53:48]     Before: undoIndex=2, stack size=3
+[22:53:48]     After: undoIndex=3, stack size=4
+[22:58:03] >>> ClearUndoHistory called
+[22:58:03]     Stack cleared, undoIndex=-1
+[22:58:03] >>> SaveUndoState called: Initial
+[22:58:03]     Before: undoIndex=-1, stack size=0
+[22:58:03]     After: undoIndex=0, stack size=1
+[22:58:29] >>> ClearUndoHistory called
+[22:58:29]     Stack cleared, undoIndex=-1
+[22:58:29] >>> SaveUndoState called: Initial
+[22:58:29]     Before: undoIndex=-1, stack size=0
+[22:58:29]     After: undoIndex=0, stack size=1
+[22:58:30] >>> ClearUndoHistory called
+[22:58:30]     Stack cleared, undoIndex=-1
+[22:58:30] >>> SaveUndoState called: Initial
+[22:58:30]     Before: undoIndex=-1, stack size=0
+[22:58:30]     After: undoIndex=0, stack size=1
+[22:58:52] >>> ClearUndoHistory called
+[22:58:52]     Stack cleared, undoIndex=-1
+[22:58:52] >>> SaveUndoState called: Initial
+[22:58:52]     Before: undoIndex=-1, stack size=0
+[22:58:52]     After: undoIndex=0, stack size=1
+[22:58:56] >>> SaveUndoState called: Paint
+[22:58:56]     Before: undoIndex=0, stack size=1
+[22:58:56]     After: undoIndex=1, stack size=2
+[22:58:57] >>> SaveUndoState called: Paint
+[22:58:57]     Before: undoIndex=1, stack size=2
+[22:58:57]     After: undoIndex=2, stack size=3
+[22:58:58] >>> SaveUndoState called: Paint
+[22:58:58]     Before: undoIndex=2, stack size=3
+[22:58:58]     After: undoIndex=3, stack size=4
+[22:58:58] >>> SaveUndoState called: Paint
+[22:58:58]     Before: undoIndex=3, stack size=4
+[22:58:58]     After: undoIndex=4, stack size=5
+[22:59:01] >>> SaveUndoState called: Paint
+[22:59:01]     Before: undoIndex=4, stack size=5
+[22:59:01]     After: undoIndex=5, stack size=6
+[22:59:01] >>> SaveUndoState called: Paint
+[22:59:01]     Before: undoIndex=5, stack size=6
+[22:59:01]     After: undoIndex=6, stack size=7
+[22:59:02] >>> SaveUndoState called: Paint
+[22:59:02]     Before: undoIndex=6, stack size=7
+[22:59:02]     After: undoIndex=7, stack size=8
+[22:59:06] >>> SaveUndoState called: Paint
+[22:59:06]     Before: undoIndex=7, stack size=8
+[22:59:06]     After: undoIndex=8, stack size=9
+[22:59:09] >>> SaveUndoState called: Paint
+[22:59:09]     Before: undoIndex=8, stack size=9
+[22:59:09]     After: undoIndex=9, stack size=10
+[22:59:09] >>> SaveUndoState called: Paint
+[22:59:09]     Before: undoIndex=9, stack size=10
+[22:59:09]     After: undoIndex=10, stack size=11
+[22:59:19] >>> SaveUndoState called: Paint
+[22:59:19]     Before: undoIndex=10, stack size=11
+[22:59:19]     After: undoIndex=11, stack size=12
+[23:01:03] >>> ClearUndoHistory called
+[23:01:03]     Stack cleared, undoIndex=-1
+[23:01:03] >>> SaveUndoState called: Initial
+[23:01:03]     Before: undoIndex=-1, stack size=0
+[23:01:03]     After: undoIndex=0, stack size=1
+[23:09:53] >>> ClearUndoHistory called
+[23:09:53]     Stack cleared, undoIndex=-1
+[23:09:53] >>> SaveUndoState called: Initial
+[23:09:53]     Before: undoIndex=-1, stack size=0
+[23:09:53]     After: undoIndex=0, stack size=1
+[23:10:17] >>> ClearUndoHistory called
+[23:10:17]     Stack cleared, undoIndex=-1
+[23:10:17] >>> SaveUndoState called: Initial
+[23:10:17]     Before: undoIndex=-1, stack size=0
+[23:10:17]     After: undoIndex=0, stack size=1
+[23:10:30] >>> ClearUndoHistory called
+[23:10:30]     Stack cleared, undoIndex=-1
+[23:10:30] >>> SaveUndoState called: Initial
+[23:10:30]     Before: undoIndex=-1, stack size=0
+[23:10:30]     After: undoIndex=0, stack size=1
+[23:14:11] >>> ClearUndoHistory called
+[23:14:11]     Stack cleared, undoIndex=-1
+[23:14:11] >>> SaveUndoState called: Initial
+[23:14:11]     Before: undoIndex=-1, stack size=0
+[23:14:11]     After: undoIndex=0, stack size=1
+[23:14:16] >>> SaveUndoState called: Paint
+[23:14:16]     Before: undoIndex=0, stack size=1
+[23:14:16]     After: undoIndex=1, stack size=2
+[23:14:19] >>> SaveUndoState called: Paint
+[23:14:19]     Before: undoIndex=1, stack size=2
+[23:14:19]     After: undoIndex=2, stack size=3
+[23:14:21] >>> SaveUndoState called: Paint
+[23:14:21]     Before: undoIndex=2, stack size=3
+[23:14:21]     After: undoIndex=3, stack size=4
+[23:14:21] >>> SaveUndoState called: Paint
+[23:14:21]     Before: undoIndex=3, stack size=4
+[23:14:21]     After: undoIndex=4, stack size=5
+[23:14:23] >>> SaveUndoState called: Paint
+[23:14:23]     Before: undoIndex=4, stack size=5
+[23:14:23]     After: undoIndex=5, stack size=6
+[23:14:26] >>> SaveUndoState called: Paint
+[23:14:26]     Before: undoIndex=5, stack size=6
+[23:14:26]     After: undoIndex=6, stack size=7
+[23:14:32] >>> SaveUndoState called: Erase
+[23:14:32]     Before: undoIndex=6, stack size=7
+[23:14:32]     After: undoIndex=7, stack size=8
+[23:14:33] >>> SaveUndoState called: Erase
+[23:14:33]     Before: undoIndex=7, stack size=8
+[23:14:33]     After: undoIndex=8, stack size=9
+[23:14:34] >>> SaveUndoState called: Erase
+[23:14:34]     Before: undoIndex=8, stack size=9
+[23:14:34]     After: undoIndex=9, stack size=10
+[23:14:34] >>> SaveUndoState called: Erase
+[23:14:34]     Before: undoIndex=9, stack size=10
+[23:14:34]     After: undoIndex=10, stack size=11
+[23:14:35] >>> SaveUndoState called: Erase
+[23:14:35]     Before: undoIndex=10, stack size=11
+[23:14:35]     After: undoIndex=11, stack size=12
+[23:14:35] >>> SaveUndoState called: Erase
+[23:14:35]     Before: undoIndex=11, stack size=12
+[23:14:35]     After: undoIndex=12, stack size=13
+[23:14:35] >>> SaveUndoState called: Erase
+[23:14:35]     Before: undoIndex=12, stack size=13
+[23:14:35]     After: undoIndex=13, stack size=14
+[23:14:36] >>> SaveUndoState called: Erase
+[23:14:36]     Before: undoIndex=13, stack size=14
+[23:14:36]     After: undoIndex=14, stack size=15
+[23:18:44] >>> ClearUndoHistory called
+[23:18:44]     Stack cleared, undoIndex=-1
+[23:18:44] >>> SaveUndoState called: Initial
+[23:18:44]     Before: undoIndex=-1, stack size=0
+[23:18:44]     After: undoIndex=0, stack size=1
+[23:19:20] >>> SaveUndoState called: Paint
+[23:19:20]     Before: undoIndex=0, stack size=1
+[23:19:20]     After: undoIndex=1, stack size=2
+[23:19:23] >>> Undo called
+[23:19:23]     undoIndex=1, stack size=2
+[23:19:23]     Restoring: Initial at index 0
+[23:21:00] >>> ClearUndoHistory called
+[23:21:00]     Stack cleared, undoIndex=-1
+[23:21:00] >>> SaveUndoState called: Initial
+[23:21:00]     Before: undoIndex=-1, stack size=0
+[23:21:00]     After: undoIndex=0, stack size=1
+[23:21:26] >>> ClearUndoHistory called
+[23:21:26]     Stack cleared, undoIndex=-1
+[23:21:26] >>> SaveUndoState called: Initial
+[23:21:26]     Before: undoIndex=-1, stack size=0
+[23:21:26]     After: undoIndex=0, stack size=1
+[23:22:41] >>> ClearUndoHistory called
+[23:22:41]     Stack cleared, undoIndex=-1
+[23:22:41] >>> SaveUndoState called: Initial
+[23:22:41]     Before: undoIndex=-1, stack size=0
+[23:22:41]     After: undoIndex=0, stack size=1
+[23:22:51] >>> SaveUndoState called: Paint
+[23:22:51]     Before: undoIndex=0, stack size=1
+[23:22:51]     After: undoIndex=1, stack size=2
+[23:23:33] >>> SaveUndoState called: Erase
+[23:23:33]     Before: undoIndex=1, stack size=2
+[23:23:33]     After: undoIndex=2, stack size=3
+[23:24:54] >>> SaveUndoState called: Paint
+[23:24:54]     Before: undoIndex=2, stack size=3
+[23:24:54]     After: undoIndex=3, stack size=4
+[23:24:56] >>> SaveUndoState called: Paint
+[23:24:56]     Before: undoIndex=3, stack size=4
+[23:24:56]     After: undoIndex=4, stack size=5
+[23:27:27] >>> ClearUndoHistory called
+[23:27:27]     Stack cleared, undoIndex=-1
+[23:27:27] >>> SaveUndoState called: Initial
+[23:27:27]     Before: undoIndex=-1, stack size=0
+[23:27:27]     After: undoIndex=0, stack size=1
+[23:27:29] >>> SaveUndoState called: Paint
+[23:27:29]     Before: undoIndex=0, stack size=1
+[23:27:29]     After: undoIndex=1, stack size=2
+[23:27:32] >>> SaveUndoState called: Erase
+[23:27:32]     Before: undoIndex=1, stack size=2
+[23:27:32]     After: undoIndex=2, stack size=3

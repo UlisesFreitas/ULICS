@@ -140,6 +140,11 @@ private:
     bool showLayerSidebar;
     int hoveredLayer;  // -1 = none, 0-7 = layer index
     
+    // Tooltip state (shows tile position on hover)
+    bool showTooltip;
+    int tooltipTileX;
+    int tooltipTileY;
+    
     // Dynamic cursor state
     enum class CursorType {
         ARROW,      // Default

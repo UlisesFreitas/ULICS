@@ -1,0 +1,10 @@
+{
+    "name": "Map Test",
+    "author": "UliCS System",
+    "version": "1.0.0",
+    "description": "Test cartridge for map rendering APIs",
+    "main": "main.lua",
+    "palette_size": 16,
+    "memory_limit_mb": 2.0,
+    "lua_code_limit_lines": 10000
+}

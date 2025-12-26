@@ -9,6 +9,7 @@
 #include <json.hpp>
 #include <cassert>  // For debug assertions
 #include <ctime>    // For timestamp logging
+#include <filesystem>  // For path operations
 
 using json = nlohmann::json;
 
@@ -33,6 +34,9 @@ MapEditor::MapEditor()
       cameraStartY(0),
       showLayerSidebar(false),
       hoveredLayer(-1),
+      showTooltip(false),
+      tooltipTileX(0),
+      tooltipTileY(0),
       currentCursor(CursorType::ARROW),
       arrowCursor(nullptr),
       handCursor(nullptr),
@@ -83,8 +87,19 @@ void MapEditor::SetActive(bool active, AestheticLayer* renderer) {
         }
         
         // When activating MapEditor, reload spritesheet to get latest changes from Sprite Editor
-        renderer->ReloadSpriteSheet();
-        std::cout << "[MapEditor] Reloaded spritesheet" << std::endl;
+        // Deduce spritesheet path from mapPath (e.g., "cartridges/test_map/map.json" -> "cartridges/test_map/spritesheet.png")
+        if (!mapPath.empty()) {
+            std::filesystem::path mapFilePath(mapPath);
+            std::filesystem::path cartridgePath = mapFilePath.parent_path();
+            std::filesystem::path spritesheetPath = cartridgePath / "spritesheet.png";
+            
+            if (std::filesystem::exists(spritesheetPath)) {
+                std::cout << "[MapEditor] Loading spritesheet from: " << spritesheetPath << std::endl;
+                renderer->LoadSpriteSheet(spritesheetPath.string());
+            } else {
+                std::cout << "[MapEditor] Warning: No spritesheet.png found at " << spritesheetPath << std::endl;
+            }
+        }
     }
 }
 
@@ -106,6 +121,24 @@ void MapEditor::Update(InputManager& input) {
     
     int mouseX = input.getMouseX();
     int mouseY = input.getMouseY();
+    
+    // Update tooltip (show tile position when hovering over map)
+    if (mouseX >= MAP_X && mouseX < MAP_X + MAP_W &&
+        mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H &&
+        (!showLayerSidebar || mouseX >= SIDEBAR_X + SIDEBAR_W)) {
+        // Mouse is over map viewport
+        int tileX = ScreenToTileX(mouseX);
+        int tileY = ScreenToTileY(mouseY);
+        if (IsValidTileCoord(tileX, tileY)) {
+            showTooltip = true;
+            tooltipTileX = tileX;
+            tooltipTileY = tileY;
+        } else {
+            showTooltip = false;
+        }
+    } else {
+        showTooltip = false;
+    }
     
     // === ZOOM with Mouse Wheel (discrete levels) ===
     int wheelDelta = input.getMouseWheelY();
@@ -259,6 +292,48 @@ void MapEditor::Render(AestheticLayer& renderer, InputManager& input) {
     RenderToolbar(renderer);
     RenderSpritesheet(renderer);
     RenderStatusBar(renderer);
+    
+    // Render tooltip last (on top of everything)
+    if (showTooltip) {
+        int mouseX = input.getMouseX();
+        int mouseY = input.getMouseY();
+        
+        // Create tooltip text
+        std::string tooltipText = "X:" + std::to_string(tooltipTileX) + " Y:" + std::to_string(tooltipTileY);
+        
+        // Tooltip dimensions (8x8 font, so 8px per character)
+        int tooltipW = tooltipText.length() * 8 + 4;  // 8px per char + 4px padding
+        int tooltipH = 10;  // 8px font + 2px padding
+        
+        // Smart positioning - right of cursor by default, left if too close to right edge
+        int tooltipX = mouseX + 12;  // Offset from cursor
+        int tooltipY = mouseY + 12;
+        
+        // Adjust if going off right edge
+        if (tooltipX + tooltipW > 256) {
+            tooltipX = mouseX - tooltipW - 4;  // Show on left instead
+        }
+        
+        // Adjust if going off bottom edge
+        if (tooltipY + tooltipH > 256) {
+            tooltipY = mouseY - tooltipH - 4;  // Show above instead
+        }
+        
+        // Clamp to screen bounds
+        if (tooltipX < 0) tooltipX = 0;
+        if (tooltipY < 0) tooltipY = 0;
+        if (tooltipX + tooltipW > 256) tooltipX = 256 - tooltipW;
+        if (tooltipY + tooltipH > 256) tooltipY = 256 - tooltipH;
+        
+        // Draw tooltip background (white)
+        renderer.RectFillRGB(tooltipX, tooltipY, tooltipW, tooltipH, 255, 255, 255);
+        
+        // Draw tooltip border (black)
+        renderer.RectRGB(tooltipX, tooltipY, tooltipW, tooltipH, 0, 0, 0);
+        
+        // Draw tooltip text (black)
+        renderer.PrintRGB(tooltipText.c_str(), tooltipX + 2, tooltipY + 1, 0, 0, 0);
+    }
 }
 
 // ===== Rendering Methods =====
@@ -338,6 +413,7 @@ void MapEditor::RenderMapViewport(AestheticLayer& renderer) {
         for (int ty = 0; ty < MAP_HEIGHT; ty++) {
             for (int tx = 0; tx < MAP_WIDTH; tx++) {
                 uint8_t tileId = GetTile(tx, ty, layer);
+                // Tile 0 is special - it's "empty" and not rendered (PICO-8/TIC-80 convention)
                 if (tileId == 0) continue;
                 
                 int screenX = mapX + tx * tileSizeFloat;

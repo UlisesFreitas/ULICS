@@ -99,6 +99,11 @@ private:
     Tool currentTool;
     uint8_t selectedTile;  // Currently selected tile ID (0-255)
     
+    // Continuous drawing state
+    bool isDrawing;      // True while left mouse is held
+    int lastDrawnTileX;  // Last tile painted (to avoid double-paint)
+    int lastDrawnTileY;
+    
     // UI state
     bool isActive;
     bool showGrid;
@@ -118,6 +123,11 @@ private:
     // Layer sidebar state
     bool showLayerSidebar;
     int hoveredLayer;  // -1 = none, 0-7 = layer index
+    
+    // Toast/Feedback message system
+    std::string toastMessage;
+    int toastTimer;  // Frames remaining to show toast (0 = hide)
+    static constexpr int TOAST_DURATION = 120;  // 2 seconds at 60fps
     
     // UI Layout constants (PICO-8 style - vertical layout, calculated from BOTTOM UP)
     static constexpr int TITLE_BAR_H = 10;
@@ -218,6 +228,9 @@ private:
     
     // Flood fill helper (recursive)
     void FloodFillRecursive(int x, int y, int layer, uint8_t targetTile, uint8_t replacementTile);
+    
+    // Toast message helper
+    void ShowToast(const std::string& message);
     
     // Debug logging
     void Log(const std::string& message);

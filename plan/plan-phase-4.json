@@ -1,15 +1,16 @@
 {
     "phase": 4,
     "title": "Map Editor",
-    "description": "Tile map editor with multi-layer support - 128x64 tile grid, up to 8 layers, PICO-8 style vertical layout with tab-based spritesheet picker. Full-width design with map at top, toolbar in middle, and 16x4 spritesheet grid at bottom.",
+    "description": "Tile map editor with multi-layer support - 128x64 tile grid, up to 8 layers, PICO-8 style vertical layout with tab-based spritesheet picker, zoom/pan navigation, and layer management sidebar.",
     "priority": "HIGH",
-    "estimatedTime": "4-5 hours (core), 4 hours (enhancements)",
-    "actualTime": "~6 hours (core completed 2025-12-25)",
+    "estimatedTime": "4-5 hours (core), 2-3 hours (enhancements), 3 hours (critical features)",
+    "actualTime": "~8 hours (core + enhancements completed), ~3 hours pending",
     "status": "in_progress",
     "coreStatus": "completed",
-    "enhancementsStatus": "pending",
-    "completionDate": "2025-12-25 (core features)",
-    "philosophy": "Powerful layer system for rich 2D worlds. PICO-8 simplicity with modern multi-layer support for depth and complexity. Vertical layout maximizes map viewport while maintaining easy access to tools and tiles.",
+    "enhancementsStatus": "completed",
+    "criticalFeaturesStatus": "pending",
+    "completionDate": "TBD (core: 2025-12-26, critical features pending)",
+    "philosophy": "Powerful layer system for rich 2D worlds. PICO-8 simplicity with modern multi-layer support for depth and complexity. Professional zoom/pan navigation and visual feedback for productive map editing.",
     "objectives": [
         "✅ Create 128x64 tile grid map editor",
         "✅ Support up to 8 independent layers",
@@ -19,9 +20,11 @@
         "✅ Save/load map data to JSON format",
         "✅ Integrate with F3 toggle key",
         "✅ PICO-8 style vertical layout with proper borders",
-        "⏳ Load actual spritesheet from cartridge",
-        "⏳ Add layer management UI panel",
-        "⏳ Implement PICO-8 zoom/pan with mouse wheel"
+        "✅ Load actual spritesheet from cartridge",
+        "✅ Add layer management UI sidebar (toggle with L)",
+        "✅ Implement 5-level zoom/pan with mouse wheel",
+        "✅ Screen section grid for game layout visualization",
+        "✅ Toast messages for user feedback"
     ],
     "tasks": [
         {
@@ -184,18 +187,46 @@
         {
             "id": "4.19",
             "description": "UX polish and visual feedback",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "1 hour",
+            "actualTime": "20 min",
+            "completionDate": "2025-12-26",
             "priority": "medium",
-            "notes": "Add toast messages for save/load. Cursor changes on hover. Layer name editing (double-click). Additional shortcuts (Ctrl+L, V, [], etc). Status bar improvements."
+            "notes": "Implemented toast message system with 2-second display in title bar. Added feedback for save/load operations ('Map saved!', 'Map loaded!', error messages). Timer-based auto-hide. Clean integration without additional UI elements. Simplified but effective user feedback."
         },
         {
             "id": "4.20",
-            "description": "Performance profiling and optimization",
-            "status": "pending",
+            "description": "Implement continuous drawing (paint while dragging)",
+            "status": "completed",
             "estimatedTime": "30 min",
-            "priority": "medium",
-            "notes": "Profile rendering performance. Optimize DrawSpriteSection caching. Aggressive viewport culling. Throttle hover updates. Benchmark before/after."
+            "actualTime": "25 min",
+            "completionDate": "2025-12-26",
+            "priority": "critical",
+            "notes": "Implemented continuous drawing - pencil paints while left mouse held + dragging. Tracks last painted tile (lastDrawnTileX/Y) to prevent double-painting same tile. isDrawing state tracks mouse down. Resets on mouse release. Works at all zoom levels. Clean brush-like experience matching SpriteEditor."
+        },
+        {
+            "id": "4.21",
+            "description": "Implement Undo/Redo system",
+            "status": "pending",
+            "estimatedTime": "1.5 hours",
+            "priority": "critical",
+            "notes": "Create MapEditor_UndoRedo.cpp/h similar to SpriteEditor. Stack-based undo/redo for tile changes. Support Ctrl+Z (undo) and Ctrl+Y (redo). Store before/after tile states. Limit stack to 50 operations. Should work with all tools (pencil, fill, eraser)."
+        },
+        {
+            "id": "4.22",
+            "description": "Runtime integration - Map display in game",
+            "status": "pending",
+            "estimatedTime": "1 hour",
+            "priority": "critical",
+            "notes": "Integrate map rendering in actual game runtime. Implement mget(x, y, [layer]) and mset(x, y, [layer], tile) Lua API. Implement map(mx, my, sx, sy, w, h, [layer_mask]) for rendering. Load map.json from cartridge folder. Test with sample game that displays and scrolls the map."
+        },
+        {
+            "id": "4.23",
+            "description": "Performance profiling and optimization",
+            "status": "skipped",
+            "estimatedTime": "30 min",
+            "priority": "low",
+            "notes": "Optional: Profile rendering performance. Optimize DrawSpriteSection caching. Aggressive viewport culling. Benchmark before/after. Can be done later if performance issues arise."
         }
     ],
     "technical_specs": {

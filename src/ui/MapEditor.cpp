@@ -15,6 +15,9 @@ MapEditor::MapEditor()
     : activeLayer(0),
       currentTool(Tool::PENCIL),
       selectedTile(1),  // Default to tile 1 (not empty)
+      isDrawing(false),
+      lastDrawnTileX(-1),
+      lastDrawnTileY(-1),
       isActive(false),
       showGrid(true),
       cameraX(4),   // Start map at position (4,4)
@@ -27,6 +30,8 @@ MapEditor::MapEditor()
       cameraStartY(0),
       showLayerSidebar(false),
       hoveredLayer(-1),
+      toastMessage(""),
+      toastTimer(0),
       currentTab(0),  // Start at tab 0
       systemSprites(nullptr) {
     
@@ -69,6 +74,11 @@ void MapEditor::SetActive(bool active, AestheticLayer* renderer) {
 
 void MapEditor::Update(InputManager& input) {
     if (!isActive) return;
+    
+    // Update toast timer
+    if (toastTimer > 0) {
+        toastTimer--;
+    }
     
     // Handle keyboard shortcuts
     HandleKeyboard(input);
@@ -142,7 +152,7 @@ void MapEditor::Update(InputManager& input) {
         hoveredLayer = -1;
     }
     
-    // Handle left mouse click
+    // Handle left mouse click (start drawing)
     if (input.isMouseButtonPressed(SDL_BUTTON_LEFT) && !isPanning) {
         // Toggle button in title bar
         if (mouseX >= TOGGLE_BTN_X && mouseX < TOGGLE_BTN_X + TOGGLE_BTN_SIZE && 
@@ -167,11 +177,14 @@ void MapEditor::Update(InputManager& input) {
                 std::cout << "[MapEditor] Active layer: " << activeLayer << std::endl;
             }
         }
-        // Map viewport
+        // Map viewport - start drawing
         else if (mouseX >= MAP_X && mouseX < MAP_X + MAP_W &&
                  mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H) {
             // Only handle if not clicking on sidebar
             if (!showLayerSidebar || mouseX >= SIDEBAR_X + SIDEBAR_W) {
+                isDrawing = true;
+                lastDrawnTileX = -1;  // Reset to allow first paint
+                lastDrawnTileY = -1;
                 HandleViewportClick(mouseX, mouseY);
             }
         }
@@ -184,6 +197,24 @@ void MapEditor::Update(InputManager& input) {
         else if (mouseY >= TOOLBAR_Y && mouseY < TOOLBAR_Y + TOOLBAR_H) {
             HandleToolbarClick(mouseX, mouseY);
         }
+    }
+    
+    // Handle continuous drawing (mouse held + dragging)
+    if (isDrawing && input.isMouseButtonDown(SDL_BUTTON_LEFT) && !isPanning) {
+        if (mouseX >= MAP_X && mouseX < MAP_X + MAP_W &&
+            mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H) {
+            // Only draw if not on sidebar
+            if (!showLayerSidebar || mouseX >= SIDEBAR_X + SIDEBAR_W) {
+                HandleViewportClick(mouseX, mouseY);
+            }
+        }
+    }
+    
+    // Stop drawing when mouse released
+    if (!input.isMouseButtonDown(SDL_BUTTON_LEFT)) {
+        isDrawing = false;
+        lastDrawnTileX = -1;
+        lastDrawnTileY = -1;
     }
 }
 
@@ -234,6 +265,12 @@ void MapEditor::RenderTitleBar(AestheticLayer& renderer) {
     std::string layerText = layers[activeLayer].name;
     renderer.PrintRGB(layerText.c_str(), 160, 1,
                       SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
+    
+    // Toast message (right side, fades based on timer)
+    if (toastTimer > 0) {
+        renderer.PrintRGB(toastMessage.c_str(), 210, 1,
+                          SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
+    }
 }
 
 void MapEditor::RenderMapViewport(AestheticLayer& renderer) {
@@ -736,7 +773,14 @@ void MapEditor::HandleKeyboard(InputManager& input) {
 // ===== Tool Implementations =====
 
 void MapEditor::UsePencil(int tileX, int tileY) {
+    // Skip if we just painted this tile (prevents double-painting during drag)
+    if (tileX == lastDrawnTileX && tileY == lastDrawnTileY) {
+        return;
+    }
+    
     SetTile(tileX, tileY, activeLayer, selectedTile);
+    lastDrawnTileX = tileX;
+    lastDrawnTileY = tileY;
 }
 
 void MapEditor::UseFill(int tileX, int tileY, uint8_t targetTile, uint8_t replacementTile) {
@@ -886,10 +930,12 @@ bool MapEditor::SaveToJSON(const std::string& path) {
         file.close();
         
         std::cout << "[MapEditor] Saved map to: " << path << std::endl;
+        ShowToast("Map saved!");
         return true;
     }
     catch (const std::exception& e) {
         std::cerr << "[MapEditor] Error saving map: " << e.what() << std::endl;
+        ShowToast("Save failed!");
         return false;
     }
 }
@@ -923,10 +969,12 @@ bool MapEditor::LoadFromJSON(const std::string& path) {
         }
         
         std::cout << "[MapEditor] Loaded map from: " << path << std::endl;
+        ShowToast("Map loaded!");
         return true;
     }
     catch (const std::exception& e) {
         std::cerr << "[MapEditor] Error loading map: " << e.what() << std::endl;
+        ShowToast("Load failed!");
         return false;
     }
 }
@@ -987,6 +1035,12 @@ int MapEditor::GetMapDrawY() const {
 
 float MapEditor::GetTileSize() const {
     return TILE_SIZE * zoom;
+}
+
+void MapEditor::ShowToast(const std::string& message) {
+    toastMessage = message;
+    toastTimer = TOAST_DURATION;
+    std::cout << "[MapEditor] Toast: " << message << std::endl;
 }
 
 void MapEditor::Log(const std::string& message) {

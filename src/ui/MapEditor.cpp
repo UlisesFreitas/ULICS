@@ -278,6 +278,44 @@ void MapEditor::RenderMapViewport(AestheticLayer& renderer) {
                             gridColor.r, gridColor.g, gridColor.b);
         }
     }
+    
+    // === SCREEN SECTION GRID (always visible - shows game screen divisions) ===
+    // Game screen is 128×64px (16×8 tiles in PICO-8)
+    // Map is 1024×512px, so we have 8×8 = 64 screens
+    int screenWidthTiles = 16;   // 128px / 8px per tile
+    int screenHeightTiles = 8;   // 64px / 8px per tile
+    float screenWidthPixels = screenWidthTiles * tileSizeFloat;
+    float screenHeightPixels = screenHeightTiles * tileSizeFloat;
+    
+    SDL_Color sectionGridColor = {255, 0, 255};  // Magenta - very visible
+    
+    // Vertical section lines (every 16 tiles = 128px)
+    for (int sx = 0; sx <= MAP_WIDTH; sx += screenWidthTiles) {
+        int lineX = mapX + sx * tileSizeFloat;
+        // Only draw if visible in viewport
+        if (lineX < MAP_X || lineX > MAP_X + MAP_W) continue;
+        
+        // Clamp line to map bounds and viewport
+        int lineStartY = std::max(mapY, MAP_Y);
+        int lineEndY = std::min(mapY + mapPixelHeight, MAP_Y + MAP_H);
+        
+        renderer.LineRGB(lineX, lineStartY, lineX, lineEndY,
+                        sectionGridColor.r, sectionGridColor.g, sectionGridColor.b);
+    }
+    
+    // Horizontal section lines (every 8 tiles = 64px)
+    for (int sy = 0; sy <= MAP_HEIGHT; sy += screenHeightTiles) {
+        int lineY = mapY + sy * tileSizeFloat;
+        // Only draw if visible in viewport
+        if (lineY < MAP_Y || lineY > MAP_Y + MAP_H) continue;
+        
+        // Clamp line to map bounds and viewport
+        int lineStartX = std::max(mapX, MAP_X);
+        int lineEndX = std::min(mapX + mapPixelWidth, MAP_X + MAP_W);
+        
+        renderer.LineRGB(lineStartX, lineY, lineEndX, lineY,
+                        sectionGridColor.r, sectionGridColor.g, sectionGridColor.b);
+    }
 }
 //     // Draw grid overlay
 //     if (showGrid) {

@@ -1,0 +1,29 @@
+=== SPRITE EDITOR LOG ===
+SpriteEditor initialized
+[RecentFiles] Loaded 1 recent files
+[Flags] Cartridge path set: ./cartridges\api_test/spritesheet.png
+[Flags] Loaded from: ./cartridges\api_test/spritesheet.flags
+[LoadSpritesheet] Loaded successfully from: ./cartridges\api_test/spritesheet.png
+[Palette] Looking for palette.pal at: ./cartridges\api_test\palette.pal
+[Palette] Loaded palette.pal successfully (32 colors)
+[Flags] Loaded from: ./cartridges\api_test/spritesheet.flags
+[Update] Active! Update count: 60
+[LoadSpritesheet] Loaded successfully from: ./cartridges\api_test/spritesheet.png
+[Palette] Looking for palette.pal at: ./cartridges\api_test\palette.pal
+[Palette] Loaded palette.pal successfully (32 colors)
+[Flags] Loaded from: ./cartridges\api_test/spritesheet.flags
+[Update] Active! Update count: 120
+[LoadSpritesheet] Loaded successfully from: ./cartridges\api_test/spritesheet.png
+[Palette] Looking for palette.pal at: ./cartridges\api_test\palette.pal
+[Palette] Loaded palette.pal successfully (32 colors)
+[Flags] Loaded from: ./cartridges\api_test/spritesheet.flags
+[RecentFiles] Saved 1 recent files
+SpriteEditor destroyed
+te Editor activated
+[Engine] F3 pressed, current mode: 2
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] F1 pressed, current mode: 3
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine::SetMode] Deactivating Sprite Editor
+[Engine] F3 pressed, current mode: 0
+[Engine::SetMode] Deactivating Sprite Editor

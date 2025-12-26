@@ -215,6 +215,24 @@
             "notes": "Created MapEditor_UndoRedo.cpp with stack-based undo/redo. UndoState stores complete layer snapshot (8192 tiles). Ctrl+Z/Y shortcuts implemented. Key solution: Save initial state when editor activates (SetActive) AND save state AFTER each modification. This ensures first undo works and redo restores modified state. Stack limited to 50 operations. Toast messages for feedback. Tested thoroughly - works correctly in all scenarios."
         },
         {
+            "id": "4.21.1",
+            "description": "UI enhancements - UI icons",
+            "status": "partial",
+            "estimatedTime": "1 hour",
+            "actualTime": "20 min",
+            "completionDate": "2025-12-26",
+            "priority": "low",
+            "notes": "Created cursor icon sprites in SystemSprites: CURSOR_ARROW (26), CURSOR_HAND (27), CURSOR_CROSS (28). Icons generated and ready to use. Full implementation of dynamic cursor changing would require SDL cursor management which is beyond scope for now. Icons available for future use or can be displayed as visual in dicators."
+        },
+        {
+            "id": "4.21.2",
+            "description": "Implement dynamic cursor changing with SDL",
+            "status": "pending",
+            "estimatedTime": "2 hours",
+            "priority": "low",
+            "notes": "Implement SDL_Cursor management for dynamic cursor changes. Change cursor based on UI area: Default arrow cursor everywhere, Hand cursor when hovering toolbars/sidebar/spritesheet (clickable areas), Crosshair cursor when hovering map viewport (drawing area). Use SDL_CreateSystemCursor() or SDL_CreateColorCursor() with the icons from SystemSprites (26-28). Track mouse position and current UI area to determine which cursor to show. Performance: only change cursor when moving between different UI areas, not every frame."
+        },
+        {
             "id": "4.22",
             "description": "Runtime integration - Map display in game",
             "status": "pending",

@@ -50,6 +50,7 @@ void SystemSprites::GenerateDefaultIcons() {
     GenerateUtilityIcons();  // NEW: utility icons (16-22)
     GenerateRotateIcons();   // Rotate Left/Right
     GenerateResetIcon();     // Reset icon (25)
+    GenerateCursorIcons();   // Cursor icons (26-28)
 }
 
 // ===== ICON GENERATORS =====
@@ -420,4 +421,45 @@ void SystemSprites::GenerateResetIcon() {
         {0,0,0,7,7,7,0,0}
     };
     std::memcpy(sprites[25], reset, 64);
+}
+
+void SystemSprites::GenerateCursorIcons() {
+    // Sprite 26: Arrow cursor (default pointer)
+    uint8_t arrow[8][8] = {
+        {7,0,0,0,0,0,0,0},
+        {7,7,0,0,0,0,0,0},
+        {7,12,7,0,0,0,0,0},
+        {7,12,12,7,0,0,0,0},
+        {7,12,12,12,7,0,0,0},
+        {7,12,12,7,0,0,0,0},
+        {7,7,7,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0}
+    };
+    std::memcpy(sprites[26], arrow, 64);
+    
+    // Sprite 27: Hand cursor (for clickable elements)
+    uint8_t hand[8][8] = {
+        {0,0,7,7,0,0,7,7},
+        {0,7,12,12,7,7,12,7},
+        {0,7,12,12,12,12,12,7},
+        {0,7,12,12,12,12,12,7},
+        {7,12,12,12,12,12,12,7},
+        {7,12,12,12,12,12,7,0},
+        {7,12,12,12,12,12,7,0},
+        {0,7,7,7,7,7,7,0}
+    };
+    std::memcpy(sprites[27], hand, 64);
+    
+    // Sprite 28: Crosshair cursor (for precise drawing)
+    uint8_t cross[8][8] = {
+        {0,0,0,7,7,0,0,0},
+        {0,0,0,7,7,0,0,0},
+        {0,0,0,7,7,0,0,0},
+        {7,7,7,0,0,7,7,7},
+        {7,7,7,0,0,7,7,7},
+        {0,0,0,7,7,0,0,0},
+        {0,0,0,7,7,0,0,0},
+        {0,0,0,7,7,0,0,0}
+    };
+    std::memcpy(sprites[28], cross, 64);
 }

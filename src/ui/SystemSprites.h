@@ -56,7 +56,12 @@ public:
         ROTATE_RIGHT = 24,  // Rotate 90° clockwise
         
         // Reset icon (25)
-        RESET = 25          // Reset icon (circular arrows)
+        RESET = 25,         // Reset icon (circular arrows)
+        
+        // Mouse cursor icons (26-28)
+        CURSOR_ARROW = 26,  // Default arrow cursor
+        CURSOR_HAND = 27,   // Hand cursor (for clickable areas)
+        CURSOR_CROSS = 28   // Crosshair cursor (for drawing)
     };
     
 private:
@@ -83,6 +88,7 @@ private:
     void GenerateUtilityIcons();  // Generates all utility icons (16-22)
     void GenerateRotateIcons();   // Generates rotate icons (23-24)
     void GenerateResetIcon();     // Generates reset icon (25)
+    void GenerateCursorIcons();   // Generates cursor icons (26-28)
 };
 
 #endif // SYSTEM_SPRITES_H

@@ -136,6 +136,17 @@ private:
     bool showLayerSidebar;
     int hoveredLayer;  // -1 = none, 0-7 = layer index
     
+    // Dynamic cursor state
+    enum class CursorType {
+        ARROW,      // Default
+        HAND,       // Clickable areas
+        CROSSHAIR   // Drawing area
+    };
+    CursorType currentCursor;
+    SDL_Cursor* arrowCursor;
+    SDL_Cursor* handCursor;
+    SDL_Cursor* crossCursor;
+    
     // Toast/Feedback message system
     std::string toastMessage;
     int toastTimer;  // Frames remaining to show toast (0 = hide)

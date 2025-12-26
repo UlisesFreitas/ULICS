@@ -90,10 +90,22 @@ private:
         }
     };
     
+    // Undo/Redo state structure
+    struct UndoState {
+        std::string actionName;              // "Paint", "Fill", "Erase", etc.
+        int layer;                           // Which layer was modified
+        std::vector<uint8_t> layerData;     // Complete layer snapshot
+    };
+    
     // Map state
     std::vector<Layer> layers;
     int activeLayer;
     std::string mapPath;
+    
+    // Undo/Redo system
+    std::vector<UndoState> undoStack;
+    int undoIndex;  // Current position in undo stack
+    static constexpr int MAX_UNDO_STACK = 50;  // Limit undo history
     
     // Tool state
     Tool currentTool;
@@ -231,6 +243,12 @@ private:
     
     // Toast message helper
     void ShowToast(const std::string& message);
+    
+    // Undo/Redo system (implemented in MapEditor_UndoRedo.cpp)
+    void SaveUndoState(const std::string& actionName);
+    void Undo();
+    void Redo();
+    void ClearUndoHistory();
     
     // Debug logging
     void Log(const std::string& message);

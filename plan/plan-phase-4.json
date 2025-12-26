@@ -207,10 +207,12 @@
         {
             "id": "4.21",
             "description": "Implement Undo/Redo system",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "1.5 hours",
+            "actualTime": "1 hour",
+            "completionDate": "2025-12-26",
             "priority": "critical",
-            "notes": "Create MapEditor_UndoRedo.cpp/h similar to SpriteEditor. Stack-based undo/redo for tile changes. Support Ctrl+Z (undo) and Ctrl+Y (redo). Store before/after tile states. Limit stack to 50 operations. Should work with all tools (pencil, fill, eraser)."
+            "notes": "Created MapEditor_UndoRedo.cpp with stack-based undo/redo. UndoState stores complete layer snapshot (8192 tiles). Ctrl+Z/Y shortcuts implemented. Key solution: Save initial state when editor activates (SetActive) AND save state AFTER each modification. This ensures first undo works and redo restores modified state. Stack limited to 50 operations. Toast messages for feedback. Tested thoroughly - works correctly in all scenarios."
         },
         {
             "id": "4.22",

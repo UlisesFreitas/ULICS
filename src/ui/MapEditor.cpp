@@ -13,6 +13,7 @@ using json = nlohmann::json;
 
 MapEditor::MapEditor() 
     : activeLayer(0),
+      undoIndex(-1),
       currentTool(Tool::PENCIL),
       selectedTile(1),  // Default to tile 1 (not empty)
       isDrawing(false),
@@ -61,10 +62,19 @@ void MapEditor::Initialize(const std::string& path) {
 }
 
 void MapEditor::SetActive(bool active, AestheticLayer* renderer) {
+    bool wasInactive = !isActive;
     isActive = active;
     
-    // When activating MapEditor, reload spritesheet to get latest changes from Sprite Editor
     if (active && renderer) {
+        // Save initial state when editor becomes active (for first undo to work)
+        if (wasInactive) {
+            // Clear undo history when opening editor
+            ClearUndoHistory();
+            // Save current state as starting point
+            SaveUndoState("Initial");
+        }
+        
+        // When activating MapEditor, reload spritesheet to get latest changes from Sprite Editor
         renderer->ReloadSpriteSheet();
         std::cout << "[MapEditor] Reloaded spritesheet" << std::endl;
     }
@@ -663,21 +673,29 @@ void MapEditor::HandleViewportClick(int mouseX, int mouseY) {
     
     if (!IsValidTileCoord(tileX, tileY)) return;
     
+    // Check if we should save undo (only on first click, not during continuous drawing)
+    bool shouldSaveUndo = (currentTool != Tool::PICKER) && 
+                          (!isDrawing || (lastDrawnTileX == -1 && lastDrawnTileY == -1));
+    
     // Apply current tool
     switch (currentTool) {
         case Tool::PENCIL:
             UsePencil(tileX, tileY);
+            if (shouldSaveUndo) SaveUndoState("Paint");
             break;
         case Tool::FILL:
             {
                 uint8_t targetTile = GetTile(tileX, tileY, activeLayer);
                 UseFill(tileX, tileY, targetTile, selectedTile);
+                if (shouldSaveUndo) SaveUndoState("Fill");
             }
             break;
         case Tool::ERASER:
             UseEraser(tileX, tileY);
+            if (shouldSaveUndo) SaveUndoState("Erase");
             break;
         case Tool::PICKER:
+            // Picker doesn't modify, no undo needed
             UsePicker(tileX, tileY);
             break;
     }
@@ -767,6 +785,16 @@ void MapEditor::HandleKeyboard(InputManager& input) {
         if (!mapPath.empty()) {
             SaveToJSON(mapPath);
         }
+    }
+    
+    // Undo (Ctrl+Z)
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_Z)) {
+        Undo();
+    }
+    
+    // Redo (Ctrl+Y)
+    if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_Y)) {
+        Redo();
     }
 }
 

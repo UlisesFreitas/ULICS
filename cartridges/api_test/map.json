@@ -16399,7 +16399,7 @@
       "id": 1,
       "name": "Layer 1",
       "opacity": 100,
-      "visible": false
+      "visible": true
     },
     {
       "data": [

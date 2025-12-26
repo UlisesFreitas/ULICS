@@ -7,6 +7,7 @@
 #include <fstream>
 #include <algorithm>
 #include <json.hpp>
+#include <cassert>  // For debug assertions
 
 using json = nlohmann::json;
 
@@ -24,6 +25,8 @@ MapEditor::MapEditor()
       panStartY(0),
       cameraStartX(0),
       cameraStartY(0),
+      showLayerSidebar(false),
+      hoveredLayer(-1),
       currentTab(0),  // Start at tab 0
       systemSprites(nullptr) {
     
@@ -131,17 +134,53 @@ void MapEditor::Update(InputManager& input) {
         isPanning = false;
     }
     
+    // Update hover state for sidebar
+    if (showLayerSidebar && mouseX >= SIDEBAR_X && mouseX < SIDEBAR_X + SIDEBAR_W &&
+        mouseY >= SIDEBAR_Y + SIDEBAR_LIST_START_Y && mouseY < SIDEBAR_Y + SIDEBAR_LIST_START_Y + LAYER_COUNT * LAYER_ITEM_H) {
+        hoveredLayer = (mouseY - (SIDEBAR_Y + SIDEBAR_LIST_START_Y)) / LAYER_ITEM_H;
+    } else {
+        hoveredLayer = -1;
+    }
+    
     // Handle left mouse click
     if (input.isMouseButtonPressed(SDL_BUTTON_LEFT) && !isPanning) {
-        // Check which UI element was clicked
-        if (mouseX >= MAP_X && mouseX < MAP_X + MAP_W &&
-            mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H) {
-            HandleViewportClick(mouseX, mouseY);
+        // Toggle button in title bar
+        if (mouseX >= TOGGLE_BTN_X && mouseX < TOGGLE_BTN_X + TOGGLE_BTN_SIZE && 
+            mouseY >= TOGGLE_BTN_Y && mouseY < TOGGLE_BTN_Y + TOGGLE_BTN_SIZE) {
+            showLayerSidebar = !showLayerSidebar;
+            std::cout << "[MapEditor] Layer sidebar: " << (showLayerSidebar ? "open" : "closed") << std::endl;
         }
+        // Sidebar layer click
+        else if (showLayerSidebar && mouseX >= SIDEBAR_X && mouseX < SIDEBAR_X + SIDEBAR_W &&
+                 mouseY >= SIDEBAR_Y + SIDEBAR_LIST_START_Y && mouseY < SIDEBAR_Y + SIDEBAR_LIST_START_Y + LAYER_COUNT * LAYER_ITEM_H) {
+            int clickedLayer = (mouseY - (SIDEBAR_Y + SIDEBAR_LIST_START_Y)) / LAYER_ITEM_H;
+            
+            // Click on Show/Hide text toggles visibility
+            if (mouseX >= SIDEBAR_X + LAYER_VIS_X && mouseX < SIDEBAR_X + LAYER_VIS_X + LAYER_VIS_W) {
+                layers[clickedLayer].visible = !layers[clickedLayer].visible;
+                std::cout << "[MapEditor] Layer " << clickedLayer << " visibility: " 
+                          << (layers[clickedLayer].visible ? "on" : "off") << std::endl;
+            }
+            // Click anywhere else selects layer
+            else {
+                activeLayer = clickedLayer;
+                std::cout << "[MapEditor] Active layer: " << activeLayer << std::endl;
+            }
+        }
+        // Map viewport
+        else if (mouseX >= MAP_X && mouseX < MAP_X + MAP_W &&
+                 mouseY >= MAP_Y && mouseY < MAP_Y + MAP_H) {
+            // Only handle if not clicking on sidebar
+            if (!showLayerSidebar || mouseX >= SIDEBAR_X + SIDEBAR_W) {
+                HandleViewportClick(mouseX, mouseY);
+            }
+        }
+        // Spritesheet
         else if (mouseX >= SHEET_X && mouseX < SHEET_X + SHEET_W &&
                  mouseY >= SHEET_Y && mouseY < SHEET_Y + SHEET_H) {
             HandlePickerClick(mouseX, mouseY);
         }
+        // Toolbar
         else if (mouseY >= TOOLBAR_Y && mouseY < TOOLBAR_Y + TOOLBAR_H) {
             HandleToolbarClick(mouseX, mouseY);
         }
@@ -157,6 +196,12 @@ void MapEditor::Render(AestheticLayer& renderer, InputManager& input) {
     // Render UI components (top to bottom)
     RenderTitleBar(renderer);
     RenderMapViewport(renderer);
+    
+    // Render layer sidebar if open (overlays on map)
+    if (showLayerSidebar) {
+        RenderLayerSidebar(renderer);
+    }
+    
     RenderToolbar(renderer);
     RenderSpritesheet(renderer);
     RenderStatusBar(renderer);
@@ -169,8 +214,20 @@ void MapEditor::RenderTitleBar(AestheticLayer& renderer) {
     renderer.RectFillRGB(0, 0, 256, TITLE_BAR_H,
                          SystemColors::LIGHT_GRAY.r, SystemColors::LIGHT_GRAY.g, SystemColors::LIGHT_GRAY.b);
     
+    // Layer toggle button (left side)
+    // Background for toggle
+    SDL_Color toggleBg = showLayerSidebar ? SystemColors::GREEN : SystemColors::DARK_GRAY;
+    renderer.RectFillRGB(TOGGLE_BTN_X, TOGGLE_BTN_Y, TOGGLE_BTN_SIZE, TOGGLE_BTN_SIZE,
+                         toggleBg.r, toggleBg.g, toggleBg.b);
+    renderer.RectRGB(TOGGLE_BTN_X, TOGGLE_BTN_Y, TOGGLE_BTN_SIZE, TOGGLE_BTN_SIZE,
+                     SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
+    
+    // "L" text
+    renderer.PrintRGB("L", TOGGLE_BTN_X + 2, TOGGLE_BTN_Y + 1,
+                      SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+    
     // Title text in black
-    renderer.PrintRGB("MAP", 4, 1,
+    renderer.PrintRGB("MAP", 14, 1,
                       SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
     
     // Current layer info
@@ -345,6 +402,52 @@ void MapEditor::RenderGrid(AestheticLayer& renderer) {
         
         renderer.LineRGB(MAP_X, screenY, MAP_X + MAP_W, screenY,
                          SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
+    }
+}
+
+void MapEditor::RenderLayerSidebar(AestheticLayer& renderer) {
+    // Background (dark gray)
+    renderer.RectFillRGB(SIDEBAR_X, SIDEBAR_Y, SIDEBAR_W, SIDEBAR_H,
+                         SystemColors::DARK_GRAY.r, SystemColors::DARK_GRAY.g, SystemColors::DARK_GRAY.b);
+    
+    // Border (white)
+    renderer.RectRGB(SIDEBAR_X, SIDEBAR_Y, SIDEBAR_W, SIDEBAR_H,
+                     SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+    
+    // Title "LAYERS"
+    renderer.PrintRGB("LAYERS", SIDEBAR_X + 2, SIDEBAR_Y + SIDEBAR_TITLE_Y,
+                      SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+    
+    // Render each layer
+    int startY = SIDEBAR_Y + SIDEBAR_LIST_START_Y;  // Start below title
+    
+    for (int i = 0; i < LAYER_COUNT; i++) {
+        int layerY = startY + i * LAYER_ITEM_H;
+        
+        // Background for this layer item
+        SDL_Color itemBg = (i == activeLayer) ? SystemColors::GREEN : SystemColors::UI_CANVAS_BG;
+        if (i == hoveredLayer) {
+            itemBg = SystemColors::LAVENDER;  // Hover color
+        }
+        
+        renderer.RectFillRGB(SIDEBAR_X + 2, layerY, SIDEBAR_W - 4, LAYER_ITEM_H - 2,
+                             itemBg.r, itemBg.g, itemBg.b);
+        
+        // Layer number
+        std::string layerNum = std::to_string(i);
+        renderer.PrintRGB(layerNum.c_str(), SIDEBAR_X + LAYER_NUM_X, layerY + 4,
+                          SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
+        
+        // Show/Hide text
+        const char* visText = layers[i].visible ? "Show" : "Hide";
+        renderer.PrintRGB(visText, SIDEBAR_X + LAYER_VIS_X, layerY + 4,
+                          SystemColors::BLACK.r, SystemColors::BLACK.g, SystemColors::BLACK.b);
+        
+        // Active indicator (arrow)
+        if (i == activeLayer) {
+            renderer.PrintRGB(">", SIDEBAR_X + LAYER_ARROW_X, layerY + 4,
+                              SystemColors::WHITE.r, SystemColors::WHITE.g, SystemColors::WHITE.b);
+        }
     }
 }
 
@@ -616,6 +719,12 @@ void MapEditor::HandleKeyboard(InputManager& input) {
         showGrid = !showGrid;
     }
     
+    // Toggle layer sidebar (L key)
+    if (input.isKeyPressed(SDL_SCANCODE_L)) {
+        showLayerSidebar = !showLayerSidebar;
+        std::cout << "[MapEditor] Layer sidebar: " << (showLayerSidebar ? "open" : "closed") << std::endl;
+    }
+    
     // Save (Ctrl+S)
     if (input.isCtrlDown() && input.isKeyPressed(SDL_SCANCODE_S)) {
         if (!mapPath.empty()) {
@@ -856,6 +965,28 @@ int MapEditor::TileToScreenY(int tileY) const {
     int mapY = MAP_Y + cameraY;
     float tileSize = TILE_SIZE * zoom;
     return mapY + tileY * tileSize;
+}
+
+// === Map Drawing Helper Methods ===
+
+int MapEditor::GetMapPixelWidth() const {
+    return MAP_WIDTH * TILE_SIZE * zoom;
+}
+
+int MapEditor::GetMapPixelHeight() const {
+    return MAP_HEIGHT * TILE_SIZE * zoom;
+}
+
+int MapEditor::GetMapDrawX() const {
+    return MAP_X + (MAP_W - GetMapPixelWidth()) / 2 - cameraX;
+}
+
+int MapEditor::GetMapDrawY() const {
+    return MAP_Y + (MAP_H - GetMapPixelHeight()) / 2 - cameraY;
+}
+
+float MapEditor::GetTileSize() const {
+    return TILE_SIZE * zoom;
 }
 
 void MapEditor::Log(const std::string& message) {

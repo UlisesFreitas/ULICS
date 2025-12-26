@@ -115,6 +115,10 @@ private:
     int cameraStartX;
     int cameraStartY;
     
+    // Layer sidebar state
+    bool showLayerSidebar;
+    int hoveredLayer;  // -1 = none, 0-7 = layer index
+    
     // UI Layout constants (PICO-8 style - vertical layout, calculated from BOTTOM UP)
     static constexpr int TITLE_BAR_H = 10;
     static constexpr int STATUS_BAR_H = 10;
@@ -142,6 +146,26 @@ private:
     static constexpr int MAP_W = MAP_BORDER_W - 2;  // Map width (254px)
     static constexpr int MAP_H = MAP_BORDER_H - 2;  // Map height
     
+    // Layer Sidebar (left side, toggleable)
+    static constexpr int SIDEBAR_W = 60;  // Width when open (wider for "Show"/"Hide")
+    static constexpr int SIDEBAR_X = 0;
+    static constexpr int SIDEBAR_Y = MAP_Y;
+    static constexpr int SIDEBAR_H = MAP_H;
+    static constexpr int LAYER_ITEM_H = 16;  // Height per layer item
+    
+    // Sidebar UI element positions
+    static constexpr int SIDEBAR_TITLE_Y = 2;
+    static constexpr int SIDEBAR_LIST_START_Y = 12;  // Start of layer list
+    static constexpr int LAYER_NUM_X = 4;   // Layer number position
+    static constexpr int LAYER_VIS_X = 14;  // "Show"/"Hide" text position
+    static constexpr int LAYER_VIS_W = 24;  // Width of visibility click area
+    static constexpr int LAYER_ARROW_X = 50;  // Active arrow position
+    
+    // Toggle button (in title bar)
+    static constexpr int TOGGLE_BTN_X = 2;
+    static constexpr int TOGGLE_BTN_Y = 1;
+    static constexpr int TOGGLE_BTN_SIZE = 8;
+    
     // Tab system (4 tabs for 256 tiles total, RIGHT EDGE of screen)
     static constexpr int SPRITES_PER_TAB = 64;  // 16x4 grid
     static constexpr int TAB_COUNT = 4;  // 4 tabs * 64 = 256 tiles
@@ -163,6 +187,7 @@ private:
     void RenderSpritesheet(AestheticLayer& renderer);
     void RenderStatusBar(AestheticLayer& renderer);
     void RenderGrid(AestheticLayer& renderer);
+    void RenderLayerSidebar(AestheticLayer& renderer);  // New sidebar
     
     // Input handling
     void HandleViewportClick(int mouseX, int mouseY);
@@ -183,6 +208,13 @@ private:
     int ScreenToTileY(int screenY) const;
     int TileToScreenX(int tileX) const;
     int TileToScreenY(int tileY) const;
+    
+    // Map drawing helpers (reduce code duplication)
+    int GetMapDrawX() const;
+    int GetMapDrawY() const;
+    int GetMapPixelWidth() const;
+    int GetMapPixelHeight() const;
+    float GetTileSize() const;
     
     // Flood fill helper (recursive)
     void FloodFillRecursive(int x, int y, int layer, uint8_t targetTile, uint8_t replacementTile);

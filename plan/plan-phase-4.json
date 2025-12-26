@@ -129,23 +129,73 @@
             "description": "Load current cartridge spritesheet",
             "status": "completed",
             "estimatedTime": "30 min",
-            "actualTime": "25 min",
-            "notes": "Updated RenderMapViewport and RenderSpritesheet to use DrawSprite instead of placeholder colors. Sprites now display from loaded cart ridge spritesheet"
+            "actualTime": "45 min",
+            "completionDate": "2025-12-25",
+            "notes": "Sprites load from cartridge, hot-reload on editor switch (F2→F3), fixed duplicate rendering bug. MapEditor::SetActive() now takes AestheticLayer* to reload spritesheet"
         },
         {
             "id": "4.14",
             "description": "Add layer management UI panel",
-            "status": "pending",
+            "status": "completed",
             "estimatedTime": "1.5 hours",
-            "notes": "UI panel for layer operations: rename, toggle visibility, reorder, opacity slider, lock/unlock. Small panel in middle space between map and toolbar"
+            "actualTime": "2 hours",
+            "completionDate": "2025-12-26",
+            "notes": "Implemented toggleable sidebar (60px wide) with LAYERS title, Show/Hide text for visibility, arrow indicator for active layer. Toggle with L key or header button. Click layer to activate, click Show/Hide to toggle visibility. Hover feedback with lavender background. Green background for active layer."
         },
         {
             "id": "4.15",
             "description": "Implement PICO-8 style zoom and pan",
             "status": "completed",
             "estimatedTime": "2 hours",
-            "actualTime": "1.5 hours",
-            "notes": "Full map visible with zoom (0.125x-4x), middle mouse + drag to pan, mouse wheel to zoom centered on cursor. All coordinate transformations updated to support zoom"
+            "actualTime": "3 hours",
+            "completionDate": "2025-12-25 to 2025-12-26",
+            "notes": "5 discrete zoom levels (0.25x, 0.5x, 1x, 2x, 4x) with mouse wheel. Middle mouse + drag for panning. Snap-to-grid (8px). Checkboard background (8x8). Screen section grid (magenta) shows 64 game screens (128x64px each). Fixed DrawSpriteSection to support proper sprite scaling. Grid hidden at <1x zoom"
+        },
+        {
+            "id": "4.16",
+            "description": "Refactor magic values to constants",
+            "status": "completed",
+            "estimatedTime": "20 min",
+            "actualTime": "25 min",
+            "completionDate": "2025-12-26",
+            "priority": "high",
+            "notes": "Extracted all hardcoded coordinates to named constants: TOGGLE_BTN_X/Y/SIZE, SIDEBAR_LIST_START_Y, LAYER_NUM_X, LAYER_VIS_X/W, LAYER_ARROW_X. Created helper methods GetMapDrawX/Y, GetMapPixelWidth/Height, GetTileSize to eliminate code duplication. Improved maintainability significantly."
+        },
+        {
+            "id": "4.17",
+            "description": "Add bounds validation",
+            "status": "completed",
+            "estimatedTime": "15 min",
+            "actualTime": "10 min",
+            "completionDate": "2025-12-26",
+            "priority": "high",
+            "notes": "Added cassert include for debug assertions. Validated existing bounds checks in SetTile/GetTile (layer < LAYER_COUNT), SetActiveLayer, ToggleLayerVisibility, zoom levels (0-4), fill safety limit (10k tiles). All critical paths have proper validation to prevent crashes."
+        },
+        {
+            "id": "4.18",
+            "description": "Update documentation",
+            "status": "completed",
+            "estimatedTime": "30 min",
+            "actualTime": "25 min",
+            "completionDate": "2025-12-26",
+            "priority": "high",
+            "notes": "Updated MAP_EDITOR_PROGRESS.md with comprehensive documentation: Layer sidebar UI details, zoom/pan system (5 levels, snap-to-grid), screen section grid explanation, checkboard background, complete keyboard shortcuts, mouse controls reference. Added enhancement features section (2025-12-26). Updated completion status, future enhancements list, and footer timestamps."
+        },
+        {
+            "id": "4.19",
+            "description": "UX polish and visual feedback",
+            "status": "pending",
+            "estimatedTime": "1 hour",
+            "priority": "medium",
+            "notes": "Add toast messages for save/load. Cursor changes on hover. Layer name editing (double-click). Additional shortcuts (Ctrl+L, V, [], etc). Status bar improvements."
+        },
+        {
+            "id": "4.20",
+            "description": "Performance profiling and optimization",
+            "status": "pending",
+            "estimatedTime": "30 min",
+            "priority": "medium",
+            "notes": "Profile rendering performance. Optimize DrawSpriteSection caching. Aggressive viewport culling. Throttle hover updates. Benchmark before/after."
         }
     ],
     "technical_specs": {
